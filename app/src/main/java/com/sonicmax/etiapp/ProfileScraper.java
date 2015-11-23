@@ -28,7 +28,6 @@ public class ProfileScraper {
         Bundle args = new Bundle();
         args.putString("method", "GET");
         args.putString("type", "url");
-        Log.v("getProfile", SharedPreferenceManager.getString(mContext, "profile_url"));
         args.putString("url", SharedPreferenceManager.getString(mContext, "profile_url"));
 
         new WebRequestAsyncTask(mContext, args) {
