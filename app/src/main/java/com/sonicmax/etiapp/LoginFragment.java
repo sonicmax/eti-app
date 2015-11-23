@@ -94,10 +94,13 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
 
     @Override
     public void onDetach() {
+
         // Make sure that we don't leak progress dialog when exiting activity
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
         }
+
+        super.onDetach();
     }
 
     /**

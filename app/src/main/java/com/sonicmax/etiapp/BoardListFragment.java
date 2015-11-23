@@ -63,6 +63,17 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
         return rootView;
     }
 
+    @Override
+    public void onDetach() {
+
+        // Make sure that we don't leak progress dialog when exiting activity
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+
+        super.onDetach();
+    }
+
     AdapterView.OnItemClickListener boardClickHandler = new AdapterView.OnItemClickListener() {
 
         @Override

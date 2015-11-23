@@ -109,6 +109,17 @@ public class MessageListFragment extends Fragment implements
         return mRootView;
     }
 
+    @Override
+    public void onDetach() {
+
+        // Make sure that we don't leak progress dialog when exiting activity
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+
+        super.onDetach();
+    }
+
     private void loadMessageList(String url, boolean filter) {
 
         Bundle args = new Bundle();

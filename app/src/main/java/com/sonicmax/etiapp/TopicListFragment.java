@@ -67,6 +67,17 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         return rootView;
     }
 
+    @Override
+    public void onDetach() {
+
+        // Make sure that we don't leak progress dialog when exiting activity
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+
+        super.onDetach();
+    }
+
     private void loadTopicList(String url) {
 
         Bundle args = new Bundle();
