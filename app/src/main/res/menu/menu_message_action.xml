@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/quote"
+        android:icon="@drawable/action_quote"
+        android:title="@string/menu_quote" />
+
+    <item android:id="@+id/highlight"
+        android:icon="@drawable/action_highlight"
+        android:title="@string/menu_highlight" />
+
+    <item android:id="@+id/ignore"
+        android:icon="@drawable/action_ignore"
+        android:title="@string/menu_ignore" />
+
+</menu>
