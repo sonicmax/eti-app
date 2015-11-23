@@ -13,7 +13,7 @@
         android:id="@+id/login_username"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="50dp"
-        android:hint="Username"/>
+        android:hint="@string/login_username" />
 
     <EditText
         android:layout_width="wrap_content"
@@ -25,7 +25,7 @@
         android:layout_below="@+id/login_username"
         android:layout_alignLeft="@+id/login_username"
         android:layout_alignStart="@+id/login_username"
-        android:hint="Password"/>
+        android:hint="@string/login_password" />
 
     <Button
         android:layout_width="wrap_content"
