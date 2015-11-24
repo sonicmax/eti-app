@@ -148,6 +148,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
                     Context context = getContext();
                     Intent intent = new Intent(context, PostTopicActivity.class);
                     intent.putExtra("title", mBoardName);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                     context.startActivity(intent);
                     break;
             }

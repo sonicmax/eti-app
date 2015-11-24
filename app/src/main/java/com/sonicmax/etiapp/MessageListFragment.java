@@ -261,6 +261,7 @@ public class MessageListFragment extends Fragment implements
                 intent.putExtra("topic", mTopic);
                 intent.putExtra("title", mTitle);
                 intent.putExtra("id", mTopic.getId());
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                 context.startActivity(intent);
                 break;
         }
