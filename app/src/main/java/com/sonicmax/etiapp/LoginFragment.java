@@ -48,7 +48,17 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
         mUsername = (EditText) rootView.findViewById(R.id.login_username);
         mPassword = (EditText) rootView.findViewById(R.id.login_password);
         Button loginButton = (Button) rootView.findViewById(R.id.login_button);
+
+        // Insert username and password from SharedPreferences (if they exist)
+        String username = SharedPreferenceManager.getString(getActivity(), "username");
+        String password = SharedPreferenceManager.getString(getActivity(), "password");
+        if (username != null & password != null) {
+            mUsername.setText(username);
+            mPassword.setText(password);
+        }
+
         loginButton.setOnClickListener(loginHandler);
+
         return rootView;
 
     }
