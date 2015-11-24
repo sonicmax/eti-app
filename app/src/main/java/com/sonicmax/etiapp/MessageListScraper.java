@@ -16,7 +16,7 @@ import java.util.List;
 public class MessageListScraper {
 
     private final String LOG_TAG = MessageListScraper.class.getSimpleName();
-    private final String mUrl;
+    private String mUrl;
 
     public MessageListScraper(String url) {
         this.mUrl = url;
@@ -101,5 +101,9 @@ public class MessageListScraper {
         MessageListFragment.mPageNumber = currentPage;
 
         return messages;
+    }
+
+    public void changeUrl(String url) {
+        mUrl = url;
     }
 }
