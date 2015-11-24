@@ -41,13 +41,13 @@ public class MessageListFragment extends Fragment implements
     private ActionMode mActionMode;
     private ProgressDialog mDialog;
     private Bundle mArgs;
+    private Topic mTopic;
 
     private int mSelection = -1;
     private int mCurrentId;
     private int mOldAdapterCount;
     public static int mPageNumber;
 
-    private String mTopicId;
     private String mTitle;
     public static String prevPageUrl;
     public static String nextPageUrl;
@@ -65,15 +65,14 @@ public class MessageListFragment extends Fragment implements
 
         // Do some initialising/etc before we inflate layout.
         Intent intent = getActivity().getIntent();
-        Topic topic = intent.getParcelableExtra("topic");
-        mTopicId = topic.getId();
+        mTopic = intent.getParcelableExtra("topic");
 
         if (mFirstRun) {
             mPageNumber = intent.getIntExtra("page", 1);
         }
 
         String url = (intent.getBooleanExtra("last_page", false))
-                ? topic.getLastPageUrl() : topic.getUrl();
+                ? mTopic.getLastPageUrl() : mTopic.getUrl();
 
         if (mScraper == null) {
             mScraper = new MessageListScraper(url);
@@ -228,7 +227,7 @@ public class MessageListFragment extends Fragment implements
                     Intent intent = new Intent(context, PostMessageActivity.class);
                     intent.putExtra("quote", quote);
                     intent.putExtra("title", mTitle);
-                    intent.putExtra("id", mTopicId);
+                    intent.putExtra("id", mTopic.getId());
                     intent.putExtra("lastpage",
                             getActivity().getIntent().getIntExtra("lastpage", 1));
                     context.startActivity(intent);
@@ -259,8 +258,9 @@ public class MessageListFragment extends Fragment implements
             case R.id.new_message:
                 Context context = getContext();
                 Intent intent = new Intent(context, PostMessageActivity.class);
+                intent.putExtra("topic", mTopic);
                 intent.putExtra("title", mTitle);
-                intent.putExtra("id", mTopicId);
+                intent.putExtra("id", mTopic.getId());
                 context.startActivity(intent);
                 break;
         }

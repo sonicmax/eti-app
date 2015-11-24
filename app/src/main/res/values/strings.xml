@@ -18,5 +18,7 @@
     <string name="menu_highlight">Highlight</string>
     <string name="menu_ignore">Ignore</string>
 
+    <string name="error_5_chars_or_more">Your message must be at least 5 characters</string>
+
     <string name="arrow">➤</string>
 </resources>

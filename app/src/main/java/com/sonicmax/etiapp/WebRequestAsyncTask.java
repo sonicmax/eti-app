@@ -252,16 +252,16 @@ public class WebRequestAsyncTask extends AsyncTask<Void, Void, String> {
 
     private String createFormDataForRequest(String requestType, ContentValues values) {
 
-        String topic, formData, message, h, submit;
+        String id, formData, message, h, submit;
 
         try {
             switch (requestType) {
                 case "newmessage":
-                    topic = values.get("topic").toString();
+                    id = values.get("id").toString();
                     message = values.get("message").toString();
                     h = values.get("h").toString();
                     submit = "Post Message";
-                    formData = "topic=" + topic + "&message=" + message + "&h=" + h
+                    formData = "topic=" + id + "&message=" + message + "&h=" + h
                             + "&submit=" + submit;
                     break;
 

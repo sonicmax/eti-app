@@ -1,6 +1,9 @@
 package com.sonicmax.etiapp;
 
+import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,26 +18,41 @@ import android.widget.TextView;
  */
 public class PostMessageFragment extends Fragment {
 
-    private EditText messageBody;
+    private EditText mMessageBody;
     private TextView errorView;
+    private Topic mTopic;
+    private String mQuote;
 
     public PostMessageFragment() {}
+
+    @Override
+    public void onAttach(Context context) {
+
+        Intent intent = ((Activity) context).getIntent();
+        this.mTopic = intent.getParcelableExtra("topic");
+        this.mQuote = intent.getStringExtra("quote");
+        super.onAttach(context);
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
         View rootView = inflater.inflate(R.layout.fragment_new_message, container, false);
-        messageBody = (EditText) rootView.findViewById(R.id.new_message);
-        String quote = getActivity().getIntent().getStringExtra("quote");
-        if (quote != null) {
-            messageBody.setText(quote);
-            // Move cursor to end of quoted text
-            messageBody.setSelection(messageBody.getText().length());
-        }
+        mMessageBody = (EditText) rootView.findViewById(R.id.new_message);
         Button postMessage = (Button) rootView.findViewById(R.id.post_new_message);
         errorView = (TextView) rootView.findViewById(R.id.error_view);
+
+        if (mQuote != null) {
+            // TODO: Display quoted message using MessageBuilder unless user requests to edit quote
+            mMessageBody.setText(mQuote);
+            // Move cursor to end of quoted text
+            mMessageBody.setSelection(mMessageBody.getText().length());
+        }
+
         postMessage.setOnClickListener(newMessageHandler);
+
         return rootView;
     }
 
@@ -42,13 +60,11 @@ public class PostMessageFragment extends Fragment {
 
         @Override
         public void onClick(View view) {
-
             switch (view.getId()) {
                 case R.id.post_new_message:
                     postNewMessage();
                     break;
             }
-
         }
     };
 
@@ -57,7 +73,7 @@ public class PostMessageFragment extends Fragment {
         final String NEWLINE = "\n";
 
         // Make sure that message length >= 5 characters (otherwise POST will be unsuccessful)
-        String message = messageBody.getText().toString();
+        String message = mMessageBody.getText().toString();
 
         if (!message.equals("") && message.length() >= 5) {
 
@@ -73,11 +89,10 @@ public class PostMessageFragment extends Fragment {
             values.put("h", token);
             values.put("submit", "Post Message");
 
-            new PostMessageHandler(getContext()).submitMessage(values);
+            new PostMessageHandler(getContext(), mTopic).submitMessage(values);
 
         } else {
-
-            errorView.setText("Your message must be at least 5 characters");
+            errorView.setText(R.string.error_5_chars_or_more);
         }
 
     }
