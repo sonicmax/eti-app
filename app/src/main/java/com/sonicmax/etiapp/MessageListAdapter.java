@@ -22,14 +22,14 @@ public class MessageListAdapter extends BaseAdapter {
         mContext = context;
     }
 
-    public void clearMessages() {
-        messages = Collections.emptyList();
+    public void updateMessages(List<Message> messageList) {
+        messages.clear();
+        messages = messageList;
         notifyDataSetChanged();
     }
 
-    public void updateMessages(List<Message> messageList) {
-        messages = null;
-        messages = messageList;
+    public void clearMessages() {
+        messages.clear();
         notifyDataSetChanged();
     }
 
