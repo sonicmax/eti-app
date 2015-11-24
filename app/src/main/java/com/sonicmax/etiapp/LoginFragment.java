@@ -95,11 +95,6 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
         SharedPreferenceManager.putString(context, "password", password);
 
         getLoaderManager().initLoader(LOGIN, args, this).forceLoad();
-
-        /*if (SharedPreferenceManager.getString(context, "profile_url") != null) {
-            // Get current signature from profile
-            new ProfileScraper(getActivity()).getProfile();
-        }*/
     }
 
     @Override
@@ -191,8 +186,12 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
 
         else if (mCurrentId == LOGIN) {
 
-            // Get list of bookmarks/etc from main.php.
-            // (we don't need to do anything with response)
+            // Get current signature from profile (if possible)
+            if (SharedPreferenceManager.getString(context, "profile_url") != null) {
+                new ProfileScraper(getActivity()).getProfile();
+            }
+
+            // Get list of bookmarks from main.php & start BoardListActivity
             SharedPreferenceManager.putBoolean(context, "is_logged_in", true);
             mDialog.dismiss();
             Intent intent = new Intent(context, BoardListActivity.class);
