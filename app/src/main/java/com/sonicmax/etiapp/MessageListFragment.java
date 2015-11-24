@@ -3,13 +3,13 @@ package com.sonicmax.etiapp;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.Fragment;
+
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
-import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,8 +22,6 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 
 /**
@@ -35,20 +33,26 @@ public class MessageListFragment extends Fragment implements
         LoaderManager.LoaderCallbacks<Object> {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
-    private String mTopicId;
-    private String mTitle;
+
     private View mRootView;
     private ListView mMessageList;
-    private ActionMode mActionMode;
-    private ProgressDialog mDialog;
-    private int mPosition = -1;
     private MessageListScraper mScraper;
     private MessageListAdapter mMessageListAdapter;
-    private static boolean mFirstRun = true;
+    private ActionMode mActionMode;
+    private ProgressDialog mDialog;
+    private Bundle mArgs;
 
+    private int mSelection = -1;
+    private int mCurrentId;
+    private int mOldAdapterCount;
+    public static int mPageNumber;
+
+    private String mTopicId;
+    private String mTitle;
     public static String prevPageUrl;
     public static String nextPageUrl;
-    public static int mPageNumber;
+
+    private static boolean mFirstRun = true;
 
     public MessageListFragment() {}
 
@@ -56,10 +60,40 @@ public class MessageListFragment extends Fragment implements
     /**
      *      Lifecycle stuff
      */
-
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onAttach(Context context) {
+
+        // Do some initialising/etc before we inflate layout.
+        Intent intent = getActivity().getIntent();
+        Topic topic = intent.getParcelableExtra("topic");
+        mTopicId = topic.getId();
+
+        if (mFirstRun) {
+            mPageNumber = intent.getIntExtra("page", 1);
+        }
+
+        String url = (intent.getBooleanExtra("lastpage", false))
+                ? topic.getLastPageUrl() : topic.getUrl();
+
+        if (mScraper == null) {
+            mScraper = new MessageListScraper(url);
+        }
+        else{
+            // Make sure that MessageListScraper is using correct url
+            mScraper.changeUrl(url);
+        }
+
+        if (mMessageListAdapter == null) {
+            mMessageListAdapter = new MessageListAdapter(context);
+        }
+        else {
+            mMessageListAdapter.clearMessages();
+        }
+
+        // Init/Restart loader and get posts for adapter
+        loadMessageList(buildArgsForLoader(url, false), 0);
+
+        super.onAttach(context);
     }
 
 
@@ -71,40 +105,25 @@ public class MessageListFragment extends Fragment implements
         mMessageList = (ListView) mRootView.findViewById(R.id.listview_messages);
         Button newMessageButton = (Button) mRootView.findViewById(R.id.new_message);
         TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title);
-
         Intent intent = getActivity().getIntent();
-        Topic topic = intent.getParcelableExtra("topic");
-        mTopicId = topic.getId();
+
+        // Display topic title
         mTitle = intent.getStringExtra("title");
-        mPageNumber = intent.getIntExtra("page", 1);
-
-        String url = (intent.getBooleanExtra("lastpage", false))
-                ? topic.getLastPageUrl() : topic.getUrl();
-
-        if (mScraper == null) {
-            mScraper = new MessageListScraper(url);
-        }
-
         topicTitle.setText(mTitle);
+
+        // Set click listeners for views
         newMessageButton.setOnClickListener(this);
-
-        if (mMessageListAdapter == null) {
-            mMessageListAdapter = new MessageListAdapter(getActivity());
-        }
-        else {
-            mMessageListAdapter.clearMessages();
-        }
-
-        mMessageList.setAdapter(mMessageListAdapter);
+        mMessageList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         mMessageList.setOnItemLongClickListener(this);
         mMessageList.setOnTouchListener(pageSwipeHandler);
-        mMessageList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
+        // Set up MessageListAdapter so we can display posts
+        mMessageList.setAdapter(mMessageListAdapter);
+
+        // Scroll to bottom of page if necessary
         if (intent.getBooleanExtra("needs_scroll", false)) {
             scrollToBottom();
         }
-
-        loadMessageList(url, false);
 
         return mRootView;
     }
@@ -120,37 +139,47 @@ public class MessageListFragment extends Fragment implements
         super.onDetach();
     }
 
-    private void loadMessageList(String url, boolean filter) {
+    /**
+     *      Helper methods for loader
+     */
+    private Bundle buildArgsForLoader(String url, boolean filter) {
 
-        Bundle args = new Bundle();
-        args.putString("method", "GET");
-        args.putString("type", "messagelist");
-        args.putString("url", url);
-        args.putBoolean("filter", filter);
+        mArgs = new Bundle();
+        mArgs.putString("method", "GET");
+        mArgs.putString("type", "messagelist");
+        mArgs.putString("url", url);
+        mArgs.putBoolean("filter", filter);
+
+        return mArgs;
+    }
+
+    private void loadMessageList(Bundle args, int loaderId) {
 
         LoaderManager loaderManager = getLoaderManager();
+
         if (mFirstRun) {
-            Log.v(LOG_TAG, "first run");
-            loaderManager.initLoader(0, args, this).forceLoad();
+            loaderManager.initLoader(loaderId, args, this).forceLoad();
             mFirstRun = false;
         }
         else {
-            Log.v(LOG_TAG, "second run");
-            // Restart loader so it can use cached result (eg. if back button is pressed, or screen
-            // orientation changes).
-            loaderManager.restartLoader(0, args, this).forceLoad();
+            loaderManager.restartLoader(loaderId, args, this).forceLoad();
         }
 
+    }
+
+    public void refreshMessageList() {
+        // TODO: Need to account for cases where new post pushes topic onto next page
+        mOldAdapterCount = mMessageListAdapter.getCount();
+        loadMessageList(mArgs, 1);
     }
 
     /**
      *      Contextual action mode methods
      */
-
     @Override
     public boolean onItemLongClick(AdapterView<?> adapter, View view, int position, long id) {
 
-        if (mActionMode != null && mPosition == -1) {
+        if (mActionMode != null && mSelection == -1) {
             // We can't do anything
             return false;
         }
@@ -159,13 +188,14 @@ public class MessageListFragment extends Fragment implements
         mActionMode = ((AppCompatActivity) getActivity())
                 .startSupportActionMode(mActionModeCallback);
 
-        if (mPosition > -1) {
+        if (mSelection > -1) {
             // Set old position to false
-            mMessageList.setItemChecked(mPosition, false);
+            mMessageList.setItemChecked(mSelection, false);
         }
 
         mMessageList.setItemChecked(position, true);
-        mPosition = position;
+        mSelection = position;
+
         return true;
     }
 
@@ -176,6 +206,7 @@ public class MessageListFragment extends Fragment implements
             // Inflate a menu resource providing context menu items
             MenuInflater inflater = mode.getMenuInflater();
             inflater.inflate(R.menu.menu_message_action, menu);
+
             return true;
         }
 
@@ -187,7 +218,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
 
-            Message target = mMessageListAdapter.getItem(mPosition);
+            Message target = mMessageListAdapter.getItem(mSelection);
 
             switch (item.getItemId()) {
                 case R.id.quote:
@@ -213,16 +244,15 @@ public class MessageListFragment extends Fragment implements
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            mMessageList.setItemChecked(mPosition, false);
+            mMessageList.setItemChecked(mSelection, false);
             mActionMode = null;
         }
     };
 
 
     /**
-     *      Allows user to post new messages
+     *      Starts PostMessageActivity when user clicks new post button
      */
-
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
@@ -240,13 +270,12 @@ public class MessageListFragment extends Fragment implements
     /**
      *      Allows user to swipe left/right on screen to change pages in topic
      */
-
     OnSwipeListener pageSwipeHandler = new OnSwipeListener(getContext()) {
 
         @Override
         public void onSwipeLeft() {
             if (nextPageUrl != null) {
-                loadMessageList(nextPageUrl, false);
+                loadMessageList(buildArgsForLoader(nextPageUrl, false), 0);
                 mPageNumber++;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
@@ -255,7 +284,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeRight() {
             if (prevPageUrl != null) {
-                loadMessageList(prevPageUrl, false);
+                loadMessageList(buildArgsForLoader(prevPageUrl, false), 0);
                 mPageNumber--;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
@@ -285,12 +314,13 @@ public class MessageListFragment extends Fragment implements
     }
 
     /**
-     * Loader callbacks.
+     *      Loader callbacks.
      */
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
         final Context context = getContext();
+        mCurrentId = id;
 
         mDialog = new ProgressDialog(getContext());
         mDialog.setMessage("Getting messages...");
@@ -308,12 +338,27 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
+
+        final int REFRESH = 1;
+
         if (data != null) {
             // We can be sure that data will safely cast to List<Message>.
             @SuppressWarnings("unchecked")
             List<Message> messages = (List<Message>) data;
             mMessageListAdapter.updateMessages(messages);
         }
+
+        if (mCurrentId == REFRESH) {
+            int adapterCount = mMessageListAdapter.getCount();
+            if (adapterCount > mOldAdapterCount) {
+                // Scroll to first unread post
+                scrollToPosition(adapterCount + 1);
+            } else {
+                // No new posts - just scroll to end of message list
+                scrollToPosition(adapterCount);
+            }
+        }
+
         mDialog.dismiss();
     }
 
@@ -321,4 +366,5 @@ public class MessageListFragment extends Fragment implements
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
     }
+
 }

@@ -1,6 +1,9 @@
 package com.sonicmax.etiapp;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,6 +12,7 @@ import android.view.MenuItem;
 public class MessageListActivity extends AppCompatActivity {
 
     private final String LOG_TAG = MessageListActivity.class.getSimpleName();
+    @SuppressWarnings("unused")
     private ProgressDialog mDialog;
 
     @Override
@@ -28,16 +32,22 @@ public class MessageListActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        else if (id == R.id.action_logout) {
-            new AccountManager(this, mDialog).requestLogout();
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.action_settings:
+                return true;
+
+            case R.id.action_logout:
+                new AccountManager(this, mDialog).requestLogout();
+                break;
+
+            case R.id.action_refresh:
+                MessageListFragment fragment = (MessageListFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.message_list_container);
+                fragment.refreshMessageList();
+
+                break;
         }
 
         return super.onOptionsItemSelected(item);
@@ -47,15 +57,5 @@ public class MessageListActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
     }
 }
