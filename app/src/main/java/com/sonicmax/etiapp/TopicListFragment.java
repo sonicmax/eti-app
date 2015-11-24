@@ -161,16 +161,6 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         super.onActivityCreated(savedInstanceState);
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
     /**
      * Loader callbacks.
      */
