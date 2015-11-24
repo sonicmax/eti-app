@@ -72,7 +72,7 @@ public class MessageListFragment extends Fragment implements
             mPageNumber = intent.getIntExtra("page", 1);
         }
 
-        String url = (intent.getBooleanExtra("lastpage", false))
+        String url = (intent.getBooleanExtra("last_page", false))
                 ? topic.getLastPageUrl() : topic.getUrl();
 
         if (mScraper == null) {
@@ -121,7 +121,7 @@ public class MessageListFragment extends Fragment implements
         mMessageList.setAdapter(mMessageListAdapter);
 
         // Scroll to bottom of page if necessary
-        if (intent.getBooleanExtra("needs_scroll", false)) {
+        if (intent.getBooleanExtra("last_page", false)) {
             scrollToBottom();
         }
 

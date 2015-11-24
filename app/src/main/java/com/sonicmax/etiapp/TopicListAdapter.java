@@ -15,28 +15,27 @@ import java.util.List;
 public class TopicListAdapter extends BaseAdapter {
 
     private ListView mListView;
-    public static List<Topic> topics = Collections.emptyList();
-    private final Context context;
+    public static List<Topic> mTopics = Collections.emptyList();
+    private final Context mContext;
 
     public TopicListAdapter(Context context) {
-        // Use context to inflate views in getView method
-        this.context = context;
+        this.mContext = context;
     }
 
-    public void updateTopics(List<Topic> updatedTopics) {
-        topics = null;
-        topics = updatedTopics;
+    public void updateTopics(List<Topic> topics) {
+        mTopics.clear();
+        mTopics = topics;
         notifyDataSetChanged();
     }
 
     @Override
     public int getCount() {
-        return topics.size();
+        return mTopics.size();
     }
 
     @Override
     public Topic getItem(int position) {
-        return topics.get(position);
+        return mTopics.get(position);
     }
 
     @Override
@@ -45,7 +44,7 @@ public class TopicListAdapter extends BaseAdapter {
     }
 
     public void clearTopics() {
-        topics = Collections.emptyList();
+        mTopics.clear();
         notifyDataSetChanged();
     }
 
@@ -70,7 +69,7 @@ public class TopicListAdapter extends BaseAdapter {
 
         if (convertView == null) {
 
-            convertView = LayoutInflater.from(context)
+            convertView = LayoutInflater.from(mContext)
                     .inflate(R.layout.list_item_topic, parent, false);
             title = (TextView) convertView.findViewById(R.id.list_item_topic_title);
             username = (TextView) convertView.findViewById(R.id.list_item_username);
@@ -100,15 +99,16 @@ public class TopicListAdapter extends BaseAdapter {
         @Override
         public void onClick(View view) {
 
+            // Get Topic object from adapter
             final int position = mListView.getPositionForView((View) view.getParent());
-            Topic target = topics.get(position);
-
-            Intent intent = new Intent(context, MessageListActivity.class);
+            Topic target = mTopics.get(position);
+            // Create new intent for MessageListActivity using Topic data
+            Intent intent = new Intent(mContext, MessageListActivity.class);
             intent.putExtra("topic", target);
             intent.putExtra("title", target.getTitle());
-            intent.putExtra("lastpage", true);
+            intent.putExtra("last_page", true);
 
-            context.startActivity(intent);
+            mContext.startActivity(intent);
         }
     };
 
