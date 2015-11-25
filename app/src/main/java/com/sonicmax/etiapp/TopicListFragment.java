@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.adapters.TopicListAdapter;
 import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 import com.sonicmax.etiapp.scrapers.TopicListScraper;
 

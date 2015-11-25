@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +8,10 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.sonicmax.etiapp.MessageListActivity;
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.Topic;
 
 import java.util.Collections;
 import java.util.List;

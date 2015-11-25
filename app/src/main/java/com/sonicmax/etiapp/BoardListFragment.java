@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import com.sonicmax.etiapp.adapters.BoardListAdapter;
 import com.sonicmax.etiapp.scrapers.BoardListScraper;
 
 import java.util.List;

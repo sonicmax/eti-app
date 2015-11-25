@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
 import android.text.method.LinkMovementMethod;
@@ -9,6 +9,8 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.Message;
+import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.ui.MessageBuilder;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 
