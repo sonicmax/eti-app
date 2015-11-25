@@ -21,10 +21,13 @@ import java.util.List;
 public class TopicListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
     private final String LOG_TAG = TopicListFragment.class.getSimpleName();
+    private final int LOAD_TOPIC = 0;
+    private final int POST_TOPIC = 1;
+
     private int mPageNumber = 1;
-    private String mBoardName;
     private ProgressDialog mDialog;
     private static boolean mFirstRun = true;
+    private int currentLoader;
 
     public static TopicListAdapter topicListAdapter;
     public static String nextPageUrl;
@@ -33,15 +36,8 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     public TopicListFragment() {}
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
+    public void onAttach(Context context) {
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-
-        View rootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
         if (topicListAdapter == null) {
             topicListAdapter = new TopicListAdapter(getActivity());
         }
@@ -49,10 +45,20 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
             topicListAdapter.clearTopics();
         }
 
+        loadTopicList(getActivity().getIntent().getStringExtra("url"));
+
+        super.onAttach(context);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View rootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
+
         TextView boardName = (TextView) rootView.findViewById(R.id.board_name);
-        // Might need to use this string later
-        mBoardName = getActivity().getIntent().getStringExtra("boardname");
-        boardName.setText(mBoardName);
+        String name = getActivity().getIntent().getStringExtra("boardname");
+        boardName.setText(name);
 
         Button newTopicButton = (Button) rootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(newTopicHandler);
@@ -61,8 +67,6 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         topicList.setAdapter(topicListAdapter);
         topicList.setOnItemClickListener(topicClickHandler);
         topicList.setOnTouchListener(topicSwipeHandler);
-
-        loadTopicList(getActivity().getIntent().getStringExtra("url"));
 
         return rootView;
     }
@@ -86,6 +90,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         args.putString("url", url);
 
         LoaderManager loaderManager = getLoaderManager();
+
         if (mFirstRun) {
             Log.v(LOG_TAG, "first run");
             loaderManager.initLoader(0, args, this).forceLoad();
@@ -133,32 +138,30 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
             intent.putExtra("topic", topic);
             intent.putExtra("title", topic.getTitle());
             context.startActivity(intent);
-            getActivity().overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
+            getActivity().overridePendingTransition(R.anim.slide_in_from_right,
+                    R.anim.slide_out_to_left);
         }
 
     };
 
     private View.OnClickListener newTopicHandler = new View.OnClickListener() {
+
         @Override
         public void onClick(View view) {
-
             switch (view.getId()) {
                 case R.id.new_topic:
-                    // Create new intent for BoardListActivity and attach response
-                    Context context = getContext();
-                    Intent intent = new Intent(context, PostTopicActivity.class);
-                    intent.putExtra("title", mBoardName);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                    context.startActivity(intent);
+                    openPostTopicActivity();
                     break;
             }
 
         }
     };
 
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    private void openPostTopicActivity() {
+        Bundle args = new Bundle();
+        args.putString("method", "GET");
+        args.putString("type", "newtopic");
+        getLoaderManager().initLoader(1, args, this).forceLoad();
     }
 
     /**
@@ -168,29 +171,70 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
         final Context context = getContext();
+        currentLoader = id;
 
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage("Getting topics...");
-        mDialog.show();
+        switch (id) {
 
-        return new AsyncLoadHandler(context, args) {
+            case LOAD_TOPIC:
 
-            @Override
-            public List<Topic> loadInBackground() {
-                String html = new WebRequest(context, args).sendRequest();
-                return new TopicListScraper(getContext()).scrapeTopics(html);
-            }
-        };
+                mDialog = new ProgressDialog(getContext());
+                mDialog.setMessage("Getting topics...");
+                mDialog.show();
+
+                return new AsyncLoadHandler(context, args) {
+
+                    @Override
+                    public List<Topic> loadInBackground() {
+                        String html = new WebRequest(context, args).sendRequest();
+                        return new TopicListScraper(getContext()).scrapeTopics(html);
+                    }
+                };
+
+            case POST_TOPIC:
+
+                mDialog = new ProgressDialog(getContext());
+                mDialog.setMessage("Loading...");
+                mDialog.show();
+
+                return new AsyncLoadHandler(context, args) {
+
+                    @Override
+                    public String loadInBackground() {
+                        return new WebRequest(context, args).sendRequest();
+                    }
+                };
+
+            default:
+                return null;
+        }
     }
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
+
         if (data != null) {
-            // We can be sure that data will safely cast to List<Topic>.
-            @SuppressWarnings("unchecked")
-            List<Topic> topics = (List<Topic>) data;
-            topicListAdapter.updateTopics(topics);
+
+            if (currentLoader == LOAD_TOPIC) {
+
+                // We can be sure that data will safely cast to List<Topic>.
+                @SuppressWarnings("unchecked")
+                List<Topic> topics = (List<Topic>) data;
+                topicListAdapter.updateTopics(topics);
+            }
+
+            else if (currentLoader == POST_TOPIC) {
+
+                Context context = getContext();
+
+                String response = (String) data;
+                new PostmsgScraper(context).parseResponse(response);
+
+                Intent intent = new Intent(context, PostTopicActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                context.startActivity(intent);
+            }
         }
+
         mDialog.dismiss();
     }
 
@@ -198,14 +242,4 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
     }
-
-    public void onActivityResult(int requestCode, int resultCode,
-                                    Intent data) {
-        final int REFRESH = 0;
-
-        if (requestCode == REFRESH) {
-            Log.v(LOG_TAG, "hit back button");
-        }
-    }
-
 }

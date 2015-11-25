@@ -14,7 +14,6 @@ public class PostTopicActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        new PostTopicHandler(this, null).getHiddenToken();
         setContentView(R.layout.activity_new_topic);
     }
 

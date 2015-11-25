@@ -33,6 +33,9 @@ public class MessageListFragment extends Fragment implements
         LoaderManager.LoaderCallbacks<Object> {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
+    private final int LOAD_MESSAGE = 0;
+    private final int REFRESH = 1;
+    private final int POST_MESSAGE = 2;
 
     private View mRootView;
     private ListView mMessageList;
@@ -90,7 +93,7 @@ public class MessageListFragment extends Fragment implements
         }
 
         // Init/Restart loader and get posts for adapter
-        loadMessageList(buildArgsForLoader(url, false), 0);
+        loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
 
         super.onAttach(context);
     }
@@ -169,7 +172,7 @@ public class MessageListFragment extends Fragment implements
     public void refreshMessageList() {
         // TODO: Need to account for cases where new post pushes topic onto next page
         mOldAdapterCount = mMessageListAdapter.getCount();
-        loadMessageList(mArgs, 1);
+        loadMessageList(mArgs, REFRESH);
     }
 
     /**
@@ -256,13 +259,10 @@ public class MessageListFragment extends Fragment implements
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.new_message:
-                Context context = getContext();
-                Intent intent = new Intent(context, PostMessageActivity.class);
-                intent.putExtra("topic", mTopic);
-                intent.putExtra("title", mTitle);
-                intent.putExtra("id", mTopic.getId());
-                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                context.startActivity(intent);
+                Bundle args = new Bundle();
+                args.putString("method", "GET");
+                args.putString("type", "newtopic");
+                getLoaderManager().initLoader(POST_MESSAGE, args, this).forceLoad();
                 break;
         }
 
@@ -276,7 +276,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeLeft() {
             if (nextPageUrl != null) {
-                loadMessageList(buildArgsForLoader(nextPageUrl, false), 0);
+                loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
                 mPageNumber++;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
@@ -285,7 +285,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeRight() {
             if (prevPageUrl != null) {
-                loadMessageList(buildArgsForLoader(prevPageUrl, false), 0);
+                loadMessageList(buildArgsForLoader(prevPageUrl, false), LOAD_MESSAGE);
                 mPageNumber--;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
@@ -323,41 +323,91 @@ public class MessageListFragment extends Fragment implements
         final Context context = getContext();
         mCurrentId = id;
 
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage("Getting messages...");
-        mDialog.show();
+        switch (id) {
 
-        return new AsyncLoadHandler(context, args) {
+            case LOAD_MESSAGE:
+            case REFRESH:
 
-            @Override
-            public List<Message> loadInBackground() {
-                String html = new WebRequest(context, args).sendRequest();
-                return mScraper.scrapeMessages(html, args.getBoolean("filter"));
-            }
-        };
+                mDialog = new ProgressDialog(getContext());
+                mDialog.setMessage("Getting messages...");
+                mDialog.show();
+
+                return new AsyncLoadHandler(context, args) {
+
+                    @Override
+                    public List<Message> loadInBackground() {
+                        String html = new WebRequest(context, args).sendRequest();
+                        return mScraper.scrapeMessages(html, args.getBoolean("filter"));
+                    }
+                };
+
+            case POST_MESSAGE:
+
+                mDialog = new ProgressDialog(getContext());
+                mDialog.setMessage("Loading...");
+                mDialog.show();
+
+                return new AsyncLoadHandler(context, args) {
+
+                    @Override
+                    public String loadInBackground() {
+                        return new WebRequest(context, args).sendRequest();
+                    }
+                };
+
+            default:
+                return null;
+
+        }
     }
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
 
-        final int REFRESH = 1;
+        switch (mCurrentId) {
 
-        if (data != null) {
-            // We can be sure that data will safely cast to List<Message>.
-            @SuppressWarnings("unchecked")
-            List<Message> messages = (List<Message>) data;
-            mMessageListAdapter.updateMessages(messages);
-        }
+            // Let LOAD_MESSAGE fall through to REFRESH
+            case LOAD_MESSAGE:
+            case REFRESH:
 
-        if (mCurrentId == REFRESH) {
-            int adapterCount = mMessageListAdapter.getCount();
-            if (adapterCount > mOldAdapterCount) {
-                // Scroll to first unread post
-                scrollToPosition(adapterCount + 1);
-            } else {
-                // No new posts - just scroll to end of message list
-                scrollToPosition(adapterCount);
-            }
+                if (data != null) {
+                    // We can be sure that data will safely cast to List<Message>.
+                    @SuppressWarnings("unchecked")
+                    List<Message> messages = (List<Message>) data;
+                    mMessageListAdapter.updateMessages(messages);
+                }
+
+                if (mCurrentId == REFRESH) {
+                    int adapterCount = mMessageListAdapter.getCount();
+                    if (adapterCount > mOldAdapterCount) {
+                        // Scroll to first unread post
+                        scrollToPosition(adapterCount + 1);
+                    } else {
+                        // No new posts - just scroll to end of message list
+                        scrollToPosition(adapterCount);
+                    }
+                }
+
+                break;
+
+            case POST_MESSAGE:
+
+                Context context = getContext();
+
+                String response = (String) data;
+                new PostmsgScraper(context).parseResponse(response);
+
+                Intent intent = new Intent(context, PostMessageActivity.class);
+                intent.putExtra("topic", mTopic);
+                intent.putExtra("title", mTitle);
+                intent.putExtra("id", mTopic.getId());
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                context.startActivity(intent);
+
+                break;
+
+            default:
+                break;
         }
 
         mDialog.dismiss();
@@ -367,5 +417,4 @@ public class MessageListFragment extends Fragment implements
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
     }
-
 }

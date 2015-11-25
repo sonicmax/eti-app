@@ -1,18 +1,25 @@
 package com.sonicmax.etiapp;
 
+import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.Context;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
-public class PostTopicFragment extends Fragment {
+import java.util.List;
+
+public class PostTopicFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
     private EditText mTopicTitle;
     private EditText mMessageBody;
+    private ProgressDialog mDialog;
 
     public PostTopicFragment() {}
 
@@ -61,13 +68,51 @@ public class PostTopicFragment extends Fragment {
             values.put("message", message + NEWLINE + signature);
             values.put("submit", "Post Message");
 
-            new PostTopicHandler(getContext(), values).submitTopic();
+            // Create bundle for loader
+            Bundle args = new Bundle();
+            args.putString("method", "POST");
+            args.putString("type", "newtopic");
+            args.putParcelable("values", values);
+
+            getLoaderManager().initLoader(0, args, this).forceLoad();
         }
 
         else {
             // TODO: Display error message
         }
 
+    }
+
+    /**
+     * Loader callbacks.
+     */
+    @Override
+    public Loader<Object> onCreateLoader(int id, final Bundle args) {
+
+        final Context context = getContext();
+
+        mDialog = new ProgressDialog(getContext());
+        mDialog.setMessage("Posting topic...");
+        mDialog.show();
+
+        return new AsyncLoadHandler(context, args) {
+
+            @Override
+            public String loadInBackground() {
+                return new WebRequest(context, args).sendRequest();
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Object> loader, Object data) {
+        // Redirect user to topic that was just created
+        mDialog.dismiss();
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Object> loader) {
+        loader.reset();
     }
 
 

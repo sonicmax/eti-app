@@ -14,12 +14,7 @@ public class PostMessageActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
-        ContentValues values = new ContentValues();
-        values.put("id", this.getIntent().getStringExtra("id"));
-        new PostMessageHandler(this, null).getHiddenToken(values);
-
         setContentView(R.layout.activity_new_message);
     }
 
