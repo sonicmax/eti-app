@@ -22,6 +22,9 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.scrapers.MessageListScraper;
+import com.sonicmax.etiapp.scrapers.PostmsgScraper;
+
 import java.util.List;
 
 /**

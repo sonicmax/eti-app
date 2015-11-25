@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import com.sonicmax.etiapp.scrapers.BoardListScraper;
+
 import java.util.List;
 
 public class BoardListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {

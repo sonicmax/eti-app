@@ -1,7 +1,11 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
 import android.os.AsyncTask;
+
+import com.sonicmax.etiapp.SharedPreferenceManager;
+import com.sonicmax.etiapp.Topic;
+import com.sonicmax.etiapp.TopicListFragment;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

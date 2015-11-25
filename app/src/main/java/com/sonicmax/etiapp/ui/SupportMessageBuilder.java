@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.ui;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -9,7 +9,8 @@ import android.text.Spanned;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
-import android.util.Log;
+
+import com.sonicmax.etiapp.Utilities;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;

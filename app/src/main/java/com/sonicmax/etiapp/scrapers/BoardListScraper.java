@@ -1,4 +1,6 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.scrapers;
+
+import com.sonicmax.etiapp.Board;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

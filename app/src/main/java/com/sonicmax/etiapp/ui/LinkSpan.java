@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.ui;
 
 import android.content.Context;
 import android.content.Intent;

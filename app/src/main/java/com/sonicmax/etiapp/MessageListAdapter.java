@@ -9,6 +9,9 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.ui.MessageBuilder;
+import com.sonicmax.etiapp.ui.SupportMessageBuilder;
+
 import java.util.Collections;
 import java.util.List;
 

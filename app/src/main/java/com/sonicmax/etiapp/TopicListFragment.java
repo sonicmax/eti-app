@@ -16,6 +16,9 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.scrapers.PostmsgScraper;
+import com.sonicmax.etiapp.scrapers.TopicListScraper;
+
 import java.util.List;
 
 public class TopicListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {

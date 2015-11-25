@@ -1,7 +1,10 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.scrapers;
 
 import android.net.Uri;
 import android.util.Log;
+
+import com.sonicmax.etiapp.Message;
+import com.sonicmax.etiapp.MessageListFragment;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
