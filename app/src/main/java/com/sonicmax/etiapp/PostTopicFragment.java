@@ -11,19 +11,18 @@ import android.widget.EditText;
 
 public class PostTopicFragment extends Fragment {
 
-    private EditText topicTitle;
-    private EditText messageBody;
+    private EditText mTopicTitle;
+    private EditText mMessageBody;
 
-    public PostTopicFragment() {
-    }
+    public PostTopicFragment() {}
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
         View rootView = inflater.inflate(R.layout.fragment_new_topic, container, false);
-        topicTitle = (EditText) rootView.findViewById(R.id.new_topic_title);
-        messageBody = (EditText) rootView.findViewById(R.id.new_topic_message);
+        mTopicTitle = (EditText) rootView.findViewById(R.id.new_topic_title);
+        mMessageBody = (EditText) rootView.findViewById(R.id.new_topic_message);
         Button postMessage = (Button) rootView.findViewById(R.id.post_new_topic);
         postMessage.setOnClickListener(newTopicHandler);
         return rootView;
@@ -45,16 +44,29 @@ public class PostTopicFragment extends Fragment {
 
     private void postNewTopic() {
 
-        String token = SharedPreferenceManager.getString(getContext(), "h");
-        // Get input from editText elements
-        ContentValues values = new ContentValues();
-        values.put("title", topicTitle.getText().toString());
-        values.put("tag", "");
-        values.put("h", token);
-        values.put("message", messageBody.getText().toString());
-        values.put("submit", "Post Message");
+        final String NEWLINE = "\n";
 
-        new PostTopicHandler(getContext(), values).submitTopic();
+        String message = mMessageBody.getText().toString();
+
+        if (message.length() >= 5) {
+
+            String token = SharedPreferenceManager.getString(getContext(), "h");
+            String signature = SharedPreferenceManager.getString(getContext(), "signature");
+
+            // Get input from editText elements
+            ContentValues values = new ContentValues();
+            values.put("title", mTopicTitle.getText().toString());
+            values.put("tag", "");
+            values.put("h", token);
+            values.put("message", message + NEWLINE + signature);
+            values.put("submit", "Post Message");
+
+            new PostTopicHandler(getContext(), values).submitTopic();
+        }
+
+        else {
+            // TODO: Display error message
+        }
 
     }
 

@@ -75,7 +75,7 @@ public class PostMessageFragment extends Fragment {
         // Make sure that message length >= 5 characters (otherwise POST will be unsuccessful)
         String message = mMessageBody.getText().toString();
 
-        if (!message.equals("") && message.length() >= 5) {
+        if (message.length() >= 5) {
 
             String token = SharedPreferenceManager.getString(getContext(), "h");
             String signature = SharedPreferenceManager.getString(getContext(), "signature");
@@ -84,7 +84,7 @@ public class PostMessageFragment extends Fragment {
             ContentValues values = new ContentValues();
             values.put("id", getActivity().getIntent().getStringExtra("id"));
             values.put("title", getActivity().getIntent().getStringExtra("title"));
-            values.put("message", message + NEWLINE + "---" + NEWLINE + signature );
+            values.put("message", message + NEWLINE + signature);
             values.put("lastpage", getActivity().getIntent().getIntExtra("lastpage", 1));
             values.put("h", token);
             values.put("submit", "Post Message");

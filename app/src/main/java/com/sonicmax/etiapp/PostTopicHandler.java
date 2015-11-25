@@ -42,9 +42,15 @@ public class PostTopicHandler {
 
             @Override
             protected void onPostExecute(String response) {
-                // Retrieve token and store it for future requests
-                String token = parseTokenField(response);
+
+                Document document = Jsoup.parse(response);
+
+                String token = scrapeToken(document);
                 SharedPreferenceManager.putString(mContext, "h", token);
+
+                String signature = scrapeSignature(document);
+                SharedPreferenceManager.putString(mContext, "signature", signature);
+
                 mDialog.dismiss();
             }
 
@@ -52,12 +58,15 @@ public class PostTopicHandler {
 
     }
 
-    private String parseTokenField(String response) {
-        Document document = Jsoup.parse(response);
+    private String scrapeToken(Document document) {
         Element tokenField = document.select("[name=h]").get(0);
         return tokenField.attr("value");
     }
 
+    private String scrapeSignature(Document document) {
+        Element messageInput = document.getElementById("message");
+        return messageInput.text().trim();
+    }
 
     public void submitTopic() {
 

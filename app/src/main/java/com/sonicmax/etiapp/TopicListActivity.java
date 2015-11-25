@@ -16,12 +16,6 @@ public class TopicListActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         Utilities.hideActionBar(getSupportActionBar());
-
-        // Make sure that we've scraped signature from profile (in case user wants to make a topic)
-        if (SharedPreferenceManager.getString(this, "signature") == null) {
-            new ProfileScraper(this).getProfile();
-        }
-
         setContentView(R.layout.activity_topic_list);
     }
 
