@@ -108,9 +108,9 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
         super.onDetach();
     }
 
-    /**
-     * Loader callbacks.
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
         final Context context = getContext();

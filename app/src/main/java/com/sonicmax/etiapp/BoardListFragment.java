@@ -98,9 +98,9 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
         super.onActivityCreated(savedInstanceState);
     }
 
-    /**
-     * Loader callbacks.
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
         final Context context = getContext();

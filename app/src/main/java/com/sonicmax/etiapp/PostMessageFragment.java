@@ -102,9 +102,9 @@ public class PostMessageFragment extends Fragment implements LoaderManager.Loade
         }
     }
 
-    /**
-     *       Loader callbacks.
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
         final Context context = getContext();

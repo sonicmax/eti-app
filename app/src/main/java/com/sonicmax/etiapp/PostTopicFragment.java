@@ -83,9 +83,9 @@ public class PostTopicFragment extends Fragment implements LoaderManager.LoaderC
 
     }
 
-    /**
-     * Loader callbacks.
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 

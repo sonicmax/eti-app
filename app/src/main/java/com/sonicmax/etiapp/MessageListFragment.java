@@ -63,10 +63,6 @@ public class MessageListFragment extends Fragment implements
 
     public MessageListFragment() {}
 
-
-    /**
-     *      Lifecycle stuff
-     */
     @Override
     public void onAttach(Context context) {
 
@@ -145,9 +141,9 @@ public class MessageListFragment extends Fragment implements
         super.onDetach();
     }
 
-    /**
-     *      Helper methods for loader
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods for loader
+    ///////////////////////////////////////////////////////////////////////////
     private Bundle buildArgsForLoader(String url, boolean filter) {
 
         mArgs = new Bundle();
@@ -179,9 +175,9 @@ public class MessageListFragment extends Fragment implements
         loadMessageList(mArgs, REFRESH);
     }
 
-    /**
-     *      Contextual action mode methods
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Contextual action mode methods
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public boolean onItemLongClick(AdapterView<?> adapter, View view, int position, long id) {
 
@@ -318,9 +314,9 @@ public class MessageListFragment extends Fragment implements
         });
     }
 
-    /**
-     *      Loader callbacks.
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 

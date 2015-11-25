@@ -168,9 +168,9 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         getLoaderManager().initLoader(1, args, this).forceLoad();
     }
 
-    /**
-     * Loader callbacks.
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
