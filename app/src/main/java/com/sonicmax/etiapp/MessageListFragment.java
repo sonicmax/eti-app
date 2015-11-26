@@ -31,13 +31,8 @@ import android.widget.TextView;
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
-import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 
 import java.util.List;
-
-/**
- * Fragment for message list - handles UI actions
- */
 
 public class MessageListFragment extends Fragment implements
         AdapterView.OnItemLongClickListener, View.OnClickListener,
@@ -255,7 +250,9 @@ public class MessageListFragment extends Fragment implements
         }
     };
 
-
+    ///////////////////////////////////////////////////////////////////////////
+    // Methods for quickpost feature
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
@@ -267,45 +264,45 @@ public class MessageListFragment extends Fragment implements
     }
 
     private void showQuickpostWindow() {
-
+        // Get device width (required for PopupWindow width)
         DisplayMetrics metrics = new DisplayMetrics();
         getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
         int deviceWidth = metrics.widthPixels;
 
+        // Prepare quickpost_window layout to be used in PopupWindow constructor
         LayoutInflater inflater = (LayoutInflater)
                 getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-        final View popupView = inflater.inflate(R.layout.quickpost_window, mContainer, false);
-        // Measure view so we can get measured height for PopupWindow constructor
-        popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        final View quickpostView = inflater.inflate(R.layout.quickpost_window, mContainer, false);
+        Button button = (Button) quickpostView.findViewById(R.id.quickpost_button);
 
-        Button button = (Button) popupView.findViewById(R.id.quickpost_button);
+        quickpostView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
 
         if (mSelectedMessage != null) {
+            // Make it clear that we are replying to selected message
             button.setText(R.string.reply);
         }
 
         final PopupWindow popup = new PopupWindow(
-                popupView,
+                quickpostView,
                 deviceWidth,
-                popupView.getMeasuredHeight(),
+                quickpostView.getMeasuredHeight(),
                 true);
 
-        // Following line allows popup to be dismissed after touching outside of it
+        // Touch events won't work if background drawable is null - even if it's specified in XML.
+        // See http://stackoverflow.com/a/3122696/3842017
         popup.setBackgroundDrawable(new ColorDrawable());
-
         popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         popup.setOutsideTouchable(true);
         popup.setFocusable(true);
+        popup.setAnimationStyle(R.style.AnimationPopup);
 
-        // Gravity.TOP means that 0,0 is at the top of the screen
         popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
                 Gravity.TOP, 0, 50);
 
-        // Hide quickpost button while popup is visible
         mQuickpostButton.setVisibility(View.INVISIBLE);
 
-        // Add listeners to handle clicks and dismiss events
+        // Add listener which allows user to post/reply to message
         button.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -320,7 +317,7 @@ public class MessageListFragment extends Fragment implements
                 }
 
                 String signature = SharedPreferenceManager.getString(getContext(), "signature");
-                EditText messageView = (EditText) popupView.findViewById(R.id.quickpost_edit);
+                EditText messageView = (EditText) quickpostView.findViewById(R.id.quickpost_edit);
                 String message = quote + messageView.getText().toString() + NEWLINE + signature;
 
                 Log.v(LOG_TAG, message);
@@ -330,6 +327,7 @@ public class MessageListFragment extends Fragment implements
 
         });
 
+        // Make sure that quickpost button is made visible after popup window is dismissed
         popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
             public void onDismiss() {
@@ -338,6 +336,9 @@ public class MessageListFragment extends Fragment implements
         });
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Methods for page changing
+    ///////////////////////////////////////////////////////////////////////////
     OnSwipeListener pageSwipeHandler = new OnSwipeListener(getContext()) {
 
         @Override
@@ -365,6 +366,7 @@ public class MessageListFragment extends Fragment implements
         messageList.post(new Runnable() {
             @Override
             public void run() {
+                // Minus 1 from count as position is 0-indexed
                 messageList.setSelection(mMessageListAdapter.getCount() - 1);
             }
         });
