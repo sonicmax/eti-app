@@ -74,7 +74,6 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onAttach(Context context) {
-
         // Do some initialising/etc before we inflate layout.
         Intent intent = getActivity().getIntent();
         mTopic = intent.getParcelableExtra("topic");
@@ -86,20 +85,8 @@ public class MessageListFragment extends Fragment implements
         String url = (intent.getBooleanExtra("last_page", false))
                 ? mTopic.getLastPageUrl() : mTopic.getUrl();
 
-        if (mScraper == null) {
-            mScraper = new MessageListScraper(url);
-        }
-        else{
-            // Make sure that MessageListScraper is using correct url
-            mScraper.changeUrl(url);
-        }
-
-        if (mMessageListAdapter == null) {
-            mMessageListAdapter = new MessageListAdapter(context);
-        }
-        else {
-            mMessageListAdapter.clearMessages();
-        }
+        mScraper = new MessageListScraper(context, url);
+        mMessageListAdapter = new MessageListAdapter(context);
 
         // Init/Restart loader and get posts for adapter
         loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
