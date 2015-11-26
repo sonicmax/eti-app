@@ -16,7 +16,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.util.List;
+import com.sonicmax.etiapp.network.WebRequest;
 
 public class PostMessageFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 

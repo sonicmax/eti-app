@@ -13,7 +13,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
-import java.util.List;
+import com.sonicmax.etiapp.network.WebRequest;
 
 public class PostTopicFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 

@@ -15,12 +15,16 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.sonicmax.etiapp.network.LoginScriptBuilder;
+import com.sonicmax.etiapp.network.WebRequest;
+
 public class LoginFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
     private final String LOG_TAG = LoginFragment.class.getSimpleName();
     private final int SCRIPT_BUILD = 0;
     private final int STATUS_CHECK = 1;
     private final int LOGIN = 2;
+
     private int mCurrentId;
     private EditText mUsername;
     private EditText mPassword;

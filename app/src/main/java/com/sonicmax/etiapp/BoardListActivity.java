@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.sonicmax.etiapp.network.WebRequestAsyncTask;
 public class BoardListActivity extends AppCompatActivity {
 
     private final String LOG_TAG = BoardListActivity.class.getSimpleName();

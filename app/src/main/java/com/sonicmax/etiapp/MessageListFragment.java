@@ -23,6 +23,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
+import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 
