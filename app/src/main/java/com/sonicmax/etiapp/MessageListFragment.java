@@ -4,22 +4,28 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
@@ -40,16 +46,18 @@ public class MessageListFragment extends Fragment implements
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
     private final int LOAD_MESSAGE = 0;
     private final int REFRESH = 1;
-    private final int POST_MESSAGE = 2;
 
     private View mRootView;
     private ListView mMessageList;
+    private Button mQuickpostButton;
     private MessageListScraper mScraper;
     private MessageListAdapter mMessageListAdapter;
     private ActionMode mActionMode;
     private ProgressDialog mDialog;
     private Bundle mArgs;
     private Topic mTopic;
+    private Message mSelectedMessage;
+    private ViewGroup mContainer;
 
     private int mSelection = -1;
     private int mCurrentId;
@@ -105,8 +113,10 @@ public class MessageListFragment extends Fragment implements
                              Bundle savedInstanceState) {
 
         mRootView = inflater.inflate(R.layout.fragment_message_list, container, false);
+        mContainer = container;
+
         mMessageList = (ListView) mRootView.findViewById(R.id.listview_messages);
-        Button newMessageButton = (Button) mRootView.findViewById(R.id.new_message);
+        mQuickpostButton = (Button) mRootView.findViewById(R.id.new_message);
         TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title);
         Intent intent = getActivity().getIntent();
 
@@ -115,7 +125,7 @@ public class MessageListFragment extends Fragment implements
         topicTitle.setText(mTitle);
 
         // Set click listeners for views
-        newMessageButton.setOnClickListener(this);
+        mQuickpostButton.setOnClickListener(this);
         mMessageList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         mMessageList.setOnItemLongClickListener(this);
         mMessageList.setOnTouchListener(pageSwipeHandler);
@@ -197,6 +207,7 @@ public class MessageListFragment extends Fragment implements
         }
 
         mMessageList.setItemChecked(position, true);
+        mSelectedMessage = mMessageListAdapter.getItem(position);
         mSelection = position;
 
         return true;
@@ -221,11 +232,9 @@ public class MessageListFragment extends Fragment implements
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
 
-            Message target = mMessageListAdapter.getItem(mSelection);
-
             switch (item.getItemId()) {
                 case R.id.quote:
-                    String quote = new QuoteHandler().parse(target.getHtml());
+                    String quote = new QuoteHandler().parse(mSelectedMessage.getHtml());
                     // Start PostMessageActivity with quoted message
                     Context context = getContext();
                     Intent intent = new Intent(context, PostMessageActivity.class);
@@ -248,30 +257,94 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onDestroyActionMode(ActionMode mode) {
             mMessageList.setItemChecked(mSelection, false);
+            mSelectedMessage = null;
             mActionMode = null;
         }
     };
 
 
-    /**
-     *      Starts PostMessageActivity when user clicks new post button
-     */
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.new_message:
-                Bundle args = new Bundle();
-                args.putString("method", "GET");
-                args.putString("type", "newtopic");
-                getLoaderManager().initLoader(POST_MESSAGE, args, this).forceLoad();
+                showQuickpostWindow();
                 break;
         }
 
     }
 
-    /**
-     *      Allows user to swipe left/right on screen to change pages in topic
-     */
+    private void showQuickpostWindow() {
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int deviceWidth = metrics.widthPixels;
+
+        LayoutInflater inflater = (LayoutInflater)
+                getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        final View popupView = inflater.inflate(R.layout.quickpost_window, mContainer, false);
+        // Measure view so we can get measured height for PopupWindow constructor
+        popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+
+        Button button = (Button) popupView.findViewById(R.id.quickpost_button);
+
+        if (mSelectedMessage != null) {
+            button.setText(R.string.reply);
+        }
+
+        final PopupWindow popup = new PopupWindow(
+                popupView,
+                deviceWidth,
+                popupView.getMeasuredHeight(),
+                true);
+
+        // Following line allows popup to be dismissed after touching outside of it
+        popup.setBackgroundDrawable(new ColorDrawable());
+
+        popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        popup.setOutsideTouchable(true);
+        popup.setFocusable(true);
+
+        // Gravity.TOP means that 0,0 is at the top of the screen
+        popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
+                Gravity.TOP, 0, 50);
+
+        // Hide quickpost button while popup is visible
+        mQuickpostButton.setVisibility(View.INVISIBLE);
+
+        // Add listeners to handle clicks and dismiss events
+        button.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                final String NEWLINE = "\n";
+
+                String quote = "";
+
+                if (mSelectedMessage != null) {
+                    // Quote selected message and append message to it
+                    quote = new QuoteHandler().parse(mSelectedMessage.getHtml()) + NEWLINE;
+                }
+
+                String signature = SharedPreferenceManager.getString(getContext(), "signature");
+                EditText messageView = (EditText) popupView.findViewById(R.id.quickpost_edit);
+                String message = quote + messageView.getText().toString() + NEWLINE + signature;
+
+                Log.v(LOG_TAG, message);
+
+                popup.dismiss();
+            }
+
+        });
+
+        popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                mQuickpostButton.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
     OnSwipeListener pageSwipeHandler = new OnSwipeListener(getContext()) {
 
         @Override
