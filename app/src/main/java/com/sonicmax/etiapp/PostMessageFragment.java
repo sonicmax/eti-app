@@ -73,19 +73,19 @@ public class PostMessageFragment extends Fragment implements LoaderManager.Loade
     private void postNewMessage() {
         final String NEWLINE = "\n";
 
-        // Make sure that message length >= 5 characters (otherwise POST will be unsuccessful)
-        String message = mMessageBody.getText().toString();
+        // Make sure that total message length >= 5 characters (otherwise POST will be unsuccessful)
+        String signature = SharedPreferenceManager.getString(getContext(), "signature");
+        String message = mMessageBody.getText().toString() + NEWLINE + signature;
 
         if (message.length() >= 5) {
 
             String token = SharedPreferenceManager.getString(getContext(), "h");
-            String signature = SharedPreferenceManager.getString(getContext(), "signature");
 
             // Get input from editText elements
             ContentValues values = new ContentValues();
             values.put("id", getActivity().getIntent().getStringExtra("id"));
             values.put("title", getActivity().getIntent().getStringExtra("title"));
-            values.put("message", message + NEWLINE + signature);
+            values.put("message", message);
             values.put("lastpage", getActivity().getIntent().getIntExtra("lastpage", 1));
             values.put("h", token);
             values.put("submit", "Post Message");

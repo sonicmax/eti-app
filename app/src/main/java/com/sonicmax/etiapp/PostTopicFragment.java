@@ -53,19 +53,20 @@ public class PostTopicFragment extends Fragment implements LoaderManager.LoaderC
 
         final String NEWLINE = "\n";
 
-        String message = mMessageBody.getText().toString();
+        // Make sure that total message length >= 5 characters (otherwise POST will be unsuccessful)
+        String signature = SharedPreferenceManager.getString(getContext(), "signature");
+        String message = mMessageBody.getText().toString() + NEWLINE + signature;
 
         if (message.length() >= 5) {
 
             String token = SharedPreferenceManager.getString(getContext(), "h");
-            String signature = SharedPreferenceManager.getString(getContext(), "signature");
 
             // Get input from editText elements
             ContentValues values = new ContentValues();
             values.put("title", mTopicTitle.getText().toString());
             values.put("tag", "");
             values.put("h", token);
-            values.put("message", message + NEWLINE + signature);
+            values.put("message", message);
             values.put("submit", "Post Message");
 
             // Create bundle for loader
