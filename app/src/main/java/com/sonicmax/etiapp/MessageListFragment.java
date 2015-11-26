@@ -142,8 +142,14 @@ public class MessageListFragment extends Fragment implements
     }
 
     @Override
-    public void onDetach() {
+    public void onStop() {
+        // Clear adapter before stopping activity
+        mMessageListAdapter.clearMessages();
+        super.onStop();
+    }
 
+    @Override
+    public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
