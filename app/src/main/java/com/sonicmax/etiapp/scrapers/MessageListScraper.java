@@ -1,10 +1,11 @@
 package com.sonicmax.etiapp.scrapers;
 
+import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 
 import com.sonicmax.etiapp.Message;
 import com.sonicmax.etiapp.MessageListFragment;
+import com.sonicmax.etiapp.SharedPreferenceManager;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,17 +19,25 @@ import java.util.List;
 
 public class MessageListScraper {
 
+    private Context mContext;
     private String mUrl;
 
-    public MessageListScraper(String url) {
+    public MessageListScraper(Context context, String url) {
+        this.mContext = context;
         this.mUrl = url;
     }
 
     public List<Message> scrapeMessages(String html, boolean isFiltered) {
 
         Document document = Jsoup.parse(html);
-        ArrayList<Message> messages = new ArrayList<>();
-        Elements containers = document.getElementsByClass("message-container");
+
+        // Get hidden token and signature from quickpost elements, found in all non-archived topics
+        Element form = document.getElementsByClass("quickpost").get(0);
+        if (form != null) {
+            Element body = form.getElementsByClass("quickpost-body").get(0);
+            getToken(form);
+            getSignature(body);
+        }
 
         // Get current page number
         int currentPage = getCurrentPage(Uri.parse(mUrl));
@@ -36,7 +45,9 @@ public class MessageListScraper {
         // Check anchors of infobar to get prev/next page URLs.
         getPageUrls(document);
 
-        // Iterate over message-container elements and populate List<Message>
+        // Scrape posts
+        ArrayList<Message> messages = new ArrayList<>();
+        Elements containers = document.getElementsByClass("message-container");
         for (int i = 0; i < containers.size(); i++) {
             Element container = containers.get(i);
             Element messageTop = container.getElementsByClass("message-top").get(0);
@@ -122,7 +133,13 @@ public class MessageListScraper {
         return ((currentPage - 1) * 50) + (index + 1);
     }
 
-    public void changeUrl(String url) {
-        mUrl = url;
+    private void getToken(Element form) {
+        Element tokenField = form.getElementsByAttributeValue("name", "h").get(0);
+        SharedPreferenceManager.putString(mContext, "h", tokenField.attr("value"));
+    }
+
+    private void getSignature(Element body) {
+        Element message = body.getElementsByAttributeValue("name", "message").get(0);
+        SharedPreferenceManager.putString(mContext, "signature", message.text().trim());
     }
 }

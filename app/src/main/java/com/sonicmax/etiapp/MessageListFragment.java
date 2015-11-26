@@ -323,91 +323,44 @@ public class MessageListFragment extends Fragment implements
         final Context context = getContext();
         mCurrentId = id;
 
-        switch (id) {
+        mDialog = new ProgressDialog(getContext());
+        mDialog.setMessage("Getting messages...");
+        mDialog.show();
 
-            case LOAD_MESSAGE:
-            case REFRESH:
+        return new AsyncLoadHandler(context, args) {
 
-                mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Getting messages...");
-                mDialog.show();
-
-                return new AsyncLoadHandler(context, args) {
-
-                    @Override
-                    public List<Message> loadInBackground() {
-                        String html = new WebRequest(context, args).sendRequest();
-                        return mScraper.scrapeMessages(html, args.getBoolean("filter"));
-                    }
-                };
-
-            case POST_MESSAGE:
-
-                mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Loading...");
-                mDialog.show();
-
-                return new AsyncLoadHandler(context, args) {
-
-                    @Override
-                    public String loadInBackground() {
-                        return new WebRequest(context, args).sendRequest();
-                    }
-                };
-
-            default:
-                return null;
-
-        }
+            @Override
+            public List<Message> loadInBackground() {
+                String html = new WebRequest(context, args).sendRequest();
+                return mScraper.scrapeMessages(html, args.getBoolean("filter"));
+            }
+        };
     }
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
 
-        switch (mCurrentId) {
+        if (data != null) {
+            // We can be sure that data will safely cast to List<Message>.
+            @SuppressWarnings("unchecked")
+            List<Message> messages = (List<Message>) data;
+            mMessageListAdapter.updateMessages(messages);
 
-            // Let LOAD_MESSAGE fall through to REFRESH
-            case LOAD_MESSAGE:
-            case REFRESH:
+            if (mCurrentId == REFRESH) {
 
-                if (data != null) {
-                    // We can be sure that data will safely cast to List<Message>.
-                    @SuppressWarnings("unchecked")
-                    List<Message> messages = (List<Message>) data;
-                    mMessageListAdapter.updateMessages(messages);
+                int adapterCount = mMessageListAdapter.getCount();
+                if (adapterCount > mOldAdapterCount) {
+                    // Scroll to first unread post
+                    scrollToPosition(adapterCount);
+                } else {
+                    // No new posts - just scroll to end of message list
+                    scrollToPosition(adapterCount - 1);
                 }
+            }
+        }
 
-                if (mCurrentId == REFRESH) {
-                    int adapterCount = mMessageListAdapter.getCount();
-                    if (adapterCount > mOldAdapterCount) {
-                        // Scroll to first unread post
-                        scrollToPosition(adapterCount + 1);
-                    } else {
-                        // No new posts - just scroll to end of message list
-                        scrollToPosition(adapterCount);
-                    }
-                }
-
-                break;
-
-            case POST_MESSAGE:
-
-                Context context = getContext();
-
-                String response = (String) data;
-                new PostmsgScraper(context).parseResponse(response);
-
-                Intent intent = new Intent(context, PostMessageActivity.class);
-                intent.putExtra("topic", mTopic);
-                intent.putExtra("title", mTitle);
-                intent.putExtra("id", mTopic.getId());
-                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                context.startActivity(intent);
-
-                break;
-
-            default:
-                break;
+        else {
+            // Handle error
         }
 
         mDialog.dismiss();
