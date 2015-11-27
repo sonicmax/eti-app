@@ -6,6 +6,7 @@ import android.content.Intent;
 
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
@@ -44,7 +45,7 @@ public class MessageListFragment extends Fragment implements
 
     private View mRootView;
     private ListView mMessageList;
-    private Button mQuickpostButton;
+    private FloatingActionButton mQuickpostButton;
     private MessageListScraper mScraper;
     private MessageListAdapter mMessageListAdapter;
     private ActionMode mActionMode;
@@ -98,7 +99,7 @@ public class MessageListFragment extends Fragment implements
         mContainer = container;
 
         mMessageList = (ListView) mRootView.findViewById(R.id.listview_messages);
-        mQuickpostButton = (Button) mRootView.findViewById(R.id.new_message);
+        mQuickpostButton = (FloatingActionButton) mRootView.findViewById(R.id.new_message);
         TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title);
         Intent intent = getActivity().getIntent();
 
@@ -297,8 +298,9 @@ public class MessageListFragment extends Fragment implements
         popup.setFocusable(true);
         popup.setAnimationStyle(R.style.AnimationPopup);
 
+        // Show quickpost window 25px from top of screen (aligned with bottom of status bar)
         popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
-                Gravity.TOP, 0, 50);
+                Gravity.TOP, 0, 25);
 
         mQuickpostButton.setVisibility(View.INVISIBLE);
 

@@ -1,18 +1,18 @@
 package com.sonicmax.etiapp;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -65,11 +65,11 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         String name = getActivity().getIntent().getStringExtra("boardname");
         boardName.setText(name);
 
-        Button newTopicButton = (Button) rootView.findViewById(R.id.new_topic);
+        FloatingActionButton newTopicButton = (FloatingActionButton) rootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(newTopicHandler);
 
         ListView topicList = (ListView) rootView.findViewById(R.id.listview_topics);
-        topicList.setAdapter(topicListAdapter);
+        topicList.setAdapter(mTopicListAdapter);
         topicList.setOnItemClickListener(topicClickHandler);
         topicList.setOnTouchListener(topicSwipeHandler);
 

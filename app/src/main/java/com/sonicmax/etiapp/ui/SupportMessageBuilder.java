@@ -54,6 +54,7 @@ public class SupportMessageBuilder {
     private SpannableStringBuilder getSpannableStringFrom(List<Node> children) {
 
         final String SIG_BELT = "---";
+        final int DARK_GREY = Color.rgb(66, 66, 66);
 
         SpannableStringBuilder builder = new SpannableStringBuilder();
 
@@ -156,7 +157,7 @@ public class SupportMessageBuilder {
                             SpannableStringBuilder quotes = getQuotesFrom(element);
                             builder.append(quotes);
                             builder.setSpan(
-                                    new CustomQuoteSpan(),
+                                    new CustomQuoteSpan(DARK_GREY),
                                     builder.length() - quotes.length(),
                                     builder.length(),
                                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -213,7 +214,7 @@ public class SupportMessageBuilder {
 
     private SpannableStringBuilder getQuotesFrom(Element quote) {
 
-        final int LIGHTER_GREEN = Color.rgb(195, 247, 206);
+        final int LIGHT_GREY = Color.rgb(66, 66, 66);
         final String QUOTE_ARROW = "⇗";
 
         // Increase quote depth to account for gap/stripe width in CustomQuoteSpan.
@@ -248,7 +249,7 @@ public class SupportMessageBuilder {
 
             output.append(username);
             output.setSpan(
-                    new QuoteBackgroundSpan(LIGHTER_GREEN, quoteDepth),
+                    new QuoteBackgroundSpan(LIGHT_GREY, quoteDepth),
                     output.length() - username.length(),
                     output.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
