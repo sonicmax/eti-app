@@ -8,7 +8,7 @@ import android.util.Log;
 import android.view.View;
 
 /**
- * Span which allows user to click URLs and view them using their preferred browser
+ * Span which displays tag name and allows user to navigate to its topic list
  */
 
 public class TagSpan extends ClickableSpan {
