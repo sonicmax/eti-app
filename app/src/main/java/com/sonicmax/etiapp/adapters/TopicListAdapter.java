@@ -56,11 +56,13 @@ public class TopicListAdapter extends BaseAdapter {
         public final TextView userView;
         public final TextView titleView;
         public final TextView totalView;
+        public final TextView tagView;
 
-        public ViewHolder(TextView username, TextView title, TextView total) {
+        public ViewHolder(TextView username, TextView title, TextView total, TextView tags) {
             this.userView = username;
             this.titleView = title;
             this.totalView = total;
+            this.tagView = tags;
         }
     }
 
@@ -69,7 +71,7 @@ public class TopicListAdapter extends BaseAdapter {
 
         mListView = (ListView) parent;
 
-        TextView username, title, totalPosts;
+        TextView username, title, totalPosts, tags;
 
         if (convertView == null) {
 
@@ -78,7 +80,8 @@ public class TopicListAdapter extends BaseAdapter {
             title = (TextView) convertView.findViewById(R.id.list_item_topic_title);
             username = (TextView) convertView.findViewById(R.id.list_item_username);
             totalPosts = (TextView) convertView.findViewById(R.id.list_item_total);
-            convertView.setTag(new ViewHolder(username, title, totalPosts));
+            tags = (TextView) convertView.findViewById(R.id.list_item_tags);
+            convertView.setTag(new ViewHolder(username, title, totalPosts, tags));
 
         } else {
 
@@ -86,12 +89,14 @@ public class TopicListAdapter extends BaseAdapter {
             username = viewHolder.userView;
             title = viewHolder.titleView;
             totalPosts = viewHolder.totalView;
+            tags = viewHolder.tagView;
         }
 
         Topic topic = getItem(position);
         username.setText(topic.getUser());
         title.setText(topic.getTitle());
         totalPosts.setText(topic.getTotalWithNewPosts());
+        tags.setText(topic.getTags());
 
         totalPosts.setOnClickListener(lastPageHandler);
 

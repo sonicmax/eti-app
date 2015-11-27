@@ -3,6 +3,7 @@ package com.sonicmax.etiapp;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.SpannableStringBuilder;
 import android.util.Log;
 
 import java.net.MalformedURLException;
@@ -15,12 +16,14 @@ public class Topic implements Parcelable {
     private String username;
     private String total;
     private String url;
+    private SpannableStringBuilder tags;
 
-    public Topic(String title, String username, String total, String url) {
+    public Topic(String title, String username, String total, String url, SpannableStringBuilder tags) {
         this.title = title;
         this.username = username;
         this.total = total;
         this.url = url;
+        this.tags = tags;
     }
 
     public String getTitle() {
@@ -38,6 +41,10 @@ public class Topic implements Parcelable {
     public String getTotal() {
         String count = total.replaceAll("\\(.*?\\) ?", "");
         return count.replaceAll("[^\\d.]", "");
+    }
+
+    public SpannableStringBuilder getTags() {
+        return tags;
     }
 
     /**

@@ -2,10 +2,14 @@ package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.util.Log;
 
 import com.sonicmax.etiapp.SharedPreferenceManager;
 import com.sonicmax.etiapp.Topic;
 import com.sonicmax.etiapp.TopicListFragment;
+import com.sonicmax.etiapp.ui.TagSpan;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -73,6 +77,9 @@ public class TopicListScraper {
             String url = "https:" + titleAnchor.attr("href");
             String title = titleAnchor.text();
 
+            Element tagDiv = titleCell.getElementsByClass("fr").get(0);
+            SpannableStringBuilder tagSpan = getTags(tagDiv);
+
             Element usernameCell = tableCells.get(1);
             String username;
 
@@ -87,7 +94,7 @@ public class TopicListScraper {
             Element postCountCell = tableCells.get(2);
             String postCount = postCountCell.text();
 
-            Topic topic = new Topic(title, username, postCount, url);
+            Topic topic = new Topic(title, username, postCount, url, tagSpan);
             topics.add(topic);
 
         }
@@ -95,4 +102,25 @@ public class TopicListScraper {
         return topics;
     }
 
+    /**
+     * Method which scrapes div for tags and returns SpannableStringBuilder with clickable TagSpans
+     */
+    private SpannableStringBuilder getTags(Element tagDiv) {
+        final String SPACE = " ";
+        Elements tagAnchors = tagDiv.getElementsByTag("a");
+        SpannableStringBuilder tagBuilder = new SpannableStringBuilder();
+        int tagSize = tagAnchors.size();
+
+        for (int j = 0; j < tagSize; j++) {
+            String tag = tagAnchors.get(j).text();
+            tagBuilder.append(tag);
+            tagBuilder.setSpan(new TagSpan(mContext, tagAnchors.get(j).attr("abs:href")),
+                    tagBuilder.length() - tag.length(),
+                    tagBuilder.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            tagBuilder.append(SPACE);
+        }
+
+        return tagBuilder;
+    }
 }
