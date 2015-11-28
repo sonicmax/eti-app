@@ -107,14 +107,17 @@ public class TopicListScraper {
      */
     private SpannableStringBuilder getTags(Element tagDiv) {
         final String SPACE = " ";
+        final String URL_PREFIX = "https://boards.endoftheinter.net";
+
         Elements tagAnchors = tagDiv.getElementsByTag("a");
         SpannableStringBuilder tagBuilder = new SpannableStringBuilder();
         int tagSize = tagAnchors.size();
 
         for (int j = 0; j < tagSize; j++) {
-            String tag = tagAnchors.get(j).text();
+            Element tagElement = tagAnchors.get(j);
+            String tag = tagElement.text();
             tagBuilder.append(tag);
-            tagBuilder.setSpan(new TagSpan(mContext, tagAnchors.get(j).attr("abs:href")),
+            tagBuilder.setSpan(new TagSpan(mContext, tag, URL_PREFIX + tagElement.attr("href")),
                     tagBuilder.length() - tag.length(),
                     tagBuilder.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

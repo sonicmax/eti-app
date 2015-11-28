@@ -2,6 +2,8 @@ package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -71,34 +73,36 @@ public class TopicListAdapter extends BaseAdapter {
 
         mListView = (ListView) parent;
 
-        TextView username, title, totalPosts, tags;
+        TextView userView, titleView, countView, tagView;
 
         if (convertView == null) {
 
             convertView = LayoutInflater.from(mContext)
                     .inflate(R.layout.list_item_topic, parent, false);
-            title = (TextView) convertView.findViewById(R.id.list_item_topic_title);
-            username = (TextView) convertView.findViewById(R.id.list_item_username);
-            totalPosts = (TextView) convertView.findViewById(R.id.list_item_total);
-            tags = (TextView) convertView.findViewById(R.id.list_item_tags);
-            convertView.setTag(new ViewHolder(username, title, totalPosts, tags));
+            titleView = (TextView) convertView.findViewById(R.id.list_item_topic_title);
+            userView = (TextView) convertView.findViewById(R.id.list_item_username);
+            countView = (TextView) convertView.findViewById(R.id.list_item_total);
+            tagView = (TextView) convertView.findViewById(R.id.list_item_tags);
+            convertView.setTag(new ViewHolder(userView, titleView, countView, tagView));
 
         } else {
 
             ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-            username = viewHolder.userView;
-            title = viewHolder.titleView;
-            totalPosts = viewHolder.totalView;
-            tags = viewHolder.tagView;
+            userView = viewHolder.userView;
+            titleView = viewHolder.titleView;
+            countView = viewHolder.totalView;
+            tagView = viewHolder.tagView;
         }
 
         Topic topic = getItem(position);
-        username.setText(topic.getUser());
-        title.setText(topic.getTitle());
-        totalPosts.setText(topic.getTotalWithNewPosts());
-        tags.setText(topic.getTags());
+        userView.setText(topic.getUser());
+        titleView.setText(topic.getTitle());
+        countView.setText(topic.getTotalWithNewPosts());
+        tagView.setText(topic.getTags());
 
-        totalPosts.setOnClickListener(lastPageHandler);
+        // Make sure that clicks on tagView are dispatched to TagSpan listener
+        tagView.setMovementMethod(LinkMovementMethod.getInstance());
+        countView.setOnClickListener(lastPageHandler);
 
         return convertView;
     }
