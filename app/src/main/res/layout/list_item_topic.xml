@@ -38,9 +38,11 @@
 
     <TextView
         android:id="@+id/list_item_tags"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="@color/secondary_text"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:gravity="end"
         android:layout_below="@+id/list_item_topic_title" />
 
