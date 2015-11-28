@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -93,7 +92,7 @@ public class PostTopicFragment extends Fragment implements LoaderManager.LoaderC
 
         final Context context = getContext();
 
-        mDialog = new ProgressDialog(context, AlertDialog.THEME_HOLO_DARK);
+        mDialog = new ProgressDialog(context);
         mDialog.setMessage("Posting topic...");
         mDialog.show();
 

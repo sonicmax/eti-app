@@ -1,9 +1,7 @@
 package com.sonicmax.etiapp;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
@@ -107,7 +105,7 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
 
         final Context context = getContext();
 
-        mDialog = new ProgressDialog(context, AlertDialog.THEME_HOLO_DARK);
+        mDialog = new ProgressDialog(context);
         mDialog.setMessage("Getting bookmarks...");
         mDialog.show();
 

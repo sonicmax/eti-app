@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -130,7 +129,7 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
             case STATUS_CHECK:
             case LOGIN:
 
-                mDialog = new ProgressDialog(context, AlertDialog.THEME_HOLO_DARK);
+                mDialog = new ProgressDialog(context);
                 mDialog.setMessage(getDialogMessage(id));
                 mDialog.show();
 

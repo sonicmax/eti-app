@@ -1,7 +1,5 @@
 <resources>
-
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat">
         <item name="android:windowBackground">@color/bg_grey</item>
         <item name="android:textColor">@color/primary_text</item>
         <item name="android:textColorSecondary">@color/secondary_text</item>
