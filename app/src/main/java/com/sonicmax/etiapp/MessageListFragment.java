@@ -1,5 +1,6 @@
 package com.sonicmax.etiapp;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -394,7 +395,7 @@ public class MessageListFragment extends Fragment implements
         final Context context = getContext();
         mCurrentId = id;
 
-        mDialog = new ProgressDialog(getContext());
+        mDialog = new ProgressDialog(context, AlertDialog.THEME_HOLO_DARK);
         mDialog.setMessage("Getting messages...");
         mDialog.show();
 

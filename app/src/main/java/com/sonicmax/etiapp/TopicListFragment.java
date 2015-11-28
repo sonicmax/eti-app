@@ -1,6 +1,7 @@
 package com.sonicmax.etiapp;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -182,7 +183,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
             case LOAD_TOPIC:
 
-                mDialog = new ProgressDialog(getContext());
+                mDialog = new ProgressDialog(context, AlertDialog.THEME_HOLO_DARK);
                 mDialog.setMessage("Getting topics...");
                 mDialog.show();
 
