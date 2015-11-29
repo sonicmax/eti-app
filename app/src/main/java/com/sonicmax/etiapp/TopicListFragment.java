@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -21,38 +20,62 @@ import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 import com.sonicmax.etiapp.scrapers.TopicListScraper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TopicListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
-    private final String LOG_TAG = TopicListFragment.class.getSimpleName();
     private final int LOAD_TOPIC = 0;
     private final int POST_TOPIC = 1;
 
-    private int mPageNumber = 1;
+    private TopicListAdapter mTopicListAdapter;
+    private String mUrl;
     private ProgressDialog mDialog;
-    private static boolean mFirstRun = true;
-    private int currentLoader;
+    private List<Topic> mTopics;
 
-    public static TopicListAdapter topicListAdapter;
+    private int mCurrentLoader;
+    private int mPageNumber;
+    private boolean mFirstRun = true;
+
     public static String nextPageUrl;
     public static String prevPageUrl;
 
     public TopicListFragment() {}
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Fragment methods
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
+        // Create adapter to display list of topics
+        mTopicListAdapter = new TopicListAdapter(context);
 
-        if (topicListAdapter == null) {
-            topicListAdapter = new TopicListAdapter(getActivity());
+        // Topic list will always start at page 1. mFirstRun is set to false after starting loader,
+        // in case user changes pages (handled with swipe event)
+        if (mFirstRun) {
+            mPageNumber = 1;
         }
-        else {
-            topicListAdapter.clearTopics();
-        }
-
-        loadTopicList(getActivity().getIntent().getStringExtra("url"));
 
         super.onAttach(context);
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        if (savedInstanceState == null) {
+            // Get url of chosen topic list form intent and pass it to loader
+            mUrl = getActivity().getIntent().getStringExtra("url");
+            loadTopicList(mUrl);
+        }
+        else {
+            // Get url in case we need to refresh topic list
+            mUrl = savedInstanceState.getString("url");
+
+            // Populate adapter with list of topics from savedInstanceState
+            mTopics = savedInstanceState.getParcelableArrayList("topics");
+            mTopicListAdapter.updateTopics(mTopics);
+        }
+
+        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -77,8 +100,22 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     @Override
-    public void onDetach() {
+    public void onSaveInstanceState(Bundle outState) {
+        // Save list of topics so we can quickly restore fragment
+        if (mTopics != null) {
+            ArrayList<Topic> topicArray = new ArrayList<>(mTopics);
+            outState.putParcelableArrayList("topics", topicArray);
+        }
+        // Save URL in case we need to refresh topic list
+        if (mUrl != null) {
+            outState.putString("url", mUrl);
+        }
 
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
@@ -87,8 +124,10 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         super.onDetach();
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
     private void loadTopicList(String url) {
-
         Bundle args = new Bundle();
         args.putString("method", "GET");
         args.putString("type", "topiclist");
@@ -97,23 +136,22 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         LoaderManager loaderManager = getLoaderManager();
 
         if (mFirstRun) {
-            Log.v(LOG_TAG, "first run");
             loaderManager.initLoader(0, args, this).forceLoad();
             mFirstRun = false;
         }
         else {
-            Log.v(LOG_TAG, "second run");
-            // Restart loader so it can use cached result (eg. if back button is pressed, or screen
-            // orientation changes).
             loaderManager.restartLoader(0, args, this).forceLoad();
         }
+    }
+
+    public void refreshTopicList() {
+        loadTopicList(mUrl);
     }
 
     OnSwipeListener topicSwipeHandler = new OnSwipeListener(getContext()) {
 
         @Override
         public void onSwipeLeft() {
-
             if (nextPageUrl != null) {
                 loadTopicList(nextPageUrl);
                 mPageNumber++;
@@ -123,7 +161,6 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
         @Override
         public void onSwipeRight() {
-            // TODO: Store visited pages instead of using "Back to the present" href
             if (prevPageUrl != null) {
                 loadTopicList(prevPageUrl);
                 mPageNumber = 1;
@@ -136,8 +173,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-            Topic topic = topicListAdapter.getItem(position);
+            Topic topic = mTopicListAdapter.getItem(position);
             Context context = getContext();
             Intent intent = new Intent(context, MessageListActivity.class);
             intent.putExtra("topic", topic);
@@ -174,9 +210,8 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
-
         final Context context = getContext();
-        currentLoader = id;
+        mCurrentLoader = id;
 
         switch (id) {
 
@@ -216,19 +251,15 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
-
         if (data != null) {
 
-            if (currentLoader == LOAD_TOPIC) {
-
+            if (mCurrentLoader == LOAD_TOPIC) {
                 // We can be sure that data will safely cast to List<Topic>.
-                @SuppressWarnings("unchecked")
-                List<Topic> topics = (List<Topic>) data;
-                topicListAdapter.updateTopics(topics);
+                mTopics = (List<Topic>) data;
+                mTopicListAdapter.updateTopics(mTopics);
             }
 
-            else if (currentLoader == POST_TOPIC) {
-
+            else if (mCurrentLoader == POST_TOPIC) {
                 Context context = getContext();
 
                 String response = (String) data;
@@ -240,7 +271,9 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
             }
         }
 
-        mDialog.dismiss();
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
     }
 
     @Override

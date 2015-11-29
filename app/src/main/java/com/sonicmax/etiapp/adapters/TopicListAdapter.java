@@ -49,11 +49,6 @@ public class TopicListAdapter extends BaseAdapter {
         return position;
     }
 
-    public void clearTopics() {
-        mTopics.clear();
-        notifyDataSetChanged();
-    }
-
     private static class ViewHolder {
         public final TextView userView;
         public final TextView titleView;

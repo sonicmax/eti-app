@@ -9,6 +9,7 @@ import android.view.MenuItem;
 public class TopicListActivity extends AppCompatActivity {
 
     private final String LOG_TAG = TopicListActivity.class.getSimpleName();
+    @SuppressWarnings("unused")
     private ProgressDialog mDialog;
 
     @Override
@@ -22,23 +23,27 @@ public class TopicListActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_topic_list, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+        switch (id) {
 
-        if (id == R.id.action_settings) {
-            return true;
-        }
+            case R.id.action_settings:
+                return true;
 
-        else if (id == R.id.action_logout) {
-            new AccountManager(this, mDialog).requestLogout();
+            case R.id.action_logout:
+                new AccountManager(this, mDialog).requestLogout();
+                break;
+
+            case R.id.action_refresh:
+                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.topic_list_container);
+                fragment.refreshTopicList();
+                break;
         }
 
         return super.onOptionsItemSelected(item);
