@@ -33,6 +33,7 @@ import com.sonicmax.etiapp.adapters.MessageListAdapter;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MessageListFragment extends Fragment implements
@@ -54,6 +55,7 @@ public class MessageListFragment extends Fragment implements
     private Topic mTopic;
     private Message mSelectedMessage;
     private ViewGroup mContainer;
+    private List<Message> mMessages;
 
     private int mSelection = -1;
     private int mCurrentId;
@@ -68,28 +70,45 @@ public class MessageListFragment extends Fragment implements
 
     public MessageListFragment() {}
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Fragment methods
+    ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
-        // Do some initialising/etc before we inflate layout.
-        Intent intent = getActivity().getIntent();
-        mTopic = intent.getParcelableExtra("topic");
-
-        if (mFirstRun) {
-            mPageNumber = intent.getIntExtra("page", 1);
-        }
-
-        String url = (intent.getBooleanExtra("last_page", false))
-                ? mTopic.getLastPageUrl() : mTopic.getUrl();
-
-        mScraper = new MessageListScraper(context, url);
         mMessageListAdapter = new MessageListAdapter(context);
-
-        // Init/Restart loader and get posts for adapter
-        loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
-
         super.onAttach(context);
     }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        if (savedInstanceState == null) {
+
+            Intent intent = getActivity().getIntent();
+            mTopic = intent.getParcelableExtra("topic");
+
+            if (mFirstRun) {
+                mPageNumber = intent.getIntExtra("page", 1);
+            }
+
+            String url = (intent.getBooleanExtra("last_page", false))
+                    ? mTopic.getLastPageUrl() : mTopic.getUrl();
+
+            mScraper = new MessageListScraper(getContext(), url);
+
+            // Init/Restart loader and get posts for adapter
+            loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
+        }
+
+        else {
+            mTopic = savedInstanceState.getParcelable("topic");
+            mPageNumber = savedInstanceState.getInt("page");
+
+            mMessages = savedInstanceState.getParcelableArrayList("messages");
+            mMessageListAdapter.updateMessages(mMessages);
+        }
+
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -131,6 +150,18 @@ public class MessageListFragment extends Fragment implements
         super.onStop();
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        // Save list of boards so we can quickly restore fragment
+        if (mMessages != null) {
+            ArrayList<Message> messageArray = new ArrayList<>(mMessages);
+            outState.putParcelableArrayList("messages", messageArray);
+        }
+        outState.putParcelable("topic", mTopic);
+        outState.putInt("page", mPageNumber);
+
+        super.onSaveInstanceState(outState);
+    }
     @Override
     public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
@@ -323,7 +354,8 @@ public class MessageListFragment extends Fragment implements
                 String message = quote + messageView.getText().toString() + NEWLINE + signature;
 
                 Log.v(LOG_TAG, message);
-
+                mMessageList.setItemChecked(mSelection, false);
+                mSelectedMessage = null;
                 popup.dismiss();
             }
 
@@ -413,12 +445,10 @@ public class MessageListFragment extends Fragment implements
 
         if (data != null) {
             // We can be sure that data will safely cast to List<Message>.
-            @SuppressWarnings("unchecked")
-            List<Message> messages = (List<Message>) data;
-            mMessageListAdapter.updateMessages(messages);
+            mMessages = (List<Message>) data;
+            mMessageListAdapter.updateMessages(mMessages);
 
             if (mCurrentId == REFRESH) {
-
                 int adapterCount = mMessageListAdapter.getCount();
                 if (adapterCount > mOldAdapterCount) {
                     // Scroll to first unread post
