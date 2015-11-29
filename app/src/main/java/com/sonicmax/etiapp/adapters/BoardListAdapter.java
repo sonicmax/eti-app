@@ -29,11 +29,6 @@ public class BoardListAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public void addBoard(Board board) {
-        this.boards.add(board);
-        notifyDataSetChanged();
-    }
-
     @Override
     public int getCount() {
         return boards.size();
