@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  *  (uses setSpan() instead of append() to create spans - required when API level < 21)
  */
 
-public class SupportMessageBuilder {
+public class SupportMessageBuilder extends Builder {
 
     private final String NEWLINE = "\n";
     private Context mContext;
@@ -38,6 +38,7 @@ public class SupportMessageBuilder {
         mContext = context;
     }
 
+    @Override
     public SpannableStringBuilder buildMessage(String html) {
 
         Element container = Jsoup.parse(html).getElementsByClass("message-container").get(0);

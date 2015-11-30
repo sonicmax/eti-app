@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import com.sonicmax.etiapp.Message;
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.ui.Builder;
 import com.sonicmax.etiapp.ui.MessageBuilder;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 
@@ -19,12 +20,20 @@ import java.util.List;
 
 public class MessageListAdapter extends BaseAdapter {
 
-    public static List<Message> messages = Collections.emptyList();
-    private ListView mListView;
     private final Context mContext;
+    private Builder mBuilder;
+    private List<Message> messages = Collections.emptyList();
+    private ListView mListView;
 
     public MessageListAdapter(Context context) {
         mContext = context;
+
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            mBuilder = new MessageBuilder(mContext);
+        }
+        else {
+            mBuilder = new SupportMessageBuilder(mContext);
+        }
     }
 
     public void updateMessages(List<Message> messageList) {
@@ -93,15 +102,7 @@ public class MessageListAdapter extends BaseAdapter {
         }
 
         Message message = getItem(position);
-
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            MessageBuilder builder = new MessageBuilder(mContext);
-            messageView.setText(builder.buildMessage(message.getHtml()));
-        }
-        else {
-            SupportMessageBuilder builder = new SupportMessageBuilder(mContext);
-            messageView.setText(builder.buildMessage(message.getHtml()));
-        }
+        messageView.setText(mBuilder.buildMessage(message.getHtml()));
 
         userView.setText(message.getUser());
         postNumberView.setText(message.getPosition());

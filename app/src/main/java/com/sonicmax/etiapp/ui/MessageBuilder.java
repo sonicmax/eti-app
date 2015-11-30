@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  *  Parses message HTML and creates SpannableStringBuilder with equivalent formatting.
  */
 
-public class MessageBuilder {
+public class MessageBuilder extends Builder {
 
     private final String NEWLINE = "\n";
     private Context mContext;
@@ -39,6 +39,7 @@ public class MessageBuilder {
         mContext = context;
     }
 
+    @Override
     public SpannableStringBuilder buildMessage(String html) {
 
         Element container = Jsoup.parse(html).getElementsByClass("message-container").get(0);
