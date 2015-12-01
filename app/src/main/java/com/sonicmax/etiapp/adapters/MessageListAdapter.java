@@ -18,7 +18,6 @@ import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -44,7 +43,7 @@ public class MessageListAdapter extends BaseAdapter {
         mContext = context;
 
         // Prepare SimpleDateFormat to parse ETI timestamp (will always be in this format)
-        mDateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss aa", Locale.US);
+        mDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss aa", Locale.US);
 
         // Get current date/time so we can create fuzzy timestamps (eg "1 minute ago")
         GregorianCalendar calendar = new GregorianCalendar();
@@ -145,7 +144,6 @@ public class MessageListAdapter extends BaseAdapter {
     }
 
     private String getFuzzyTimestamp(String timestamp) {
-        String fuzzyTime = "";
         Date date;
 
         // Try to parse timestamp using provided SimpleDateFormat
@@ -158,22 +156,11 @@ public class MessageListAdapter extends BaseAdapter {
 
         GregorianCalendar postCalendar = new GregorianCalendar();
         postCalendar.setTime(date);
-        List<String> differences = getDifference(postCalendar);
-        int sizeOfDifferences = differences.size();
 
-        for (int i = 0; i < sizeOfDifferences; i++) {
-            fuzzyTime += differences.get(i);
-            if (i < sizeOfDifferences - 1) {
-                fuzzyTime += ", ";
-            }
-        }
-        fuzzyTime += " ago.";
-
-        return fuzzyTime;
+        return getDifference(postCalendar);
     }
 
-    private List<String> getDifference(GregorianCalendar postCalendar) {
-        ArrayList<String> output = new ArrayList<>();
+    private String getDifference(GregorianCalendar postCalendar) {
 
         int postYear = postCalendar.get(GregorianCalendar.YEAR);
         int postDay = postCalendar.get(GregorianCalendar.DAY_OF_YEAR);
@@ -181,69 +168,65 @@ public class MessageListAdapter extends BaseAdapter {
         int postMinute = postCalendar.get(GregorianCalendar.MINUTE);
         int postSecond = postCalendar.get(GregorianCalendar.SECOND);
 
+        Log.v(LOG_TAG, "current year: " + CURRENT_YEAR);
+        Log.v(LOG_TAG, "post: " + postYear);
+
+        Log.v(LOG_TAG, "current day: " + CURRENT_DAY_OF_YEAR);
+        Log.v(LOG_TAG, "post: " + postDay);
+
+        Log.v(LOG_TAG, "current hour: " + CURRENT_HOUR_OF_DAY);
+        Log.v(LOG_TAG, "post: " + postHour);
+
+        Log.v(LOG_TAG, "current min: " + CURRENT_MINUTE);
+        Log.v(LOG_TAG, "post: " + postMinute);
+
+        Log.v(LOG_TAG, "current sec: " + CURRENT_SECOND);
+        Log.v(LOG_TAG, "post: " + postSecond);
+
         if (CURRENT_YEAR > postYear) {
-
             if (CURRENT_YEAR - postYear > 1) {
-                output.add((CURRENT_YEAR - postYear) + " years");
+                return (CURRENT_YEAR - postYear) + " years ago";
             } else {
-                output.add((CURRENT_YEAR - postYear) + " year");
+                return (CURRENT_YEAR - postYear) + " year ago";
             }
-
-            if (postDay > CURRENT_DAY_OF_YEAR) {
-                int difference = (postCalendar.getActualMaximum(GregorianCalendar.DAY_OF_YEAR)
-                        - postDay) + CURRENT_DAY_OF_YEAR;
-                // difference will always be > 1
-                output.add(difference + " days");
-            }
-
-            else if (CURRENT_DAY_OF_YEAR > postDay) {
-                if ((CURRENT_DAY_OF_YEAR - postDay) > 1) {
-                    output.add((CURRENT_DAY_OF_YEAR - postDay) + " days");
-                }
-                else {
-                    output.add((CURRENT_DAY_OF_YEAR - postDay) + " day");
-                }
-            }
-
-            return output;
         }
 
         else {
             // If post is from same year, we can just check for differences and subtract.
             if (CURRENT_DAY_OF_YEAR > postDay) {
                 if (CURRENT_DAY_OF_YEAR - postDay > 1) {
-                    output.add((CURRENT_DAY_OF_YEAR - postDay) + " days");
+                    return (CURRENT_DAY_OF_YEAR - postDay) + " days ago";
                 } else {
-                    output.add((CURRENT_DAY_OF_YEAR - postDay) + " day");
+                    return (CURRENT_DAY_OF_YEAR - postDay) + " day ago";
                 }
             }
 
             if (CURRENT_HOUR_OF_DAY > postHour) {
                 if (CURRENT_HOUR_OF_DAY - postHour > 1) {
-                    output.add((CURRENT_HOUR_OF_DAY - postHour) + " hours");
+                    return (CURRENT_HOUR_OF_DAY - postHour) + " hours ago";
                 } else {
-                    output.add((CURRENT_HOUR_OF_DAY - postHour) + " hour");
+                    return (CURRENT_HOUR_OF_DAY - postHour) + " hour ago";
                 }
             }
 
             if (CURRENT_MINUTE > postMinute) {
                 if (CURRENT_MINUTE - postMinute > 1) {
-                    output.add((CURRENT_MINUTE - postMinute) + " minutes");
+                    return (CURRENT_MINUTE - postMinute) + " minutes ago";
                 } else {
-                    output.add((CURRENT_MINUTE - postMinute) + " minute");
+                    return (CURRENT_MINUTE - postMinute) + " minute ago";
                 }
             }
 
             if (CURRENT_SECOND > postSecond) {
                 if (CURRENT_SECOND - postSecond > 1) {
-                    output.add((CURRENT_SECOND - postSecond) + " seconds");
+                    return (CURRENT_SECOND - postSecond) + " seconds ago";
                 } else {
-                    output.add((CURRENT_SECOND - postSecond) + " second");
+                    return (CURRENT_SECOND - postSecond) + " second ago";
                 }
             }
-
-            return output;
         }
+
+        return null;
     }
 
     private View.OnClickListener filterHandler = new View.OnClickListener() {
