@@ -28,30 +28,24 @@ public class MessageListAdapter extends BaseAdapter {
 
     private final String LOG_TAG = MessageListAdapter.class.getSimpleName();
     private final Context mContext;
-    private final int CURRENT_YEAR;
-    private final int CURRENT_DAY_OF_YEAR;
-    private final int CURRENT_HOUR_OF_DAY;
-    private final int CURRENT_MINUTE;
-    private final int CURRENT_SECOND;
 
     private Builder mBuilder;
     private SimpleDateFormat mDateFormat;
     private List<Message> messages = Collections.emptyList();
     private ListView mListView;
 
+    private int CURRENT_YEAR;
+    private int CURRENT_MONTH;
+    private int CURRENT_DAY_OF_MONTH;
+    private int CURRENT_HOUR_OF_DAY;
+    private int CURRENT_MINUTE;
+    private int CURRENT_SECOND;
+
     public MessageListAdapter(Context context) {
         mContext = context;
 
         // Prepare SimpleDateFormat to parse ETI timestamp (will always be in this format)
         mDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss aa", Locale.US);
-
-        // Get current date/time so we can create fuzzy timestamps (eg "1 minute ago")
-        GregorianCalendar calendar = new GregorianCalendar();
-        CURRENT_YEAR = calendar.get(GregorianCalendar.YEAR);
-        CURRENT_DAY_OF_YEAR = calendar.get(GregorianCalendar.DAY_OF_YEAR);
-        CURRENT_HOUR_OF_DAY = calendar.get(GregorianCalendar.HOUR_OF_DAY);
-        CURRENT_MINUTE = calendar.get(GregorianCalendar.MINUTE);
-        CURRENT_SECOND = calendar.get(GregorianCalendar.SECOND);
 
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             mBuilder = new MessageBuilder(mContext);
@@ -64,6 +58,17 @@ public class MessageListAdapter extends BaseAdapter {
         messages.clear();
         messages = messageList;
         notifyDataSetChanged();
+    }
+
+    public void getCurrentTime() {
+        // Get current date/time so we can create fuzzy timestamps (eg "1 minute ago")
+        GregorianCalendar calendar = new GregorianCalendar();
+        CURRENT_YEAR = calendar.get(GregorianCalendar.YEAR);
+        CURRENT_MONTH = calendar.get(GregorianCalendar.MONTH);
+        CURRENT_DAY_OF_MONTH = calendar.get(GregorianCalendar.DAY_OF_MONTH);
+        CURRENT_HOUR_OF_DAY = calendar.get(GregorianCalendar.HOUR_OF_DAY);
+        CURRENT_MINUTE = calendar.get(GregorianCalendar.MINUTE);
+        CURRENT_SECOND = calendar.get(GregorianCalendar.SECOND);
     }
 
     public void clearMessages() {
@@ -163,51 +168,62 @@ public class MessageListAdapter extends BaseAdapter {
     private String getDifference(GregorianCalendar postCalendar) {
 
         int postYear = postCalendar.get(GregorianCalendar.YEAR);
-        int postDay = postCalendar.get(GregorianCalendar.DAY_OF_YEAR);
-        int postHour = postCalendar.get(GregorianCalendar.HOUR_OF_DAY);
-        int postMinute = postCalendar.get(GregorianCalendar.MINUTE);
-        int postSecond = postCalendar.get(GregorianCalendar.SECOND);
 
         if (CURRENT_YEAR > postYear) {
             if (CURRENT_YEAR - postYear > 1) {
                 return (CURRENT_YEAR - postYear) + " years ago";
             } else {
-                return (CURRENT_YEAR - postYear) + " year ago";
+                return "1 year ago";
             }
         }
 
-        else {
-            // If post is from same year, we can just check for differences and subtract.
-            if (CURRENT_DAY_OF_YEAR > postDay) {
-                if (CURRENT_DAY_OF_YEAR - postDay > 1) {
-                    return (CURRENT_DAY_OF_YEAR - postDay) + " days ago";
-                } else {
-                    return (CURRENT_DAY_OF_YEAR - postDay) + " day ago";
-                }
-            }
+        int postMonth = postCalendar.get(GregorianCalendar.MONTH);
 
-            if (CURRENT_HOUR_OF_DAY > postHour) {
-                if (CURRENT_HOUR_OF_DAY - postHour > 1) {
-                    return (CURRENT_HOUR_OF_DAY - postHour) + " hours ago";
-                } else {
-                    return (CURRENT_HOUR_OF_DAY - postHour) + " hour ago";
-                }
+        if (CURRENT_MONTH > postMonth) {
+            if (CURRENT_MONTH - postMonth > 1) {
+                return (CURRENT_MONTH - postMonth) + " months ago";
+            } else {
+                return "1 month ago";
             }
+        }
 
-            if (CURRENT_MINUTE > postMinute) {
-                if (CURRENT_MINUTE - postMinute > 1) {
-                    return (CURRENT_MINUTE - postMinute) + " minutes ago";
-                } else {
-                    return (CURRENT_MINUTE - postMinute) + " minute ago";
-                }
+        int postDay = postCalendar.get(GregorianCalendar.DAY_OF_MONTH);
+
+        if (CURRENT_DAY_OF_MONTH > postDay) {
+            if (CURRENT_DAY_OF_MONTH - postDay > 1) {
+                return (CURRENT_DAY_OF_MONTH - postDay) + " days ago";
+            } else {
+                return "1 day ago";
             }
+        }
 
-            if (CURRENT_SECOND > postSecond) {
-                if (CURRENT_SECOND - postSecond > 1) {
-                    return (CURRENT_SECOND - postSecond) + " seconds ago";
-                } else {
-                    return (CURRENT_SECOND - postSecond) + " second ago";
-                }
+        int postHour = postCalendar.get(GregorianCalendar.HOUR_OF_DAY);
+
+        if (CURRENT_HOUR_OF_DAY > postHour) {
+            if (CURRENT_HOUR_OF_DAY - postHour > 1) {
+                return (CURRENT_HOUR_OF_DAY - postHour) + " hours ago";
+            } else {
+                return "1 hour ago";
+            }
+        }
+
+        int postMinute = postCalendar.get(GregorianCalendar.MINUTE);
+
+        if (CURRENT_MINUTE > postMinute) {
+            if (CURRENT_MINUTE - postMinute > 1) {
+                return (CURRENT_MINUTE - postMinute) + " minutes ago";
+            } else {
+                return "1 minute ago";
+            }
+        }
+
+        int postSecond = postCalendar.get(GregorianCalendar.SECOND);
+
+        if (CURRENT_SECOND > postSecond) {
+            if (CURRENT_SECOND - postSecond > 1) {
+                return (CURRENT_SECOND - postSecond) + " seconds ago";
+            } else {
+                return "1 second ago";
             }
         }
 

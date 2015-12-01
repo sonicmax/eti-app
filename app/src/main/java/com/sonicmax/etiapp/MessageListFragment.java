@@ -446,6 +446,7 @@ public class MessageListFragment extends Fragment implements
         if (data != null) {
             // We can be sure that data will safely cast to List<Message>.
             mMessages = (List<Message>) data;
+            mMessageListAdapter.getCurrentTime();
             mMessageListAdapter.updateMessages(mMessages);
 
             if (mCurrentId == REFRESH) {
