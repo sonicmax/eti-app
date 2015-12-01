@@ -168,21 +168,6 @@ public class MessageListAdapter extends BaseAdapter {
         int postMinute = postCalendar.get(GregorianCalendar.MINUTE);
         int postSecond = postCalendar.get(GregorianCalendar.SECOND);
 
-        Log.v(LOG_TAG, "current year: " + CURRENT_YEAR);
-        Log.v(LOG_TAG, "post: " + postYear);
-
-        Log.v(LOG_TAG, "current day: " + CURRENT_DAY_OF_YEAR);
-        Log.v(LOG_TAG, "post: " + postDay);
-
-        Log.v(LOG_TAG, "current hour: " + CURRENT_HOUR_OF_DAY);
-        Log.v(LOG_TAG, "post: " + postHour);
-
-        Log.v(LOG_TAG, "current min: " + CURRENT_MINUTE);
-        Log.v(LOG_TAG, "post: " + postMinute);
-
-        Log.v(LOG_TAG, "current sec: " + CURRENT_SECOND);
-        Log.v(LOG_TAG, "post: " + postSecond);
-
         if (CURRENT_YEAR > postYear) {
             if (CURRENT_YEAR - postYear > 1) {
                 return (CURRENT_YEAR - postYear) + " years ago";
