@@ -14,12 +14,14 @@ public class Message implements Parcelable {
 
     private String html;
     private String username;
+    private String time;
     private String position;
     private String filterUrl;
 
-    public Message(String html, String user, String filter, int position) {
+    public Message(String html, String user, String time, String filter, int position) {
         this.html = html;
         this.username = user;
+        this.time = time;
         this.filterUrl = filter;
         this.position = Integer.toString(position);
     }
@@ -28,16 +30,16 @@ public class Message implements Parcelable {
         return username;
     }
 
+    public String getTimestamp() {
+        return time;
+    }
+
     public String getPosition() {
         return position;
     }
 
-    public URL filterUser() {
-        try {
-            return new URL(filterUrl);
-        } catch (MalformedURLException e) {
-            return null;
-        }
+    public String filter() {
+        return filterUrl;
     }
 
     public String getHtml() {
@@ -47,6 +49,7 @@ public class Message implements Parcelable {
     protected Message(Parcel in) {
         html = in.readString();
         username = in.readString();
+        time = in.readString();
         position = in.readString();
         filterUrl = in.readString();
     }
@@ -60,6 +63,7 @@ public class Message implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(html);
         dest.writeString(username);
+        dest.writeString(time);
         dest.writeString(position);
         dest.writeString(filterUrl);
     }

@@ -53,15 +53,18 @@ public class MessageListScraper {
             Element messageTop = container.getElementsByClass("message-top").get(0);
             Element userElement = messageTop.child(1);
 
-            String username;
+            // Get username and timestamp. These will be in different places depending on whether
+            // we are in an anonymous topic or not
+            String username, timeStamp;
+            List<Node> children = messageTop.childNodes();
             if (userElement.tagName().equals("a")) {
                 username = userElement.text();
+                timeStamp = ((TextNode) children.get(5)).text().replace(" | ", "");
             }
             else {
-                // Anonymous topic - check text nodes for human number
-                List<Node> children = messageTop.childNodes();
-                Node child = children.get(1);
-                username = ((TextNode) child).text().replace(" | ", "");
+                // Anonymous topic - get human number from 2nd child of message-top element
+                username = ((TextNode) children.get(1)).text().replace(" | ", "");
+                timeStamp = ((TextNode) children.get(3)).text().replace(" | ", "");
             }
 
             // Pass null into Message object if topic has already been filtered
@@ -83,7 +86,7 @@ public class MessageListScraper {
             // Get position of current message in topic
             int position = getPosition(currentPage, i);
 
-            Message message = new Message(container.outerHtml(), username, filterUrl, position);
+            Message message = new Message(container.outerHtml(), username, timeStamp, filterUrl, position);
 
             messages.add(message);
         }
