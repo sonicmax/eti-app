@@ -85,16 +85,17 @@ public class TopicListScraper {
 
             try {
                 Element usernameAnchor = usernameCell.getElementsByTag("a").get(0);
-                username = usernameAnchor.text();
+                username = usernameAnchor.text().trim();
             } catch (IndexOutOfBoundsException e) {
-                // Topic is anonymous
+                // Username anchor doesn't exist if topic is anonymous
                 username = "Human";
             }
 
             Element postCountCell = tableCells.get(2);
-            String postCount = postCountCell.text();
+            Element timestampCell = tableCells.get(3);
 
-            Topic topic = new Topic(title, username, postCount, url, tagSpan);
+            Topic topic = new Topic(title, username, postCountCell.text(), url, tagSpan,
+                    timestampCell.text());
             topics.add(topic);
 
         }

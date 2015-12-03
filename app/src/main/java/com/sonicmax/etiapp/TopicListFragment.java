@@ -256,6 +256,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
             if (mCurrentLoader == LOAD_TOPIC) {
                 // We can be sure that data will safely cast to List<Topic>.
                 mTopics = (List<Topic>) data;
+                mTopicListAdapter.getCurrentTime();
                 mTopicListAdapter.updateTopics(mTopics);
             }
 

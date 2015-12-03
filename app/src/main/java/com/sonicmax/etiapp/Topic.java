@@ -17,13 +17,16 @@ public class Topic implements Parcelable {
     private String total;
     private String url;
     private SpannableStringBuilder tags;
+    private String timestamp;
 
-    public Topic(String title, String username, String total, String url, SpannableStringBuilder tags) {
+    public Topic(String title, String username, String total, String url,
+                 SpannableStringBuilder tags, String timestamp) {
         this.title = title;
         this.username = username;
         this.total = total;
         this.url = url;
         this.tags = tags;
+        this.timestamp = timestamp;
     }
 
     public String getTitle() {
@@ -45,6 +48,10 @@ public class Topic implements Parcelable {
 
     public SpannableStringBuilder getTags() {
         return tags;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
     }
 
     /**
