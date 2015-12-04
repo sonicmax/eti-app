@@ -24,11 +24,11 @@ public class AsyncLoadHandler extends AsyncTaskLoader<Object> {
         return null;
     }
 
-    @Override public void deliverResult(Object data) {
+    @Override
+    public void deliverResult(Object data) {
 
         if (isReset()) {
             if (data != null) {
-                Log.v(LOG_TAG, "releasing data from deliverResult");
                 onReleaseResources(data);
             }
         }
@@ -36,7 +36,6 @@ public class AsyncLoadHandler extends AsyncTaskLoader<Object> {
         mData = data;
 
         if (isStarted()) {
-            Log.v(LOG_TAG, "delivering data");
             super.deliverResult(data);
         }
     }
@@ -44,22 +43,20 @@ public class AsyncLoadHandler extends AsyncTaskLoader<Object> {
     @Override
     protected void onForceLoad() {
         if (mData != null) {
-            Log.v(LOG_TAG, "returning cached result");
             deliverResult(mData);
         }
         else {
-            Log.v(LOG_TAG, "forcing load");
             super.onForceLoad();
         }
     }
 
-    @Override public void onCanceled(Object data) {
+    @Override
+    public void onCanceled(Object data) {
         super.onCanceled(data);
         onReleaseResources(data);
     }
 
     protected void onReleaseResources(Object data) {
-        Log.v(LOG_TAG, "releasing data");
         data = null;
     }
 
