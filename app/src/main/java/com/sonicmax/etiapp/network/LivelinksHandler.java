@@ -2,13 +2,16 @@ package com.sonicmax.etiapp.network;
 
 import android.content.Context;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.math.BigInteger;
 
 public class LivelinksHandler {
 
-    final Context mContext;
-    final BigInteger topicPayload;
-    final BigInteger inboxPayload;
+    private final Context mContext;
+    private final BigInteger mTopicPayload;
+    private final BigInteger mInboxPayload;
 
     public LivelinksHandler(Context context, int topicId, int userId) {
         final int TOPIC_CHANNEL = 0x0200;
@@ -18,20 +21,35 @@ public class LivelinksHandler {
         this.mContext = context;
 
         // Payload consists of channel type and identifier packed into 64-bit int.
-        topicPayload = BigInteger.valueOf(TOPIC_CHANNEL)
+        mTopicPayload = BigInteger.valueOf(TOPIC_CHANNEL)
                 .shiftLeft(SHIFT_CONSTANT)
                 .or(BigInteger.valueOf(topicId));
 
-        inboxPayload = BigInteger.valueOf(INBOX_CHANNEL)
+        mInboxPayload = BigInteger.valueOf(INBOX_CHANNEL)
                 .shiftLeft(SHIFT_CONSTANT)
                 .or(BigInteger.valueOf(userId));
     }
 
     public BigInteger getTopicPayload() {
-        return topicPayload;
+        return mTopicPayload;
     }
 
     public BigInteger getInboxPayload() {
-        return inboxPayload;
+        return mInboxPayload;
+    }
+
+    public JSONObject parseResponse(String response) {
+        // TODO: This will probably break if user has unread PMs
+        String trimmedResponse = response.replace("}{", "{");
+
+        JSONObject parsedResponse;
+
+        try {
+            parsedResponse = new JSONObject(trimmedResponse);
+        } catch (JSONException e) {
+            throw new AssertionError(e);
+        }
+
+        return parsedResponse;
     }
 }
