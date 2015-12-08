@@ -24,15 +24,16 @@ public class TestLivelinks extends AndroidTestCase {
     public void testPayloadGeneration() {
         final String LOG_TAG = "testPayloadGeneration";
 
-        // BigInteger payload = BigInteger.valueOf(CHANNEL) // 100000000
+        /* BigInteger payload = BigInteger.valueOf(TOPIC_CHANNEL) // 100000000 in binary
 
-                // .shiftLeft(SHIFT_CONSTANT) // SHIFT_CONSTANT is 48
-                //      1000000000000000000000000000000000000000000000000000000000
+                .shiftLeft(SHIFT_CONSTANT) // SHIFT_CONSTANT is 48
+                     1000000000000000000000000000000000000000000000000000000000
 
-                // .or(BigInteger.valueOf(ID));
-                //      1000000000000000000000000000000000100011011110010111000111
+                .or(BigInteger.valueOf(ID));
+                     1000000000000000000000000000000000100011011110010111000111
+                     (equals 144115188085085408)
+        */
 
-        
         BigInteger topicPayload = mLivelinks.getTopicPayload();
         BigInteger inboxPayload = mLivelinks.getInboxPayload();
 
