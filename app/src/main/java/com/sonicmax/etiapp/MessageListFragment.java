@@ -58,7 +58,6 @@ public class MessageListFragment extends Fragment implements
     private List<Message> mMessages;
 
     private int mSelection = -1;
-    private int mCurrentId;
     private int mOldAdapterCount;
     public static int mPageNumber;
 
@@ -424,7 +423,6 @@ public class MessageListFragment extends Fragment implements
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
         final Context context = getContext();
-        mCurrentId = id;
 
         mDialog = new ProgressDialog(context);
         mDialog.setMessage("Getting messages...");
@@ -449,7 +447,7 @@ public class MessageListFragment extends Fragment implements
             mMessageListAdapter.getCurrentTime();
             mMessageListAdapter.updateMessages(mMessages);
 
-            if (mCurrentId == REFRESH) {
+            if (loader.getId() == REFRESH) {
                 int adapterCount = mMessageListAdapter.getCount();
                 if (adapterCount > mOldAdapterCount) {
                     // Scroll to first unread post

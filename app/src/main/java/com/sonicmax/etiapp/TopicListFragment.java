@@ -33,7 +33,6 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     private ProgressDialog mDialog;
     private List<Topic> mTopics;
 
-    private int mCurrentLoader;
     private int mPageNumber;
     private boolean mFirstRun = true;
 
@@ -211,10 +210,8 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
         final Context context = getContext();
-        mCurrentLoader = id;
 
         switch (id) {
-
             case LOAD_TOPIC:
 
                 mDialog = new ProgressDialog(context);
@@ -252,23 +249,24 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
         if (data != null) {
+            switch (loader.getId()) {
+                case LOAD_TOPIC:
+                    // We can be sure that data will safely cast to List<Topic>.
+                    mTopics = (List<Topic>) data;
+                    mTopicListAdapter.getCurrentTime();
+                    mTopicListAdapter.updateTopics(mTopics);
+                    break;
 
-            if (mCurrentLoader == LOAD_TOPIC) {
-                // We can be sure that data will safely cast to List<Topic>.
-                mTopics = (List<Topic>) data;
-                mTopicListAdapter.getCurrentTime();
-                mTopicListAdapter.updateTopics(mTopics);
-            }
+                case POST_TOPIC:
+                    Context context = getContext();
 
-            else if (mCurrentLoader == POST_TOPIC) {
-                Context context = getContext();
+                    String response = (String) data;
+                    new PostmsgScraper(context).parseResponse(response);
 
-                String response = (String) data;
-                new PostmsgScraper(context).parseResponse(response);
-
-                Intent intent = new Intent(context, PostTopicActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                context.startActivity(intent);
+                    Intent intent = new Intent(context, PostTopicActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                    context.startActivity(intent);
+                    break;
             }
         }
 

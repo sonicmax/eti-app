@@ -25,7 +25,6 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
     private final int STATUS_CHECK = 1;
     private final int LOGIN = 2;
 
-    private int mCurrentId;
     private EditText mUsername;
     private EditText mPassword;
     private ProgressDialog mDialog;
@@ -83,13 +82,13 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
 
         Context context = getContext();
 
-        ContentValues values = new ContentValues();
+        ContentValues values = new ContentValues(2);
         String username = mUsername.getText().toString();
         String password = mPassword.getText().toString();
         values.put("username", username);
         values.put("password", password);
 
-        Bundle args = new Bundle();
+        Bundle args = new Bundle(3);
         args.putString("method", "POST");
         args.putString("type", "login");
         args.putParcelable("values", values);
@@ -118,7 +117,6 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
         final Context context = getContext();
-        mCurrentId = id;
 
         switch (id) {
             // TODO: Perform SCRIPT_BUILD and STATUS_CHECK in same AsyncLoadHandler
@@ -149,52 +147,55 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
     public void onLoadFinished(Loader<Object> loader, Object data) {
 
         String response = (String) data;
-
         Context context = getContext();
+
         if (mDialog != null) {
             mDialog.dismiss();
         }
 
-        if (mCurrentId == SCRIPT_BUILD) {
+        switch (loader.getId()) {
+            case SCRIPT_BUILD:
+                Bundle args = new Bundle();
+                args.putString("method", "GET");
+                args.putString("type", "url");
+                args.putString("url", response);
 
-            Log.v(LOG_TAG, "received script build response");
-            Bundle args = new Bundle();
-            args.putString("method", "GET");
-            args.putString("type", "url");
-            args.putString("url", response);
+                getLoaderManager().initLoader(STATUS_CHECK, args, this).forceLoad();
+                break;
 
-            getLoaderManager().initLoader(STATUS_CHECK, args, this).forceLoad();
-        }
+            case STATUS_CHECK:
+                Log.v(LOG_TAG, "Status check response = " + response);
 
-        else if (mCurrentId == STATUS_CHECK) {
+                // FOR DEBUG ONLY
+                Toaster.makeToast(getContext(), "Status check response = " + response);
 
-            Log.v(LOG_TAG, "status check response = " + data);
+                // response = "1";
 
-            // Possible responses:
-            // "0"              Not logged in
-            // "1:username"     Logged in
+                // Possible responses:
+                // "0"              Not logged in
+                // "1:username"     Logged in
 
-            if (response == null || response.trim().equals("0")) {
-                // Wait for user to login - do nothing. Handle null responses here as well
-                mDialog.dismiss();
-            }
+                if (response == null || response.trim().equals("0")) {
+                    // Wait for user to login - do nothing. Handle null responses here as well
+                    mDialog.dismiss();
+                }
 
-            else {
-                // Use stored cookies to get board list and start activity
+                else {
+                    // Use stored cookies to get board list and start activity
+                    mDialog.dismiss();
+                    Intent intent = new Intent(context, BoardListActivity.class);
+                    intent.putExtra("title", "ETI");
+                    context.startActivity(intent);
+                }
+                break;
+
+            case LOGIN:
+                // Get list of bookmarks from main.php & start BoardListActivity
+                SharedPreferenceManager.putBoolean(context, "is_logged_in", true);
                 mDialog.dismiss();
                 Intent intent = new Intent(context, BoardListActivity.class);
-                intent.putExtra("title", "ETI");
                 context.startActivity(intent);
-            }
-        }
-
-        else if (mCurrentId == LOGIN) {
-
-            // Get list of bookmarks from main.php & start BoardListActivity
-            SharedPreferenceManager.putBoolean(context, "is_logged_in", true);
-            mDialog.dismiss();
-            Intent intent = new Intent(context, BoardListActivity.class);
-            context.startActivity(intent);
+                break;
         }
     }
 
