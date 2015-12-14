@@ -33,6 +33,8 @@ public class WebRequest {
     private ContentValues values;
     private URL url;
     private Uri uri;
+    private String mPayload;
+
     private static CookieManager mCookieManager;
 
     /**
@@ -41,17 +43,17 @@ public class WebRequest {
      * @param args Values for HTTPSUrlConnection
      */
     public WebRequest(Context context, Bundle args) {
-
         this.mContext = context;
         this.httpMethod = args.getString("method");
         this.requestType = args.getString("type");
         this.values = args.getParcelable("values");
+        this.mPayload = args.getString("payload");
 
         if (args.getString("url") == null) {
-            uri = createUriForRequest(requestType);
+            this.uri = createUriForRequest(requestType);
         }
         else {
-            uri = Uri.parse(args.getString("url"));
+            this.uri = Uri.parse(args.getString("url"));
         }
 
         mCookieManager = new CookieManager();
@@ -228,6 +230,7 @@ public class WebRequest {
             case "livelinks":
                 builder.authority("evt0.evt.endoftheinter.net")
                         .appendPath("subscribe");
+                break;
 
             case "home":
                 builder.authority("endoftheinter.net")
@@ -283,7 +286,7 @@ public class WebRequest {
                     break;
 
                 case "livelinks":
-                    formData = values.get("payload").toString();
+                    formData = mPayload;
                     break;
 
                 default:
