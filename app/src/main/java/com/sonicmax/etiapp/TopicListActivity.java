@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.sonicmax.etiapp.network.AccountManager;
+
 public class TopicListActivity extends AppCompatActivity {
 
     private final String LOG_TAG = TopicListActivity.class.getSimpleName();

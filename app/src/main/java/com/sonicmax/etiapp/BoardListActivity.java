@@ -6,7 +6,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.sonicmax.etiapp.network.WebRequestAsyncTask;
+import com.sonicmax.etiapp.network.AccountManager;
+
 public class BoardListActivity extends AppCompatActivity {
 
     private final String LOG_TAG = BoardListActivity.class.getSimpleName();
@@ -15,7 +16,6 @@ public class BoardListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WebRequestAsyncTask.getCookies(this);
         setContentView(R.layout.activity_board_list);
     }
 

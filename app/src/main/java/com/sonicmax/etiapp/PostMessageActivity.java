@@ -1,12 +1,12 @@
 package com.sonicmax.etiapp;
 
 import android.app.ProgressDialog;
-import android.content.ContentValues;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.sonicmax.etiapp.network.AccountManager;
 
 public class PostMessageActivity extends AppCompatActivity {
 

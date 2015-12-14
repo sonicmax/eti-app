@@ -1,13 +1,12 @@
 package com.sonicmax.etiapp;
 
 import android.app.ProgressDialog;
-import android.content.Intent;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.sonicmax.etiapp.network.AccountManager;
 
 public class MessageListActivity extends AppCompatActivity {
 

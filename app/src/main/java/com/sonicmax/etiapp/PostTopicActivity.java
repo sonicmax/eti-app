@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.sonicmax.etiapp.network.AccountManager;
+
 public class PostTopicActivity extends AppCompatActivity {
 
     private String LOG_TAG = PostTopicActivity.class.getSimpleName();
