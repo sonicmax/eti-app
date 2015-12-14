@@ -38,7 +38,7 @@ public class LivelinksSubscriber {
     public void subscribeToUpdates() {
         JSONObject payload = buildLivelinksPayload();
 
-        Bundle args = new Bundle(1);
+        Bundle args = new Bundle(3);
         args.putString("method", "POST");
         args.putString("type", "livelinks");
         args.putString("payload", payload.toString());
@@ -84,18 +84,22 @@ public class LivelinksSubscriber {
     }
 
     public JSONObject parseLivelinksResponse(String response) {
-        // TODO: This will probably break if user has unread PMs
+        /* Response is key-value pair formatted like this:
+
+                }{"144115188085085408":42}
+
+                    Key is either topic payload or inbox payload
+                    Value is index of new post, or number of unread PMs
+                    If keep-alive times out, response would parse to empty JSON object
+         */
         String trimmedResponse = response.replace("}{", "{");
 
-        JSONObject parsedResponse;
-
         try {
-            parsedResponse = new JSONObject(trimmedResponse);
+            return new JSONObject(trimmedResponse);
         } catch (JSONException e) {
-            throw new AssertionError(e);
+            Log.e(LOG_TAG, "Error parsing response from server: " + response, e);
+            return null;
         }
-
-        return parsedResponse;
     }
 
     private void handleLivelinksResponse(String response) {
@@ -113,7 +117,7 @@ public class LivelinksSubscriber {
 
         if (newTopicSize > mTopicSize) {
             // Load new messages using moremessages.php
-            Bundle args = new Bundle(6);
+            Bundle args = new Bundle(5);
             args.putInt("topic", mTopicId);
             args.putInt("old", mTopicSize);
             args.putInt("new", newTopicSize);
