@@ -228,7 +228,7 @@ public class WebRequest {
                 break;
 
             case "livelinks":
-                builder.authority("evt0.evt.endoftheinter.net")
+                builder.authority("evt0.endoftheinter.net")
                         .appendPath("subscribe");
                 break;
 
