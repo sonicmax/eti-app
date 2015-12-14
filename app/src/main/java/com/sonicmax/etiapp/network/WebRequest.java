@@ -205,42 +205,41 @@ public class WebRequest {
     private Uri createUriForRequest(String requestType) {
 
         Uri.Builder builder = new Uri.Builder();
+        builder.scheme("https");
 
         switch (requestType) {
             case "topiclist":
-                builder.scheme("https")
-                        .authority("boards.endoftheinter.net")
+                builder.authority("boards.endoftheinter.net")
                         .appendPath("topics")
                         .appendPath(values.get("tags").toString());
                 break;
 
             case "newtopic":
-                builder.scheme("https")
-                        .authority("boards.endoftheinter.net")
+                builder.authority("boards.endoftheinter.net")
                         .appendPath("postmsg.php");
                 break;
 
             case "newmessage":
-                builder.scheme("https")
-                        .authority("boards.endoftheinter.net")
+                builder.authority("boards.endoftheinter.net")
                         .appendPath("postmsg.php")
                         .appendQueryParameter("topic", values.get("id").toString());
                 break;
 
+            case "livelinks":
+                builder.authority("evt0.evt.endoftheinter.net")
+                        .appendPath("subscribe");
+
             case "home":
-                builder.scheme("https")
-                        .authority("endoftheinter.net")
+                builder.authority("endoftheinter.net")
                         .appendPath("main.php");
                 break;
 
             case "login":
-                builder.scheme("https")
-                        .authority("iphone.endoftheinter.net");
+                builder.authority("iphone.endoftheinter.net");
                 break;
 
             case "logout":
-                builder.scheme("https")
-                        .authority("endoftheinter.net")
+                builder.authority("endoftheinter.net")
                         .appendPath("logout.php");
                 break;
 
@@ -281,6 +280,10 @@ public class WebRequest {
                     String username = values.get("username").toString();
                     String password = values.get("password").toString();
                     formData = "username=" + username + "&password=" + password;
+                    break;
+
+                case "livelinks":
+                    formData = values.get("payload").toString();
                     break;
 
                 default:

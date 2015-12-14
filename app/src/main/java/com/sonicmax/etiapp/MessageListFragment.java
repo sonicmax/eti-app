@@ -30,6 +30,7 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
+import com.sonicmax.etiapp.network.LivelinksHandler;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 
@@ -56,6 +57,7 @@ public class MessageListFragment extends Fragment implements
     private Message mSelectedMessage;
     private ViewGroup mContainer;
     private List<Message> mMessages;
+    private LivelinksHandler mLivelinksHandler;
 
     private int mSelection = -1;
     private int mOldAdapterCount;
@@ -446,6 +448,17 @@ public class MessageListFragment extends Fragment implements
             mMessages = (List<Message>) data;
             mMessageListAdapter.getCurrentTime();
             mMessageListAdapter.updateMessages(mMessages);
+
+            mLivelinksHandler = new LivelinksHandler(getContext(), mTopic.getId(), "5599", mMessageListAdapter.getCount(), 0) {
+
+                @Override
+                public void onReceiveUpdate(String response) {
+                    List<Message> newMessages = mScraper.scrapeMessages(response, false);
+                    mMessageListAdapter.updateMessages(newMessages);
+                }
+            };
+
+            mLivelinksHandler.subscribeToUpdates();
 
             if (loader.getId() == REFRESH) {
                 int adapterCount = mMessageListAdapter.getCount();
