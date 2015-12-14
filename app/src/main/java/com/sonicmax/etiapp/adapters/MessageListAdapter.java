@@ -54,9 +54,14 @@ public class MessageListAdapter extends BaseAdapter {
         }
     }
 
-    public void updateMessages(List<Message> messageList) {
+    public void updateMessages(List<Message> messages) {
         messages.clear();
-        messages = messageList;
+        this.messages = messages;
+        notifyDataSetChanged();
+    }
+
+    public void appendToMessages(List<Message> newMessages) {
+        this.messages.addAll(newMessages);
         notifyDataSetChanged();
     }
 

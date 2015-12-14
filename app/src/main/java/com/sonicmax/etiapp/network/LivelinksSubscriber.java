@@ -14,8 +14,8 @@ import org.json.JSONObject;
 
 import java.math.BigInteger;
 
-public class LivelinksHandler {
-    private final String LOG_TAG = LivelinksHandler.class.getSimpleName();
+public class LivelinksSubscriber {
+    private final String LOG_TAG = LivelinksSubscriber.class.getSimpleName();
     private final int LIVELINKS = 1;
     private final int FETCH_MESSAGE = 2;
     private final int SHIFT_CONSTANT = 48;
@@ -27,7 +27,7 @@ public class LivelinksHandler {
     private int mTopicSize;
     private int mInboxSize;
 
-    public LivelinksHandler(Context context, String topicId, String userId, int topicSize, int inboxSize) {
+    public LivelinksSubscriber(Context context, String topicId, String userId, int topicSize, int inboxSize) {
         this.mContext = context;
         this.mTopicId = Integer.parseInt(topicId);
         this.mUserId = Integer.parseInt(userId);
@@ -49,7 +49,7 @@ public class LivelinksHandler {
     }
 
     public void onReceiveUpdate(String message) {
-        // Override this when instantiating LivelinksHandler
+        // Override this when instantiating LivelinksSubscriber
     }
 
     public BigInteger getTopicPayload() {
