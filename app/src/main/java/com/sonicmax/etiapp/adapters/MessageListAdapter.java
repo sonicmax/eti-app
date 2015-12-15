@@ -60,7 +60,7 @@ public class MessageListAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public void appendToMessages(List<Message> newMessages) {
+    public void appendMessages(List<Message> newMessages) {
         this.messages.addAll(newMessages);
         notifyDataSetChanged();
     }

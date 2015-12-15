@@ -27,11 +27,11 @@ public class LivelinksSubscriber {
     private int mTopicSize;
     private int mInboxSize;
 
-    public LivelinksSubscriber(Context context, String topicId, String userId, int topicSize, int inboxSize) {
+    public LivelinksSubscriber(Context context, String topicId, String userId, String topicSize, int inboxSize) {
         this.mContext = context;
         this.mTopicId = Integer.parseInt(topicId);
         this.mUserId = Integer.parseInt(userId);
-        this.mTopicSize = topicSize;
+        this.mTopicSize = Integer.parseInt(topicSize);
         this.mInboxSize = inboxSize;
     }
 

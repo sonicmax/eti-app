@@ -449,12 +449,15 @@ public class MessageListFragment extends Fragment implements
             mMessageListAdapter.getCurrentTime();
             mMessageListAdapter.updateMessages(mMessages);
 
-            mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(), "5599", mMessageListAdapter.getCount(), 0) {
+            // TODO: Replace this with actual value
+            final String DEBUG_USER_ID = "5599";
+
+            mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(), DEBUG_USER_ID, mTopic.getTotal(), 0) {
 
                 @Override
                 public void onReceiveUpdate(String response) {
                     List<Message> newMessages = mScraper.scrapeMessages(response, false);
-                    mMessageListAdapter.appendToMessages(newMessages);
+                    mMessageListAdapter.appendMessages(newMessages);
                 }
             };
 
