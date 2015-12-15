@@ -451,17 +451,28 @@ public class MessageListFragment extends Fragment implements
 
             // TODO: Replace this with actual value
             final String DEBUG_USER_ID = "5599";
+            final int DEBUG_INBOX_COUNT = 0;
 
-            mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(), DEBUG_USER_ID, mTopic.getTotal(), 0) {
+            // We only need to create LivelinksSubscriber once.
+            if (mLivelinksSubscriber == null) {
+                mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
+                        DEBUG_USER_ID, mTopic.getTotal(), DEBUG_INBOX_COUNT) {
 
-                @Override
-                public void onReceiveUpdate(String response) {
-                    List<Message> newMessages = mScraper.scrapeMessages(response, false);
-                    mMessageListAdapter.appendMessages(newMessages);
-                }
-            };
+                    @Override
+                    public void onReceiveUpdate(String response) {
+                        String escapedResponse = response.replaceAll("\\\\", "");
+                        List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
+                        if (mPageNumber == mTopic.getLastPage(0)) {
+                            mMessageListAdapter.appendMessages(newMessages);
+                        }
+                        else {
+                            // TODO: Notify user that there were new posts, and offer option to skip to last page
+                        }
+                    }
+                };
 
-            mLivelinksSubscriber.subscribeToUpdates();
+                mLivelinksSubscriber.subscribeToUpdates();
+            }
 
             if (loader.getId() == REFRESH) {
                 int adapterCount = mMessageListAdapter.getCount();
