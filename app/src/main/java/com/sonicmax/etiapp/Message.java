@@ -34,6 +34,10 @@ public class Message implements Parcelable {
         return time;
     }
 
+    public void setPosition(int newPosition) {
+        position = Integer.toString(newPosition);
+    }
+
     public String getPosition() {
         return position;
     }

@@ -34,9 +34,10 @@ public class LivelinksSubscriber {
         this.mUserId = Integer.parseInt(userId);
         this.mTopicSize = Integer.parseInt(topicSize);
         this.mInboxSize = inboxSize;
+        subscribeToUpdates();
     }
 
-    public void subscribeToUpdates() {
+    private void subscribeToUpdates() {
         JSONObject payload = buildLivelinksPayload();
 
         Bundle args = new Bundle(3);
@@ -54,7 +55,7 @@ public class LivelinksSubscriber {
         }
     }
 
-    public void onReceiveUpdate(String message) {
+    public void onReceiveUpdate(String message, int position) {
         // Override this when instantiating LivelinksSubscriber
     }
 
@@ -95,9 +96,9 @@ public class LivelinksSubscriber {
                 }{"144115188085085408":42}
 
                     Key is either topic payload or inbox payload
-                    Value is index of new post, or number of unread PMs
-                    If keep-alive times out, response would parse to empty JSON object
+                    Value is either index of new post, or number of unread PMs
          */
+
         String trimmedResponse = response.replace("}{", "{");
 
         try {
@@ -142,15 +143,18 @@ public class LivelinksSubscriber {
                 values.put("old", mTopicSize);
                 values.put("new", newTopicSize);
                 values.put("filter", 0);
-
                 args.putParcelable("values", values);
-
-                ((FragmentActivity) mContext).getSupportLoaderManager()
-                        .initLoader(FETCH_MESSAGE, args, callbacks)
-                        .forceLoad();
 
                 // Update mTopicSize for subsequent requests
                 mTopicSize = newTopicSize;
+
+                LoaderManager loaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
+                if (loaderManager.getLoader(FETCH_MESSAGE) == null) {
+                    loaderManager.initLoader(FETCH_MESSAGE, args, callbacks).forceLoad();
+                }
+                else {
+                    loaderManager.restartLoader(FETCH_MESSAGE, args, callbacks).forceLoad();
+                }
             }
 
             if (newInboxSize > mInboxSize) {
@@ -162,6 +166,7 @@ public class LivelinksSubscriber {
 
     private LoaderManager.LoaderCallbacks<Object> callbacks = new LoaderManager.LoaderCallbacks<Object>() {
 
+        @Override
         public Loader<Object> onCreateLoader(int id, final Bundle args) {
             return new AsyncLoadHandler(mContext, args) {
 
@@ -181,7 +186,7 @@ public class LivelinksSubscriber {
                     break;
 
                 case FETCH_MESSAGE:
-                    onReceiveUpdate(response);
+                    onReceiveUpdate(response, mTopicSize);
                     subscribeToUpdates();
                     break;
             }

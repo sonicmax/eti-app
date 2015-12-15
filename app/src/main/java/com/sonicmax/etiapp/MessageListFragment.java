@@ -458,23 +458,30 @@ public class MessageListFragment extends Fragment implements
                         DEBUG_USER_ID, mTopic.getTotal(), DEBUG_INBOX_COUNT) {
 
                     @Override
-                    public void onReceiveUpdate(String response) {
+                    public void onReceiveUpdate(String response, int position) {
                         // Can't parse HTML unless we remove these characters
                         String escapedResponse = response.replace("\\/", "/")
                                 .replace("\\\"", "\"")
                                 .replace("\\n", "");
 
                         List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
-                        if (mPageNumber == mTopic.getLastPage(0)) {
+                        int sizeOfNewMessages = newMessages.size();
+                        int adapterSize = mMessageListAdapter.getCount();
+
+                        // We have to set position manually because count from scraper will be incorrect
+                        for (int i = 0; i < sizeOfNewMessages; i++) {
+                            Message message = newMessages.get(i);
+                            message.setPosition(adapterSize + i + 1);
+                        }
+
+                        if (mPageNumber == mTopic.getLastPage(0) && position > adapterSize) {
                             mMessageListAdapter.appendMessages(newMessages);
                         }
                         else {
-                            // TODO: Notify user that there were new posts, and offer option to skip to last page
+                            // TODO: Notify user that there were new posts, offer option to skip to last page
                         }
                     }
                 };
-
-                mLivelinksSubscriber.subscribeToUpdates();
             }
 
             if (loader.getId() == REFRESH) {
