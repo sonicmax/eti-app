@@ -113,33 +113,44 @@ public class LivelinksSubscriber {
 
         JSONObject parsedResponse = parseLivelinksResponse(response);
 
-        try {
-            newTopicSize = parsedResponse.getInt(getTopicPayload().toString());
-            newInboxSize = parsedResponse.getInt(getInboxPayload().toString());
-        } catch (JSONException e) {
-            Log.e(LOG_TAG, "Error in livelinks: ", e);
+        if (parsedResponse.length() == 0) {
+            // Empty response means that request timed out. Happens every 70 seconds
+            subscribeToUpdates();
         }
 
-        if (newTopicSize > mTopicSize) {
-            // Load new messages using moremessages.php
-            Bundle args = new Bundle(5);
-            args.putInt("topic", mTopicId);
-            args.putInt("old", mTopicSize);
-            args.putInt("new", newTopicSize);
-            args.putString("method", "POST");
-            args.putString("type", "moremessages");
+        else {
+            try {
+                newTopicSize = parsedResponse.getInt(getTopicPayload().toString());
 
-            ((FragmentActivity) mContext).getSupportLoaderManager()
-                    .initLoader(FETCH_MESSAGE, args, callbacks)
-                    .forceLoad();
+                if (newTopicSize == -1) {
+                    newInboxSize = parsedResponse.getInt(getInboxPayload().toString());
+                }
 
-            // Update mTopicSize for subsequent requests
-            mTopicSize = newTopicSize;
-        }
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, "Error in livelinks: ", e);
+            }
 
-        if (newInboxSize > mInboxSize) {
-            // Notify user that they have new PMs. We should then store this locally
-            // To avoid having to make unnecessary web requests.
+            if (newTopicSize > mTopicSize) {
+                // Load new messages using moremessages.php
+                Bundle args = new Bundle(5);
+                args.putInt("topic", mTopicId);
+                args.putInt("old", mTopicSize);
+                args.putInt("new", newTopicSize);
+                args.putString("method", "POST");
+                args.putString("type", "moremessages");
+
+                ((FragmentActivity) mContext).getSupportLoaderManager()
+                        .initLoader(FETCH_MESSAGE, args, callbacks)
+                        .forceLoad();
+
+                // Update mTopicSize for subsequent requests
+                mTopicSize = newTopicSize;
+            }
+
+            if (newInboxSize > mInboxSize) {
+                // Notify user that they have new PMs. We should then store this locally
+                // To avoid having to make unnecessary web requests.
+            }
         }
     }
 
