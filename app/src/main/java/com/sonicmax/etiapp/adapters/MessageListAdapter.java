@@ -31,7 +31,7 @@ public class MessageListAdapter extends BaseAdapter {
 
     private Builder mBuilder;
     private SimpleDateFormat mDateFormat;
-    private List<Message> messages = Collections.emptyList();
+    private List<Message> mMessages = Collections.emptyList();
     private ListView mListView;
 
     private int CURRENT_YEAR;
@@ -55,17 +55,24 @@ public class MessageListAdapter extends BaseAdapter {
     }
 
     public void updateMessages(List<Message> messages) {
-        messages.clear();
-        this.messages = messages;
+        getCurrentTime();
+        mMessages.clear();
+        mMessages = messages;
         notifyDataSetChanged();
     }
 
-    public void appendMessages(List<Message> newMessages) {
-        this.messages.addAll(newMessages);
+    public void appendMessages(List<Message> messages) {
+        getCurrentTime();
+        mMessages.addAll(messages);
         notifyDataSetChanged();
     }
 
-    public void getCurrentTime() {
+    public void clearMessages() {
+        mMessages.clear();
+        notifyDataSetChanged();
+    }
+
+    private void getCurrentTime() {
         // Get current date/time so we can create fuzzy timestamps (eg "1 minute ago")
         GregorianCalendar calendar = new GregorianCalendar();
         CURRENT_YEAR = calendar.get(GregorianCalendar.YEAR);
@@ -76,19 +83,14 @@ public class MessageListAdapter extends BaseAdapter {
         CURRENT_SECOND = calendar.get(GregorianCalendar.SECOND);
     }
 
-    public void clearMessages() {
-        messages.clear();
-        notifyDataSetChanged();
-    }
-
     @Override
     public int getCount() {
-        return messages.size();
+        return mMessages.size();
     }
 
     @Override
     public Message getItem(int position) {
-        return messages.get(position);
+        return mMessages.get(position);
     }
 
     @Override
@@ -156,7 +158,6 @@ public class MessageListAdapter extends BaseAdapter {
     private String getFuzzyTimestamp(String timestamp) {
         Date date;
 
-        // Try to parse timestamp using provided SimpleDateFormat
         try {
             date = mDateFormat.parse(timestamp);
         } catch (ParseException e) {
@@ -242,7 +243,7 @@ public class MessageListAdapter extends BaseAdapter {
 
             final boolean FILTERED = true;
             final int position = mListView.getPositionForView((View) view.getParent());
-            Message target = messages.get(position);
+            Message target = mMessages.get(position);
             // TODO: Implement LoaderCallbacks here or use fragment
         }
     };

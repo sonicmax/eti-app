@@ -446,10 +446,9 @@ public class MessageListFragment extends Fragment implements
         if (data != null) {
             // We can be sure that data will safely cast to List<Message>.
             mMessages = (List<Message>) data;
-            mMessageListAdapter.getCurrentTime();
             mMessageListAdapter.updateMessages(mMessages);
 
-            // TODO: Replace this with actual value
+            // TODO: Replace these with actual values
             final String DEBUG_USER_ID = "5599";
             final int DEBUG_INBOX_COUNT = 0;
 
@@ -460,7 +459,11 @@ public class MessageListFragment extends Fragment implements
 
                     @Override
                     public void onReceiveUpdate(String response) {
-                        String escapedResponse = response.replaceAll("\\\\", "");
+                        // Can't parse HTML unless we remove these characters
+                        String escapedResponse = response.replace("\\/", "/")
+                                .replace("\\\"", "\"")
+                                .replace("\\n", "");
+
                         List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
                         if (mPageNumber == mTopic.getLastPage(0)) {
                             mMessageListAdapter.appendMessages(newMessages);
