@@ -132,12 +132,13 @@ public class LivelinksSubscriber {
 
             if (newTopicSize > mTopicSize) {
                 // Load new messages using moremessages.php
-                Bundle args = new Bundle(5);
+                Bundle args = new Bundle(6);
+                args.putString("method", "GET");
+                args.putString("type", "moremessages");
                 args.putInt("topic", mTopicId);
                 args.putInt("old", mTopicSize);
                 args.putInt("new", newTopicSize);
-                args.putString("method", "POST");
-                args.putString("type", "moremessages");
+                args.putInt("filter", 0);
 
                 ((FragmentActivity) mContext).getSupportLoaderManager()
                         .initLoader(FETCH_MESSAGE, args, callbacks)

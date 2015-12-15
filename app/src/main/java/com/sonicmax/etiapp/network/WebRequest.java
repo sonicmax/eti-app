@@ -62,6 +62,7 @@ public class WebRequest {
     public String sendRequest() {
 
         final String FORM_DATA = "application/x-www-form-urlencoded";
+        final String PLAIN_TEXT = "text/plain;charset=UTF-8";
 
         HttpsURLConnection connection = null;
         PrintWriter writer;
@@ -70,7 +71,6 @@ public class WebRequest {
         String formData;
 
         try {
-
             if (url == null) {
                 url = new URL(uri.toString());
             }
@@ -101,7 +101,13 @@ public class WebRequest {
                 connection.setDoOutput(true);
                 connection.setInstanceFollowRedirects(true);
                 connection.setFixedLengthStreamingMode(formData.getBytes().length);
-                connection.setRequestProperty("Content-Type", FORM_DATA);
+
+                if (requestType.equals("livelinks")) {
+                    connection.setRequestProperty("Content-Type", PLAIN_TEXT);
+                }
+                else {
+                    connection.setRequestProperty("Content-Type", FORM_DATA);
+                }
 
                 // Send data to ETI
                 writer = new PrintWriter(connection.getOutputStream());
@@ -232,6 +238,15 @@ public class WebRequest {
                         .appendPath("subscribe");
                 break;
 
+            case "moremessages":
+                builder.authority("boards.endoftheinter.net")
+                        .appendPath("moremessages.php")
+                        .appendQueryParameter("topic", values.get("topic").toString())
+                        .appendQueryParameter("old", values.get("old").toString())
+                        .appendQueryParameter("new", values.get("new").toString())
+                        .appendQueryParameter("filter", values.get("filter").toString());
+                break;
+            
             case "home":
                 builder.authority("endoftheinter.net")
                         .appendPath("main.php");
