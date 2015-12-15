@@ -32,8 +32,9 @@ public class MessageListScraper {
         Document document = Jsoup.parse(html);
 
         // Get hidden token and signature from quickpost elements, found in all non-archived topics
-        Element form = document.getElementsByClass("quickpost").get(0);
-        if (form != null) {
+        Elements formClass = document.getElementsByClass("quickpost");
+        if (formClass.size() > 0) {
+            Element form = formClass.get(0);
             Element body = form.getElementsByClass("quickpost-body").get(0);
             getToken(form);
             getSignature(body);
@@ -42,8 +43,12 @@ public class MessageListScraper {
         // Get current page number
         int currentPage = getCurrentPage(Uri.parse(mUrl));
 
-        // Check anchors of infobar to get prev/next page URLs.
-        getPageUrls(document);
+        // Check anchors of infobar to get prev/next page URLs (not found in moremessages.php)
+        Elements infobarClass = document.getElementsByClass("infobar");
+        if (infobarClass.size() > 0) {
+            Element infobar = infobarClass.get(0);
+            getPageUrls(infobar);
+        }
 
         // Scrape posts
         ArrayList<Message> messages = new ArrayList<>();
@@ -107,11 +112,10 @@ public class MessageListScraper {
         }
     }
 
-    private void getPageUrls(Document document) {
+    private void getPageUrls(Element infobar) {
 
         final String HTTPS = "https:";
 
-        Element infobar = document.getElementsByClass("infobar").get(0);
         Element secondAnchor = infobar.getElementsByTag("a").get(1);
 
         if (secondAnchor.text().equals("Previous Page")) {
