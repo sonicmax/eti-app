@@ -43,9 +43,14 @@ public class LivelinksSubscriber {
         args.putString("type", "livelinks");
         args.putString("payload", payload.toString());
 
-        ((FragmentActivity) mContext).getSupportLoaderManager()
-                .initLoader(LIVELINKS, args, callbacks)
-                .forceLoad();
+        LoaderManager manager = ((FragmentActivity) mContext).getSupportLoaderManager();
+
+        if (manager.getLoader(LIVELINKS) == null) {
+            manager.initLoader(LIVELINKS, args, callbacks).forceLoad();
+        }
+        else {
+            manager.restartLoader(LIVELINKS, args, callbacks).forceLoad();
+        }
     }
 
     public void onReceiveUpdate(String message) {
