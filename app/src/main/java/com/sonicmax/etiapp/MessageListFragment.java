@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
@@ -22,6 +23,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -262,7 +265,7 @@ public class MessageListFragment extends Fragment implements
 
             switch (item.getItemId()) {
                 case R.id.quote:
-                    String quote = new QuoteHandler().parse(mSelectedMessage.getHtml());
+                    String quote = new MarkupBuilder().parse(mSelectedMessage.getHtml());
                     // Start PostMessageActivity with quoted message
                     Context context = getContext();
                     Intent intent = new Intent(context, PostMessageActivity.class);
@@ -354,7 +357,7 @@ public class MessageListFragment extends Fragment implements
 
                 if (mSelectedMessage != null) {
                     // Quote selected message and append message to it
-                    quote = new QuoteHandler().parse(mSelectedMessage.getHtml()) + NEWLINE;
+                    quote = new MarkupBuilder().parse(mSelectedMessage.getHtml()) + NEWLINE;
                 }
 
                 String signature = SharedPreferenceManager.getString(getContext(), "signature");
@@ -399,6 +402,13 @@ public class MessageListFragment extends Fragment implements
                 mPageNumber--;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
+        }
+    };
+
+    View.OnClickListener snackbarAction = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            loadMessageList(buildArgsForLoader(mTopic.getLastPageUrl(), false), LOAD_MESSAGE);
         }
     };
 
@@ -462,7 +472,7 @@ public class MessageListFragment extends Fragment implements
             // We only need to create LivelinksSubscriber once.
             if (mLivelinksSubscriber == null) {
                 mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
-                        DEBUG_USER_ID, mTopic.getTotal(), DEBUG_INBOX_COUNT) {
+                        DEBUG_USER_ID, mTopic.sizeAsString(), DEBUG_INBOX_COUNT) {
 
                     @Override
                     public void onReceiveUpdate(String response, int position) {
@@ -472,20 +482,40 @@ public class MessageListFragment extends Fragment implements
                                 .replace("\\n", "");
 
                         List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
+
                         int sizeOfNewMessages = newMessages.size();
-                        int adapterSize = mMessageListAdapter.getCount();
+                        int currentTopicSize = mTopic.size();
 
                         // We have to set position manually because count from scraper will be incorrect
                         for (int i = 0; i < sizeOfNewMessages; i++) {
                             Message message = newMessages.get(i);
-                            message.setPosition(adapterSize + i + 1);
+                            message.setPosition(currentTopicSize + (i + 1));
                         }
 
-                        if (mPageNumber == mTopic.getLastPage(0) && position > adapterSize) {
-                            mMessageListAdapter.appendMessages(newMessages);
+                        if (position > currentTopicSize) {
+                            mTopic.addToSize(sizeOfNewMessages);
+
+                            if (mPageNumber == mTopic.getLastPage(0)) {
+                                // We can append new post to current page
+                                mMessageListAdapter.appendMessages(newMessages);
+                                animateTimestampChange();
+                            }
+                            else {
+                                // Notify user of new post and allow them to navigate to last page
+                                int lastPage = mTopic.getLastPage(0);
+                                String message = "New post on page " + lastPage;
+
+                                Snackbar.make(mRootView, message, Snackbar.LENGTH_INDEFINITE)
+                                        .setAction(R.string.snackbar_view, snackbarAction)
+                                        .show();
+                            }
                         }
+
                         else {
-                            // TODO: Notify user that there were new posts, offer option to skip to last page
+                            // Position of new message should never be less than size of topic.
+                            // Do nothing and hope for the best
+                            Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
+                                    "Position = " + position + ", topic size = " + currentTopicSize);
                         }
                     }
                 };
@@ -513,5 +543,34 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
+    }
+
+    public void animateTimestampChange() {
+        final Animation fadeOut = new AlphaAnimation(1.0f, 0.0f);
+        fadeOut.setDuration(500);
+
+        final Animation fadeIn = new AlphaAnimation(0.0f, 1.0f);
+        fadeIn.setDuration(500);
+
+        int firstVisiblePosition = mMessageList.getFirstVisiblePosition();
+        int lastVisiblePosition = mMessageList.getLastVisiblePosition();
+        int visibleSize = lastVisiblePosition - firstVisiblePosition;
+        Log.v(LOG_TAG, "first position: " + firstVisiblePosition);
+        Log.v(LOG_TAG, "last position: " + lastVisiblePosition);
+
+        for (int i = 0; i < visibleSize; i++) {
+            View view = mMessageList.getChildAt(i);
+            TextView timestamp = (TextView) view.findViewById(R.id.list_item_time);
+            timestamp.startAnimation(fadeOut);
+        }
+
+        mMessageListAdapter.setCurrentTime();
+        mMessageListAdapter.notifyDataSetChanged();
+
+        for (int i = 0; i < visibleSize; i++) {
+            View view = mMessageList.getChildAt(i);
+            TextView timestamp = (TextView) view.findViewById(R.id.list_item_time);
+            timestamp.startAnimation(fadeIn);
+        }
     }
 }
