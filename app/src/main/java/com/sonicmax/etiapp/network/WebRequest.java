@@ -34,8 +34,7 @@ public class WebRequest {
     private URL url;
     private Uri uri;
     private String mPayload;
-
-    private static CookieManager mCookieManager;
+    private CookieManager mCookieManager;
 
     /**
      * Handles GET/POST requests. Call from background thread.
@@ -83,7 +82,7 @@ public class WebRequest {
                         TextUtils.join(";", mCookieManager.getCookieStore().getCookies()));
             } else {
                 // Get stored cookies from sharedPreferences
-                getCookies(mContext);
+                getCookies();
                 connection.setRequestProperty("Cookie",
                         TextUtils.join(";", mCookieManager.getCookieStore().getCookies()));
             }
@@ -113,13 +112,14 @@ public class WebRequest {
                 writer = new PrintWriter(connection.getOutputStream());
                 writer.print(formData);
                 writer.close();
-                Log.v(LOG_TAG, connection.getHeaderFields().toString());
+
+                // Log.v(LOG_TAG, connection.getHeaderFields().toString());
+
                 if (requestType.equals("login")) {
                     // Get cookies from response
                     Map<String, List<String>> headerFields = connection.getHeaderFields();
-                    storeCookies(mContext, headerFields);
+                    storeCookies(headerFields);
                 }
-
             }
 
             int responseCode = connection.getResponseCode();
@@ -169,24 +169,21 @@ public class WebRequest {
                 }
             }
         }
-
         // Log.v(LOG_TAG, response);
         return response;
     }
 
-    public static void getCookies(Context context) {
-
-        int size = SharedPreferenceManager.getInt(context, "cookie_array_size");
+    public void getCookies() {
+        int size = SharedPreferenceManager.getInt(mContext, "cookie_array_size");
         for (int i = 0; i < size; i++) {
-            String cookie = SharedPreferenceManager.getString(context, "cookie_array_" + i);
+            String cookie = SharedPreferenceManager.getString(mContext, "cookie_array_" + i);
             if (cookie != null) {
                 mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
             }
         }
     }
 
-    private void storeCookies(Context context, Map<String, List<String>> headerFields) {
-
+    private void storeCookies(Map<String, List<String>> headerFields) {
         final String COOKIES_HEADER = "Set-Cookie";
 
         List<String> cookiesHeader = headerFields.get(COOKIES_HEADER);
@@ -197,13 +194,13 @@ public class WebRequest {
                 mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
             }
 
-            if (!SharedPreferenceManager.getBoolean(context, "logged_in")) {
+            if (!SharedPreferenceManager.getBoolean(mContext, "logged_in")) {
 
-                SharedPreferenceManager.putBoolean(context, "logged_in", true);
-                SharedPreferenceManager.putInt(context, "cookie_array_size", cookiesHeader.size());
+                SharedPreferenceManager.putBoolean(mContext, "logged_in", true);
+                SharedPreferenceManager.putInt(mContext, "cookie_array_size", cookiesHeader.size());
 
                 for (int i = 0; i < cookiesHeader.size(); i++) {
-                    SharedPreferenceManager.putString(context,
+                    SharedPreferenceManager.putString(mContext,
                             "cookie_array_" + i, cookiesHeader.get(i));
                 }
             }
@@ -211,7 +208,6 @@ public class WebRequest {
     }
 
     private Uri createUriForRequest(String requestType) {
-
         Uri.Builder builder = new Uri.Builder();
         builder.scheme("https");
 
@@ -269,9 +265,7 @@ public class WebRequest {
     }
 
     private String createFormDataForRequest(String requestType, ContentValues values) {
-
         String topic, formData, message, h, submit;
-
         try {
             switch (requestType) {
                 case "newmessage":
