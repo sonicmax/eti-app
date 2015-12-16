@@ -16,9 +16,7 @@ public class MessageListActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
-        Utilities.hideActionBar(getSupportActionBar());
         setContentView(R.layout.activity_message_list);
     }
 

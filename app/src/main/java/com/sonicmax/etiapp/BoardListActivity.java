@@ -11,6 +11,7 @@ import com.sonicmax.etiapp.network.AccountManager;
 public class BoardListActivity extends AppCompatActivity {
 
     private final String LOG_TAG = BoardListActivity.class.getSimpleName();
+    @SuppressWarnings("unused")
     private ProgressDialog mDialog;
 
     @Override

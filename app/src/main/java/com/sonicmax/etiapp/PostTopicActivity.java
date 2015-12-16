@@ -11,6 +11,7 @@ import com.sonicmax.etiapp.network.AccountManager;
 public class PostTopicActivity extends AppCompatActivity {
 
     private String LOG_TAG = PostTopicActivity.class.getSimpleName();
+    @SuppressWarnings("unused")
     private ProgressDialog mDialog;
 
     @Override
