@@ -23,6 +23,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MessageListAdapter extends BaseAdapter {
 
@@ -42,27 +44,28 @@ public class MessageListAdapter extends BaseAdapter {
     private int CURRENT_SECOND;
 
     public MessageListAdapter(Context context) {
-        mContext = context;
+        final String etiTimestamp = "MM/dd/yyyy hh:mm:ss aa";
 
-        // Prepare SimpleDateFormat to parse ETI timestamp (will always be in this format)
-        mDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss aa", Locale.US);
+        mContext = context;
+        mDateFormat = new SimpleDateFormat(etiTimestamp, Locale.US);
 
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             mBuilder = new MessageBuilder(mContext);
         } else {
             mBuilder = new SupportMessageBuilder(mContext);
         }
+
+        startTimer();
     }
 
     public void updateMessages(List<Message> messages) {
-        getCurrentTime();
+        setCurrentTime();
         mMessages.clear();
         mMessages = messages;
         notifyDataSetChanged();
     }
 
     public void appendMessages(List<Message> messages) {
-        getCurrentTime();
         mMessages.addAll(messages);
         notifyDataSetChanged();
     }
@@ -72,8 +75,21 @@ public class MessageListAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    private void getCurrentTime() {
-        // Get current date/time so we can create fuzzy timestamps (eg "1 minute ago")
+    private void startTimer() {
+        final int ONE_MINUTE = 60000;
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                setCurrentTime();
+            }
+
+        }, 0, ONE_MINUTE);
+    }
+
+    public void setCurrentTime() {
+        // Set current date/time so we can create fuzzy timestamps (eg "1 minute ago")
         GregorianCalendar calendar = new GregorianCalendar();
         CURRENT_YEAR = calendar.get(GregorianCalendar.YEAR);
         CURRENT_MONTH = calendar.get(GregorianCalendar.MONTH);
@@ -233,7 +249,7 @@ public class MessageListAdapter extends BaseAdapter {
             }
         }
 
-        return null;
+        return "Just now";
     }
 
     private View.OnClickListener filterHandler = new View.OnClickListener() {
