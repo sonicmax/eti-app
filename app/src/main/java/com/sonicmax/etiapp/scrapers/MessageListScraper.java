@@ -3,9 +3,9 @@ package com.sonicmax.etiapp.scrapers;
 import android.content.Context;
 import android.net.Uri;
 
-import com.sonicmax.etiapp.Message;
+import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.MessageListFragment;
-import com.sonicmax.etiapp.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

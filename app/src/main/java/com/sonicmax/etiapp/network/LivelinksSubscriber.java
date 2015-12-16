@@ -8,7 +8,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.util.Log;
 
-import com.sonicmax.etiapp.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
 
 import org.json.JSONException;
 import org.json.JSONObject;

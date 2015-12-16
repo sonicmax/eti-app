@@ -1,57 +1,72 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.objects;
 
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.SpannableStringBuilder;
-import android.util.Log;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 
 public class Topic implements Parcelable {
 
     private final String LOG_TAG = Topic.class.getSimpleName();
-    private String title;
-    private String username;
-    private String total;
-    private String url;
-    private SpannableStringBuilder tags;
-    private String timestamp;
+    private String mTitle;
+    private String mUsername;
+    private String mMsgs;
+    private String mUrl;
+    private SpannableStringBuilder mTagSpan;
+    private String mTimestamp;
+    private int mSize = -1;
 
-    public Topic(String title, String username, String total, String url,
+    public Topic(String title, String username, String msgs, String url,
                  SpannableStringBuilder tags, String timestamp) {
-        this.title = title;
-        this.username = username;
-        this.total = total;
-        this.url = url;
-        this.tags = tags;
-        this.timestamp = timestamp;
+
+        this.mTitle = title;
+        this.mUsername = username;
+        this.mMsgs = msgs;
+        this.mUrl = url;
+        this.mTagSpan = tags;
+        this.mTimestamp = timestamp;
     }
 
     public String getTitle() {
-        return title;
+        return mTitle;
     }
 
     public String getUser() {
-        return username;
+        return mUsername;
     }
 
-    public String getTotalWithNewPosts() {
-        return total;
+    /**
+     * @return Size of topic as string, including new post anchor
+     *              eg. 1317 (+29)
+     */
+    public String etiFormatSize() {
+        return mMsgs;
     }
 
-    public String getTotal() {
-        String count = total.replaceAll("\\(.*?\\) ?", "");
+    public String sizeAsString() {
+        String count = mMsgs.replaceAll("\\(.*?\\) ?", "");
         return count.replaceAll("[^\\d.]", "");
+    }
+    
+    public int size() {
+        return Integer.parseInt(sizeAsString());
+    }
+
+    public void addToSize(int newMessages) {
+        if (mSize == -1) {
+            mSize = Integer.parseInt(sizeAsString() + newMessages);
+        }
+        else {
+            mSize += newMessages;
+        }
     }
 
     public SpannableStringBuilder getTags() {
-        return tags;
+        return mTagSpan;
     }
 
     public String getTimestamp() {
-        return timestamp;
+        return mTimestamp;
     }
 
     /**
@@ -64,7 +79,7 @@ public class Topic implements Parcelable {
 
         try {
             // Add 1 to post count, in case new post takes us to a new page
-            count = Integer.parseInt(getTotal());
+            count = Integer.parseInt(sizeAsString());
             if (newPosts > 0)
                 count += newPosts;
 
@@ -80,25 +95,25 @@ public class Topic implements Parcelable {
     }
 
     public String getUrl() {
-        return url;
+        return mUrl;
     }
 
     public String getLastPageUrl() {
-        return url + "&page=" + getLastPage(0);
+        return mUrl + "&page=" + getLastPage(0);
     }
 
     public String getId() {
 
-        Uri uri = Uri.parse(url);
+        Uri uri = Uri.parse(mUrl);
         return uri.getQueryParameter("topic");
 
     }
 
     protected Topic(Parcel in) {
-        title = in.readString();
-        username = in.readString();
-        total = in.readString();
-        url = in.readString();
+        mTitle = in.readString();
+        mUsername = in.readString();
+        mMsgs = in.readString();
+        mUrl = in.readString();
     }
 
     @Override
@@ -108,10 +123,10 @@ public class Topic implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(title);
-        dest.writeString(username);
-        dest.writeString(total);
-        dest.writeString(url);
+        dest.writeString(mTitle);
+        dest.writeString(mUsername);
+        dest.writeString(mMsgs);
+        dest.writeString(mUrl);
     }
 
     @SuppressWarnings("unused")

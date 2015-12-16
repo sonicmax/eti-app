@@ -13,7 +13,7 @@ import android.widget.TextView;
 
 import com.sonicmax.etiapp.MessageListActivity;
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.Topic;
+import com.sonicmax.etiapp.objects.Topic;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -125,7 +125,7 @@ public class TopicListAdapter extends BaseAdapter {
 
         userView.setText(topic.getUser());
         titleView.setText(topic.getTitle());
-        countView.setText(topic.getTotalWithNewPosts());
+        countView.setText(topic.etiFormatSize());
         tagView.setText(topic.getTags());
         timestampView.setText(getFuzzyTimestamp(topic.getTimestamp()));
 

@@ -6,8 +6,7 @@ import android.net.wifi.WifiManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
 
-import com.sonicmax.etiapp.SharedPreferenceManager;
-import com.sonicmax.etiapp.Toaster;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import java.math.BigInteger;
 import java.net.InetAddress;

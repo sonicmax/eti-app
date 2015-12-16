@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.sonicmax.etiapp.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -10,7 +10,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.sonicmax.etiapp.Message;
+import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.ui.Builder;
 import com.sonicmax.etiapp.ui.MessageBuilder;

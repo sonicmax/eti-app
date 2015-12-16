@@ -1,6 +1,4 @@
-package com.sonicmax.etiapp;
-
-import android.util.Log;
+package com.sonicmax.etiapp.utilities;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
@@ -10,11 +8,11 @@ import org.jsoup.select.Elements;
 
 import java.util.List;
 
-public class QuoteHandler {
+public class MarkupBuilder {
 
     private final String NEWLINE = "\n";
     private final String CLOSE_QUOTE = "</quote>";
-    private final String LOG_TAG = QuoteHandler.class.getSimpleName();
+    private final String LOG_TAG = MarkupBuilder.class.getSimpleName();
 
     public String parse(String html) {
 
@@ -82,7 +80,7 @@ public class QuoteHandler {
                 if (element.className() != null) {
                     switch (element.className()) {
                         case "pr":
-                            output += OPEN_PRE + Utilities.convertLineBreaks(element.html()) + CLOSE_PRE;
+                            output += OPEN_PRE + LineBreakConverter.convert(element.html()) + CLOSE_PRE;
                             break;
                         case "imgs":
                             output += getImagesFrom(element);

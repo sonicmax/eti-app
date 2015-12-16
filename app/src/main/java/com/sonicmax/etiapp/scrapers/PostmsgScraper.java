@@ -2,7 +2,7 @@ package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
 
-import com.sonicmax.etiapp.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

@@ -1,11 +1,7 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.objects;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.util.Log;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 
 public class Board implements Parcelable {
 

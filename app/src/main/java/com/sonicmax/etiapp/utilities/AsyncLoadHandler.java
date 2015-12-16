@@ -1,9 +1,8 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.utilities;
 
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.content.AsyncTaskLoader;
-import android.util.Log;
 
 /**
  * Generic AsyncTaskLoader implementation

@@ -1,13 +1,11 @@
 package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.util.Log;
 
-import com.sonicmax.etiapp.SharedPreferenceManager;
-import com.sonicmax.etiapp.Topic;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
+import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.TopicListFragment;
 import com.sonicmax.etiapp.ui.TagSpan;
 
@@ -91,13 +89,11 @@ public class TopicListScraper {
                 username = "Human";
             }
 
-            Element postCountCell = tableCells.get(2);
-            Element timestampCell = tableCells.get(3);
+            // Topic row will always contain these elements
+            String postCount = tableCells.get(2).text().replace(" x", "");
+            String timestamp = tableCells.get(3).text();
 
-            Topic topic = new Topic(title, username, postCountCell.text(), url, tagSpan,
-                    timestampCell.text());
-            topics.add(topic);
-
+            topics.add(new Topic(title, username, postCount, url, tagSpan, timestamp));
         }
 
         return topics;

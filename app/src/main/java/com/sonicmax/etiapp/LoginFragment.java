@@ -17,6 +17,9 @@ import android.widget.EditText;
 
 import com.sonicmax.etiapp.network.LoginScriptBuilder;
 import com.sonicmax.etiapp.network.WebRequest;
+import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.Toaster;
 
 public class LoginFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 

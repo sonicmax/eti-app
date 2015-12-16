@@ -10,7 +10,7 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 
-import com.sonicmax.etiapp.Utilities;
+import com.sonicmax.etiapp.utilities.LineBreakConverter;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
@@ -132,7 +132,7 @@ public class SupportMessageBuilder extends Builder {
                 if (element.className() != null) {
                     switch (element.className()) {
                         case "pr":
-                            String text = Utilities.convertLineBreaks(element.html());
+                            String text = LineBreakConverter.convert(element.html());
                             builder.append(text);
                             builder.setSpan(
                                     new TypefaceSpan("monospace"),

@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.utilities;
 
 import android.content.Context;
 import android.os.Build;
@@ -24,5 +24,4 @@ public class Toaster {
 
         mToast.show();
     }
-
 }

@@ -15,7 +15,9 @@ import android.widget.ListView;
 
 import com.sonicmax.etiapp.adapters.BoardListAdapter;
 import com.sonicmax.etiapp.network.WebRequest;
+import com.sonicmax.etiapp.objects.Board;
 import com.sonicmax.etiapp.scrapers.BoardListScraper;
+import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,6 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.listeners;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,7 +15,7 @@ public class OnSwipeListener implements View.OnTouchListener {
     }
 
     /**
-     *      onSwipeLeft/onSwipeRight methods are intentionally empty so we can use different swipe
+     *      onSwipeLeft/onSwipeRight methods are intentionally empty so we can use different
      *      behaviour depending on the context - override them after instantiating OnSwipeListener
      */
 

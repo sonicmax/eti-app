@@ -8,9 +8,9 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 
-import com.sonicmax.etiapp.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
 import com.sonicmax.etiapp.LoginActivity;
-import com.sonicmax.etiapp.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 
 public class AccountManager {
