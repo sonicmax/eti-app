@@ -29,7 +29,7 @@ import java.util.List;
 
 public class TopicListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
-    private final int LOAD_TOPIC = 0;
+    private final int LOAD_TOPIC_LIST = 0;
     private final int POST_TOPIC = 1;
 
     private TopicListAdapter mTopicListAdapter;
@@ -137,13 +137,12 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         args.putString("url", url);
 
         LoaderManager loaderManager = getLoaderManager();
-
-        if (mFirstRun) {
-            loaderManager.initLoader(0, args, this).forceLoad();
+        if (loaderManager.getLoader(LOAD_TOPIC_LIST) == null) {
+            loaderManager.initLoader(LOAD_TOPIC_LIST, args, this).forceLoad();
             mFirstRun = false;
         }
         else {
-            loaderManager.restartLoader(0, args, this).forceLoad();
+            loaderManager.restartLoader(LOAD_TOPIC_LIST, args, this).forceLoad();
         }
     }
 
@@ -205,7 +204,13 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         Bundle args = new Bundle();
         args.putString("method", "GET");
         args.putString("type", "newtopic");
-        getLoaderManager().initLoader(1, args, this).forceLoad();
+        LoaderManager loaderManager = getLoaderManager();
+        if (loaderManager.getLoader(POST_TOPIC) == null) {
+            getLoaderManager().initLoader(POST_TOPIC, args, this).forceLoad();
+        }
+        else {
+            getLoaderManager().restartLoader(POST_TOPIC, args, this).forceLoad();
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -216,10 +221,9 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         final Context context = getContext();
 
         switch (id) {
-            case LOAD_TOPIC:
-
+            case LOAD_TOPIC_LIST:
                 mDialog = new ProgressDialog(context);
-                mDialog.setMessage("Getting topics...");
+                mDialog.setMessage("Loading topics...");
                 mDialog.show();
 
                 return new AsyncLoadHandler(context, args) {
@@ -232,9 +236,8 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
                 };
 
             case POST_TOPIC:
-
                 mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Loading...");
+                mDialog.setMessage("Posting...");
                 mDialog.show();
 
                 return new AsyncLoadHandler(context, args) {
@@ -254,7 +257,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     public void onLoadFinished(Loader<Object> loader, Object data) {
         if (data != null) {
             switch (loader.getId()) {
-                case LOAD_TOPIC:
+                case LOAD_TOPIC_LIST:
                     // We can be sure that data will safely cast to List<Topic>.
                     mTopics = (List<Topic>) data;
                     mTopicListAdapter.getCurrentTime();
