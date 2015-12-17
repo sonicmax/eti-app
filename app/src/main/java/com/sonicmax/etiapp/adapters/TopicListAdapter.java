@@ -2,6 +2,7 @@ package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.content.ContextCompat;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,11 +27,14 @@ import java.util.Locale;
 public class TopicListAdapter extends BaseAdapter {
 
     private final String LOG_TAG = TopicListAdapter.class.getSimpleName();
+    private final int BG_GREY;
+    private final int HEADER_GREY;
+
     private final Context mContext;
+    private final SimpleDateFormat mDateFormat;
 
     private ListView mListView;
     private List<Topic> mTopics = Collections.emptyList();
-    private SimpleDateFormat mDateFormat;
 
     private int CURRENT_YEAR;
     private int CURRENT_MONTH;
@@ -43,6 +47,10 @@ public class TopicListAdapter extends BaseAdapter {
 
         // Prepare SimpleDateFormat to parse ETI timestamp (will always be in this format)
         mDateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US);
+
+        // Resolve colours from resources for use in getView() method
+        BG_GREY = ContextCompat.getColor(context, R.color.bg_grey);
+        HEADER_GREY = ContextCompat.getColor(context, R.color.header_grey);
     }
 
     public void updateTopics(List<Topic> topics) {
@@ -132,6 +140,15 @@ public class TopicListAdapter extends BaseAdapter {
         // Make sure that clicks on tagView are dispatched to TagSpan listener
         tagView.setMovementMethod(LinkMovementMethod.getInstance());
         countView.setOnClickListener(lastPageHandler);
+
+        // Highlight topic if pinned
+        if (topic.getTags().toString().matches(".*\\bPinned\\b.*")) {
+            convertView.setBackgroundColor(HEADER_GREY);
+        }
+        else {
+            // We have to manually set the default colour because the adapter will reuse views
+            convertView.setBackgroundColor(BG_GREY);
+        }
 
         return convertView;
     }
