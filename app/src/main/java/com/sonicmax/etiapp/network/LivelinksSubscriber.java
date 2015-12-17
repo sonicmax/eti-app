@@ -34,10 +34,10 @@ public class LivelinksSubscriber {
         this.mUserId = Integer.parseInt(userId);
         this.mTopicSize = Integer.parseInt(topicSize);
         this.mInboxSize = inboxSize;
-        subscribeToUpdates();
+        subscribe();
     }
 
-    private void subscribeToUpdates() {
+    private void subscribe() {
         JSONObject payload = buildLivelinksPayload();
 
         Bundle args = new Bundle(3);
@@ -52,6 +52,13 @@ public class LivelinksSubscriber {
         }
         else {
             manager.restartLoader(LIVELINKS, args, callbacks).forceLoad();
+        }
+    }
+
+    public void unsubscribe() {
+        LoaderManager manager = ((FragmentActivity) mContext).getSupportLoaderManager();
+        if (manager.getLoader(LIVELINKS) != null) {
+            manager.destroyLoader(LIVELINKS);
         }
     }
 
@@ -117,7 +124,7 @@ public class LivelinksSubscriber {
 
         if (parsedResponse.length() == 0) {
             // Empty response means that request timed out. Happens every 70 seconds
-            subscribeToUpdates();
+            subscribe();
         }
 
         else {
@@ -133,11 +140,10 @@ public class LivelinksSubscriber {
             }
 
             if (newTopicSize > mTopicSize) {
-                // Load new messages using moremessages.php
+                // Prepare bundle of args so we can load new messages using moremessages.php
                 Bundle args = new Bundle(3);
                 args.putString("method", "GET");
                 args.putString("type", "moremessages");
-
                 ContentValues values = new ContentValues(4);
                 values.put("topic", mTopicId);
                 values.put("old", mTopicSize);
@@ -187,7 +193,7 @@ public class LivelinksSubscriber {
 
                 case FETCH_MESSAGE:
                     onReceiveUpdate(response, mTopicSize);
-                    subscribeToUpdates();
+                    subscribe();
                     break;
             }
         }
