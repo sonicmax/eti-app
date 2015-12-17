@@ -1,6 +1,7 @@
 package com.sonicmax.etiapp;
 
 import android.app.ProgressDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 
@@ -39,6 +40,7 @@ import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
+import com.sonicmax.etiapp.ui.QuickpostHandler;
 import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
@@ -54,6 +56,7 @@ public class MessageListFragment extends Fragment implements
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
     private final int LOAD_MESSAGE = 0;
     private final int REFRESH = 1;
+    private final int POST_MESSAGE = 2;
 
     private View mRootView;
     private ListView mMessageList;
@@ -198,7 +201,6 @@ public class MessageListFragment extends Fragment implements
     }
 
     private void loadMessageList(Bundle args, int loaderId) {
-
         LoaderManager loaderManager = getLoaderManager();
 
         if (mFirstRun) {
@@ -208,7 +210,6 @@ public class MessageListFragment extends Fragment implements
         else {
             loaderManager.restartLoader(loaderId, args, this).forceLoad();
         }
-
     }
 
     public void refreshMessageList() {
@@ -344,7 +345,8 @@ public class MessageListFragment extends Fragment implements
         popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
                 Gravity.TOP, 0, 25);
 
-        mQuickpostButton.setVisibility(View.INVISIBLE);
+        QuickpostHandler quickpostHandler = new QuickpostHandler(mQuickpostButton);
+        quickpostHandler.setInvisible();
 
         // Add listener which allows user to post/reply to message
         button.setOnClickListener(new View.OnClickListener() {
@@ -363,8 +365,9 @@ public class MessageListFragment extends Fragment implements
                 String signature = SharedPreferenceManager.getString(getContext(), "signature");
                 EditText messageView = (EditText) quickpostView.findViewById(R.id.quickpost_edit);
                 String message = quote + messageView.getText().toString() + NEWLINE + signature;
+                postMessage(message);
 
-                Log.v(LOG_TAG, message);
+                // Clean up UI
                 mMessageList.setItemChecked(mSelection, false);
                 mSelectedMessage = null;
                 popup.dismiss();
@@ -373,12 +376,39 @@ public class MessageListFragment extends Fragment implements
         });
 
         // Make sure that quickpost button is made visible after popup window is dismissed
-        popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
-            @Override
-            public void onDismiss() {
-                mQuickpostButton.setVisibility(View.VISIBLE);
+        popup.setOnDismissListener(quickpostHandler.dismissListener);
+    }
+
+    public void postMessage(String message) {
+        if (message.length() >= 5) {
+            String token = SharedPreferenceManager.getString(getContext(), "h");
+
+            // Get input from editText elements
+            ContentValues values = new ContentValues();
+            values.put("id", mTopic.getId());
+            values.put("message", message);
+            values.put("h", token);
+            values.put("submit", "Post Message");
+
+            Bundle args = new Bundle();
+            args.putString("method", "POST");
+            args.putString("type", "newmessage");
+            args.putParcelable("values", values);
+
+            LoaderManager loaderManager = getLoaderManager();
+
+            if (loaderManager.getLoader(POST_MESSAGE) == null) {
+                loaderManager.initLoader(POST_MESSAGE, args, this).forceLoad();
             }
-        });
+            else {
+                loaderManager.restartLoader(POST_MESSAGE, args, this).forceLoad();
+            }
+        }
+
+        else {
+            Snackbar.make(mRootView, R.string.error_5_chars_or_more, Snackbar.LENGTH_SHORT)
+                    .show();
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -439,102 +469,80 @@ public class MessageListFragment extends Fragment implements
     // Loader callbacks
     ///////////////////////////////////////////////////////////////////////////
     @Override
-    public Loader<Object> onCreateLoader(int id, final Bundle args) {
+    public Loader<Object> onCreateLoader(final int id, final Bundle args) {
 
         final Context context = getContext();
 
         mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Getting messages...");
-        mDialog.show();
 
-        return new AsyncLoadHandler(context, args) {
+        switch (id) {
+            case LOAD_MESSAGE: // Let LOAD_MESSAGE fall through to REFRESH
+            case REFRESH:
 
-            @Override
-            public List<Message> loadInBackground() {
-                String html = new WebRequest(context, args).sendRequest();
-                return mScraper.scrapeMessages(html, args.getBoolean("filter"));
-            }
-        };
+                mDialog.setMessage("Loading messages...");
+                mDialog.show();
+
+                return new AsyncLoadHandler(context, args) {
+                    @Override
+                    public List<Message> loadInBackground() {
+                        String html = new WebRequest(context, args).sendRequest();
+                        return mScraper.scrapeMessages(html, args.getBoolean("filter"));
+                    }
+                };
+
+            case POST_MESSAGE:
+
+                mDialog.setMessage("Posting message...");
+                mDialog.show();
+
+                return new AsyncLoadHandler(context, args) {
+                    @Override
+                    public String loadInBackground() {
+                        return new WebRequest(context, args).sendRequest();
+                    }
+                };
+
+            default:
+                return null;
+        }
     }
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
 
-        if (data != null) {
-            // We can be sure that data will safely cast to List<Message>.
-            mMessages = (List<Message>) data;
-            mMessageListAdapter.updateMessages(mMessages);
+        switch (loader.getId()) {
+            case LOAD_MESSAGE: // Let LOAD_MESSAGE fall through to REFRESH
+            case REFRESH:
+                if (data != null) {
+                    // We can be sure that data will safely cast to List<Message>.
+                    mMessages = (List<Message>) data;
+                    mMessageListAdapter.updateMessages(mMessages);
 
-            // TODO: Replace these with actual values
-            final String DEBUG_USER_ID = "5599";
-            final int DEBUG_INBOX_COUNT = 0;
+                    if (mLivelinksSubscriber == null) {
+                        initLivelinksSubscriber();
+                    }
 
-            // We only need to create LivelinksSubscriber once.
-            if (mLivelinksSubscriber == null) {
-                mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
-                        DEBUG_USER_ID, mTopic.sizeAsString(), DEBUG_INBOX_COUNT) {
-
-                    @Override
-                    public void onReceiveUpdate(String response, int position) {
-                        // Can't parse HTML unless we remove these characters
-                        String escapedResponse = response.replace("\\/", "/")
-                                .replace("\\\"", "\"")
-                                .replace("\\n", "");
-
-                        List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
-
-                        int sizeOfNewMessages = newMessages.size();
-                        int currentTopicSize = mTopic.size();
-
-                        // We have to set position manually because count from scraper will be incorrect
-                        for (int i = 0; i < sizeOfNewMessages; i++) {
-                            Message message = newMessages.get(i);
-                            message.setPosition(currentTopicSize + (i + 1));
-                        }
-
-                        if (position > currentTopicSize) {
-                            mTopic.addToSize(sizeOfNewMessages);
-
-                            if (mPageNumber == mTopic.getLastPage(0)) {
-                                // We can append new post to current page
-                                mMessageListAdapter.appendMessages(newMessages);
-                                animateTimestampChange();
-                            }
-                            else {
-                                // Notify user of new post and allow them to navigate to last page
-                                int lastPage = mTopic.getLastPage(0);
-                                String message = "New post on page " + lastPage;
-
-                                Snackbar.make(mRootView, message, Snackbar.LENGTH_INDEFINITE)
-                                        .setAction(R.string.snackbar_view, snackbarAction)
-                                        .show();
-                            }
-                        }
-
-                        else {
-                            // Position of new message should never be less than size of topic.
-                            // Do nothing and hope for the best
-                            Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
-                                    "Position = " + position + ", topic size = " + currentTopicSize);
+                    if (loader.getId() == REFRESH) {
+                        int adapterCount = mMessageListAdapter.getCount();
+                        if (adapterCount > mOldAdapterCount) {
+                            // Scroll to first unread post
+                            scrollToPosition(adapterCount);
+                        } else {
+                            // No new posts - just scroll to end of message list
+                            scrollToPosition(adapterCount - 1);
                         }
                     }
-                };
-            }
-
-            if (loader.getId() == REFRESH) {
-                int adapterCount = mMessageListAdapter.getCount();
-                if (adapterCount > mOldAdapterCount) {
-                    // Scroll to first unread post
-                    scrollToPosition(adapterCount);
-                } else {
-                    // No new posts - just scroll to end of message list
-                    scrollToPosition(adapterCount - 1);
                 }
-            }
-        }
 
-        else {
-            // Handle error
+                else {
+                    // Handle error
+                }
+                break;
+
+            case POST_MESSAGE:
+                Snackbar.make(mRootView, R.string.post_message_ok, Snackbar.LENGTH_SHORT)
+                        .show();
+                break;
         }
 
         mDialog.dismiss();
@@ -543,6 +551,62 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
+    }
+
+    public void initLivelinksSubscriber() {
+        // TODO: Replace these with actual values
+        final String DEBUG_USER_ID = "5599";
+        final int DEBUG_INBOX_COUNT = 0;
+
+        mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
+                DEBUG_USER_ID, mTopic.sizeAsString(), DEBUG_INBOX_COUNT) {
+
+            @Override
+            public void onReceiveUpdate(String response, int position) {
+                // Can't parse HTML unless we remove these characters
+                String escapedResponse = response.replace("\\/", "/")
+                        .replace("\\\"", "\"")
+                        .replace("\\n", "");
+
+                List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
+
+                int sizeOfNewMessages = newMessages.size();
+                int currentTopicSize = mTopic.size();
+
+                // We have to set position manually because count from scraper will be incorrect
+                for (int i = 0; i < sizeOfNewMessages; i++) {
+                    Message message = newMessages.get(i);
+                    message.setPosition(currentTopicSize + (i + 1));
+                }
+
+                Log.v(LOG_TAG, "position = " + position);
+                Log.v(LOG_TAG, "size = " + currentTopicSize);
+
+                if (position > currentTopicSize) {
+
+                    mTopic.addToSize(sizeOfNewMessages);
+
+                    if (mPageNumber == mTopic.getLastPage(0)) {
+                        // We can append new post to current page
+                        mMessageListAdapter.appendMessages(newMessages);
+                        animateTimestampChange();
+                    } else {
+                        // Notify user of new post and allow them to navigate to last page
+                        int lastPage = mTopic.getLastPage(0);
+                        String message = "New post on page " + lastPage;
+
+                        Snackbar.make(mRootView, message, Snackbar.LENGTH_INDEFINITE)
+                                .setAction(R.string.snackbar_view, snackbarAction)
+                                .show();
+                    }
+                } else {
+                    // Position of new message should never be less than size of topic.
+                    // Do nothing and hope for the best
+                    Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
+                            "Position = " + position + ", topic size = " + currentTopicSize);
+                }
+            }
+        };
     }
 
     public void animateTimestampChange() {
