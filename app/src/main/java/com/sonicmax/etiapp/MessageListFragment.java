@@ -41,6 +41,7 @@ import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.ui.QuickpostHandler;
+import com.sonicmax.etiapp.ui.QuickpostWindow;
 import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
@@ -327,19 +328,11 @@ public class MessageListFragment extends Fragment implements
             button.setText(R.string.reply);
         }
 
-        final PopupWindow popup = new PopupWindow(
+        final QuickpostWindow popup = new QuickpostWindow(
                 quickpostView,
                 deviceWidth,
                 quickpostView.getMeasuredHeight(),
                 true);
-
-        // Touch events won't work if background drawable is null - even if it's specified in XML.
-        // See http://stackoverflow.com/a/3122696/3842017
-        popup.setBackgroundDrawable(new ColorDrawable());
-        popup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-        popup.setOutsideTouchable(true);
-        popup.setFocusable(true);
-        popup.setAnimationStyle(R.style.AnimationPopup);
 
         // Show quickpost window 25px from top of screen (aligned with bottom of status bar)
         popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
