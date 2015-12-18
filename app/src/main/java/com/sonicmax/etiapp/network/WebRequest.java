@@ -268,7 +268,7 @@ public class WebRequest {
         try {
             switch (requestType) {
                 case "newmessage":
-                    topic = values.get("topic").toString();
+                    topic = values.get("id").toString();
                     message = values.get("message").toString();
                     h = values.get("h").toString();
                     submit = "Post Message";
