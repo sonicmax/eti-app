@@ -120,13 +120,12 @@ public class WebRequest {
                     Map<String, List<String>> headerFields = connection.getHeaderFields();
                     storeCookies(headerFields);
                 }
-            }
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode != 200) {
-                Log.v(LOG_TAG, "Response code: " + responseCode);
-                Log.v(LOG_TAG, "Response message: " + connection.getResponseMessage());
-                return null;
+                if (!requestType.equals("livelinks")) {
+                    // Return response code so we know whether POST was successful or not.
+                    // For livelinks requests we want to return the response itself.
+                    return Integer.toString(connection.getResponseCode());
+                }
             }
 
             // Read input stream into a String

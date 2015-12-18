@@ -25,6 +25,9 @@
     <string name="snackbar_view">View</string>
 
     <string name="error_5_chars_or_more">Your message must be at least 5 characters</string>
+    <string name="error_message_failed">Post failed</string>
+
+    <string name="post_message_ok">Message posted</string>
 
     <string name="arrow">➤</string>
 </resources>

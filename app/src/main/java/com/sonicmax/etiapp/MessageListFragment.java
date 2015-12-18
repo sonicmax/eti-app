@@ -40,7 +40,7 @@ import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
-import com.sonicmax.etiapp.ui.QuickpostHandler;
+import com.sonicmax.etiapp.network.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
 import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
@@ -71,6 +71,7 @@ public class MessageListFragment extends Fragment implements
     private Message mSelectedMessage;
     private ViewGroup mContainer;
     private List<Message> mMessages;
+    private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
 
     private int mSelection = -1;
@@ -141,8 +142,10 @@ public class MessageListFragment extends Fragment implements
         mTitle = intent.getStringExtra("title");
         topicTitle.setText(mTitle);
 
-        // Set click listeners for views
+        // Set up quickpost handler and click listener
         mQuickpostButton.setOnClickListener(this);
+
+        // Set up other listeners
         mMessageList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         mMessageList.setOnItemLongClickListener(this);
         mMessageList.setOnTouchListener(pageSwipeHandler);
@@ -338,8 +341,36 @@ public class MessageListFragment extends Fragment implements
         popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
                 Gravity.TOP, 0, 25);
 
-        QuickpostHandler quickpostHandler = new QuickpostHandler(mQuickpostButton);
-        quickpostHandler.setInvisible();
+        // Set up quickpostHandler to handle UI changes and manage loading
+        mQuickpostHandler = new QuickpostHandler(getContext(), mQuickpostButton, mTopic) {
+
+            @Override
+            public void onPreLoad() {
+                mDialog = new ProgressDialog(getContext());
+                mDialog.setMessage("Loading messages...");
+                mDialog.show();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                if (mDialog != null && mDialog.isShowing()) {
+                    mDialog.hide();
+                }
+
+                Snackbar.make(mRootView, errorMessage, Snackbar.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onSuccess() {
+                if (mDialog != null && mDialog.isShowing()) {
+                    mDialog.hide();
+                }
+
+                Snackbar.make(mRootView, R.string.post_message_ok, Snackbar.LENGTH_SHORT).show();
+            }
+        };
+
+        mQuickpostHandler.setInvisible();
 
         // Add listener which allows user to post/reply to message
         button.setOnClickListener(new View.OnClickListener() {
@@ -358,7 +389,7 @@ public class MessageListFragment extends Fragment implements
                 String signature = SharedPreferenceManager.getString(getContext(), "signature");
                 EditText messageView = (EditText) quickpostView.findViewById(R.id.quickpost_edit);
                 String message = quote + messageView.getText().toString() + NEWLINE + signature;
-                postMessage(message);
+                mQuickpostHandler.postMessage(message);
 
                 // Clean up UI
                 mMessageList.setItemChecked(mSelection, false);
@@ -369,39 +400,7 @@ public class MessageListFragment extends Fragment implements
         });
 
         // Make sure that quickpost button is made visible after popup window is dismissed
-        popup.setOnDismissListener(quickpostHandler.dismissListener);
-    }
-
-    public void postMessage(String message) {
-        if (message.length() >= 5) {
-            String token = SharedPreferenceManager.getString(getContext(), "h");
-
-            // Get input from editText elements
-            ContentValues values = new ContentValues();
-            values.put("id", mTopic.getId());
-            values.put("message", message);
-            values.put("h", token);
-            values.put("submit", "Post Message");
-
-            Bundle args = new Bundle();
-            args.putString("method", "POST");
-            args.putString("type", "newmessage");
-            args.putParcelable("values", values);
-
-            LoaderManager loaderManager = getLoaderManager();
-
-            if (loaderManager.getLoader(POST_MESSAGE) == null) {
-                loaderManager.initLoader(POST_MESSAGE, args, this).forceLoad();
-            }
-            else {
-                loaderManager.restartLoader(POST_MESSAGE, args, this).forceLoad();
-            }
-        }
-
-        else {
-            Snackbar.make(mRootView, R.string.error_5_chars_or_more, Snackbar.LENGTH_SHORT)
-                    .show();
-        }
+        popup.setOnDismissListener(mQuickpostHandler.dismissListener);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -463,79 +462,46 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(final int id, final Bundle args) {
-
         final Context context = getContext();
 
         mDialog = new ProgressDialog(context);
+        mDialog.setMessage("Loading messages...");
+        mDialog.show();
 
-        switch (id) {
-            case LOAD_MESSAGE: // Let LOAD_MESSAGE fall through to REFRESH
-            case REFRESH:
-
-                mDialog.setMessage("Loading messages...");
-                mDialog.show();
-
-                return new AsyncLoadHandler(context, args) {
-                    @Override
-                    public List<Message> loadInBackground() {
-                        String html = new WebRequest(context, args).sendRequest();
-                        return mScraper.scrapeMessages(html, args.getBoolean("filter"));
-                    }
-                };
-
-            case POST_MESSAGE:
-
-                mDialog.setMessage("Posting message...");
-                mDialog.show();
-
-                return new AsyncLoadHandler(context, args) {
-                    @Override
-                    public String loadInBackground() {
-                        return new WebRequest(context, args).sendRequest();
-                    }
-                };
-
-            default:
-                return null;
-        }
+        return new AsyncLoadHandler(context, args) {
+            @Override
+            public List<Message> loadInBackground() {
+                String html = new WebRequest(context, args).sendRequest();
+                return mScraper.scrapeMessages(html, args.getBoolean("filter"));
+            }
+        };
     }
 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
+        if (data != null) {
+            // We can be sure that data will safely cast to List<Message>.
+            mMessages = (List<Message>) data;
+            mMessageListAdapter.updateMessages(mMessages);
 
-        switch (loader.getId()) {
-            case LOAD_MESSAGE: // Let LOAD_MESSAGE fall through to REFRESH
-            case REFRESH:
-                if (data != null) {
-                    // We can be sure that data will safely cast to List<Message>.
-                    mMessages = (List<Message>) data;
-                    mMessageListAdapter.updateMessages(mMessages);
+            if (mPageNumber == mTopic.getLastPage(0) && mLivelinksSubscriber == null) {
+                initLivelinksSubscriber();
+            }
 
-                    if (mLivelinksSubscriber == null) {
-                        initLivelinksSubscriber();
-                    }
-
-                    if (loader.getId() == REFRESH) {
-                        int adapterCount = mMessageListAdapter.getCount();
-                        if (adapterCount > mOldAdapterCount) {
-                            // Scroll to first unread post
-                            scrollToPosition(adapterCount);
-                        } else {
-                            // No new posts - just scroll to end of message list
-                            scrollToPosition(adapterCount - 1);
-                        }
-                    }
+            if (loader.getId() == REFRESH) {
+                int adapterCount = mMessageListAdapter.getCount();
+                if (adapterCount > mOldAdapterCount) {
+                    // Scroll to first unread post
+                    scrollToPosition(adapterCount);
+                } else {
+                    // No new posts - just scroll to end of message list
+                    scrollToPosition(adapterCount - 1);
                 }
+            }
+        }
 
-                else {
-                    // Handle error
-                }
-                break;
-
-            case POST_MESSAGE:
-                Snackbar.make(mRootView, R.string.post_message_ok, Snackbar.LENGTH_SHORT)
-                        .show();
-                break;
+        else {
+            // Handle error
         }
 
         mDialog.dismiss();
@@ -551,8 +517,17 @@ public class MessageListFragment extends Fragment implements
         final String DEBUG_USER_ID = "5599";
         final int DEBUG_INBOX_COUNT = 0;
 
+        int totalPosts;
+        if (mPageNumber == 1) {
+            totalPosts = mMessageListAdapter.getCount();
+        }
+        else {
+            // Account for posts on previous pages & add current adapter count
+            totalPosts = ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getCount();
+        }
+
         mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
-                DEBUG_USER_ID, mTopic.sizeAsString(), DEBUG_INBOX_COUNT) {
+                DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT) {
 
             @Override
             public void onReceiveUpdate(String response, int position) {
