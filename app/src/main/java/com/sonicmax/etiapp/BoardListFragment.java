@@ -136,7 +136,7 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
             @Override
             public List<Board> loadInBackground() {
                 String html = new WebRequest(context, args).sendRequest();
-                return new BoardListScraper().scrapeBoards(html);
+                return new BoardListScraper(context).scrapeBoards(html);
             }
         };
     }
