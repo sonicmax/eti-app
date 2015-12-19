@@ -237,7 +237,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
             case POST_TOPIC:
                 mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Posting...");
+                mDialog.setMessage("Loading...");
                 mDialog.show();
 
                 return new AsyncLoadHandler(context, args) {
