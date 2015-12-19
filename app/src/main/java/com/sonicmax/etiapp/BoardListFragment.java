@@ -24,11 +24,11 @@ import java.util.List;
 
 public class BoardListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
+    private final int LOAD_BOARDS = 0;
+
     private BoardListAdapter mBoardListAdapter;
     private ProgressDialog mDialog;
     private List<Board> mBookmarks;
-
-    private boolean mFirstRun = true;
 
     public BoardListFragment() {}
 
@@ -52,11 +52,11 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
             args.putString("method", "GET");
             args.putString("type", "home");
 
-            if (mFirstRun) {
-                getLoaderManager().initLoader(0, args, this).forceLoad();
-                mFirstRun = false;
+            LoaderManager loaderManager = getLoaderManager();
+            if (loaderManager.getLoader(LOAD_BOARDS) == null) {
+                getLoaderManager().initLoader(LOAD_BOARDS, args, this).forceLoad();
             } else {
-                getLoaderManager().restartLoader(0, args, this).forceLoad();
+                getLoaderManager().restartLoader(LOAD_BOARDS, args, this).forceLoad();
             }
         }
 
