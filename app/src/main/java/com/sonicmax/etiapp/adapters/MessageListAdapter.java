@@ -81,7 +81,8 @@ public class MessageListAdapter extends SelectableAdapter {
 
     public void appendMessages(List<Message> messages) {
         mMessages.addAll(messages);
-        notifyDataSetChanged();
+        notifyItemRangeChanged(mMessages.size() - 1,
+                mMessages.size() + messages.size() - 1);
     }
 
     public void clearMessages() {
