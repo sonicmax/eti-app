@@ -61,9 +61,10 @@ public class SharedPreferenceManager {
         SharedPreferences.Editor editor = prefs.edit();
 
         // We need to store size of list under separate key so we know how many values to retrieve
-        editor.putInt(key + "size", list.size());
+        editor.putInt(key + "_size", list.size());
 
         for (int i = 0; i < list.size(); i++) {
+            Log.v("Help", "Storing value: " + list.get(i));
             editor.putString(key + i, list.get(i));
         }
 
@@ -71,7 +72,7 @@ public class SharedPreferenceManager {
     }
 
     public static List<String> getStringList(Context context, String key) {
-        int size = SharedPreferenceManager.getInt(context, key + "size");
+        int size = SharedPreferenceManager.getInt(context, key + "_size");
         List<String> list = new ArrayList<>(size);
 
         for (int i = 0; i < size; i++) {

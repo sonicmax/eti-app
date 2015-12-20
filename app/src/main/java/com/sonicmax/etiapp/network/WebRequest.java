@@ -175,10 +175,8 @@ public class WebRequest {
     public void getCookies() {
         int size = SharedPreferenceManager.getInt(mContext, "cookie_array_size");
         for (int i = 0; i < size; i++) {
-            String cookie = SharedPreferenceManager.getString(mContext, "cookie_array_" + i);
-            if (cookie != null) {
-                mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
-            }
+            String cookie = SharedPreferenceManager.getString(mContext, "cookie_array" + i);
+            mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
         }
     }
 
@@ -193,15 +191,10 @@ public class WebRequest {
                 mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
             }
 
+            SharedPreferenceManager.putStringList(mContext, "cookie_array", cookiesHeader);
+
             if (!SharedPreferenceManager.getBoolean(mContext, "logged_in")) {
-
                 SharedPreferenceManager.putBoolean(mContext, "logged_in", true);
-                SharedPreferenceManager.putInt(mContext, "cookie_array_size", cookiesHeader.size());
-
-                for (int i = 0; i < cookiesHeader.size(); i++) {
-                    SharedPreferenceManager.putString(mContext,
-                            "cookie_array_" + i, cookiesHeader.get(i));
-                }
             }
         }
     }
