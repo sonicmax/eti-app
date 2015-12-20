@@ -29,7 +29,6 @@ public class TopicListActivity extends AppCompatActivity {
     private DrawerLayout mDrawerLayout;
     private ArrayAdapter<String> mAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
-    private String mTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +38,6 @@ public class TopicListActivity extends AppCompatActivity {
 
         mDrawerList = (ListView)findViewById(R.id.drawer_list);
         mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
-        mTitle = getTitle().toString();
 
         addDrawerItems();
         setupDrawer();
@@ -59,7 +57,10 @@ public class TopicListActivity extends AppCompatActivity {
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toaster.makeToast(getBaseContext(), urlArray.get(position));
+                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.topic_list_container);
+                fragment.loadTopicList(nameArray.get(position), urlArray.get(position));
+                mDrawerLayout.closeDrawers();
             }
         });
     }

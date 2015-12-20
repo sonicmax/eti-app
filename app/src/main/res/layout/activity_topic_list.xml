@@ -14,11 +14,29 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <ListView
-        android:id="@+id/drawer_list"
-        android:layout_width="240dp"
+    <RelativeLayout
+        android:id="@+id/drawer_view"
+        android:layout_width="@dimen/navigation_drawer_width"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="@color/bg_grey" />
+        android:background="@color/bg_grey">
+
+        <TextView
+            android:id="@+id/drawer_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/bookmarks"
+            android:gravity="center"
+            android:layout_marginBottom="10dp"
+            android:background="@color/fg_grey"
+            android:textColor="@color/secondary_text" />
+
+        <ListView
+            android:id="@+id/drawer_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/drawer_title" />
+
+    </RelativeLayout>
 
 </android.support.v4.widget.DrawerLayout>

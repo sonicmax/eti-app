@@ -36,6 +36,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     private String mUrl;
     private ProgressDialog mDialog;
     private List<Topic> mTopics;
+    private TextView mBoardName;
 
     private int mPageNumber;
     private boolean mFirstRun = true;
@@ -67,7 +68,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         if (savedInstanceState == null) {
             // Get url of chosen topic list form intent and pass it to loader
             mUrl = getActivity().getIntent().getStringExtra("url");
-            loadTopicList(mUrl);
+            loadTopicList(null, mUrl);
         }
         else {
             // Get url in case we need to refresh topic list
@@ -87,9 +88,9 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
         View rootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
 
-        TextView boardName = (TextView) rootView.findViewById(R.id.board_name);
+        mBoardName = (TextView) rootView.findViewById(R.id.board_name);
         String name = getActivity().getIntent().getStringExtra("boardname");
-        boardName.setText(name);
+        mBoardName.setText(name);
 
         FloatingActionButton newTopicButton = (FloatingActionButton) rootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(newTopicHandler);
@@ -130,7 +131,11 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
-    private void loadTopicList(String url) {
+    public void loadTopicList(String name, String url) {
+        if (name != null) {
+            mBoardName.setText(name);
+        }
+
         Bundle args = new Bundle();
         args.putString("method", "GET");
         args.putString("type", "topiclist");
@@ -147,7 +152,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     public void refreshTopicList() {
-        loadTopicList(mUrl);
+        loadTopicList(null, mUrl);
     }
 
     OnSwipeListener topicSwipeHandler = new OnSwipeListener(getContext()) {
@@ -155,7 +160,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         @Override
         public void onSwipeLeft() {
             if (nextPageUrl != null) {
-                loadTopicList(nextPageUrl);
+                loadTopicList(null, nextPageUrl);
                 mPageNumber++;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
@@ -164,7 +169,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         @Override
         public void onSwipeRight() {
             if (prevPageUrl != null) {
-                loadTopicList(prevPageUrl);
+                loadTopicList(null, prevPageUrl);
                 mPageNumber = 1;
                 Toaster.makeToast(getContext(), "Page " + mPageNumber);
             }
