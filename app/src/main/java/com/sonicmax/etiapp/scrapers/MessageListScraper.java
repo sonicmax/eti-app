@@ -96,7 +96,7 @@ public class MessageListScraper {
             messages.add(message);
         }
 
-        MessageListFragment.mPageNumber = currentPage;
+        MessageListFragment.currentPage = currentPage;
 
         return messages;
     }

@@ -1,44 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/quickpost_border"
-    android:elevation="4dp"
-    android:paddingBottom="20dp">
+    card_view:cardBackgroundColor="@color/fg_grey"
+    card_view:cardElevation="6dp">
 
     <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="102dp"
-        android:layout_margin="10dp"
-        android:layout_gravity="center_horizontal">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="20dp">
 
-        <EditText
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="102dp"
             android:layout_margin="10dp"
-            android:id="@+id/quickpost_edit"
-            android:inputType="textMultiLine"
-            android:hint="@string/hint_message"
-            android:ellipsize="start"
-            android:gravity="start"
-            android:background="@color/header_grey"
+            android:layout_gravity="center_horizontal">
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="10dp"
+                android:id="@+id/quickpost_edit"
+                android:inputType="textMultiLine"
+                android:hint="@string/hint_message"
+                android:ellipsize="start"
+                android:gravity="start"
+                android:background="@color/header_grey"
+                android:textColor="@color/primary_text"
+                android:textColorHint="@color/hint_text" />
+
+        </LinearLayout>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/post_message"
+            android:id="@+id/quickpost_button"
+            android:background="@drawable/button"
             android:textColor="@color/primary_text"
-            android:textColorHint="@color/hint_text" />
+            android:layout_gravity="end"
+            android:layout_marginRight="20dp"
+            android:layout_marginEnd="20dp"
+            />
 
     </LinearLayout>
-
-    <Button
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/post_message"
-        android:id="@+id/quickpost_button"
-        android:background="@drawable/button"
-        android:textColor="@color/primary_text"
-        android:layout_gravity="end"
-        android:layout_marginRight="20dp"
-        android:layout_marginEnd="20dp"
-        />
-
-</LinearLayout>
+</android.support.v7.widget.CardView>

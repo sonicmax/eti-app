@@ -1,11 +1,9 @@
 package com.sonicmax.etiapp;
 
 import android.app.ProgressDialog;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -14,6 +12,8 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -24,13 +24,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
@@ -51,16 +52,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MessageListFragment extends Fragment implements
-        AdapterView.OnItemLongClickListener, View.OnClickListener,
+        MessageListAdapter.ClickListener, View.OnClickListener,
         LoaderManager.LoaderCallbacks<Object> {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
     private final int LOAD_MESSAGE = 0;
     private final int REFRESH = 1;
-    private final int POST_MESSAGE = 2;
 
     private View mRootView;
-    private ListView mMessageList;
+    private RecyclerView mMessageList;
     private FloatingActionButton mQuickpostButton;
     private MessageListScraper mScraper;
     private MessageListAdapter mMessageListAdapter;
@@ -74,15 +74,11 @@ public class MessageListFragment extends Fragment implements
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
 
-    private int mSelection = -1;
-    private int mOldAdapterCount;
-    public static int mPageNumber;
-
     private String mTitle;
+
     public static String prevPageUrl;
     public static String nextPageUrl;
-
-    private static boolean mFirstRun = true;
+    public static int currentPage;
 
     public MessageListFragment() {}
 
@@ -91,7 +87,7 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
-        mMessageListAdapter = new MessageListAdapter(context);
+        mMessageListAdapter = new MessageListAdapter(context, this);
         super.onAttach(context);
     }
 
@@ -101,25 +97,18 @@ public class MessageListFragment extends Fragment implements
 
             Intent intent = getActivity().getIntent();
             mTopic = intent.getParcelableExtra("topic");
-
-            if (mFirstRun) {
-                mPageNumber = intent.getIntExtra("page", 1);
-            }
-
             String url = (intent.getBooleanExtra("last_page", false))
                     ? mTopic.getLastPageUrl() : mTopic.getUrl();
 
             mScraper = new MessageListScraper(getContext(), url);
-
-            // Init/Restart loader and get posts for adapter
             loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
         }
 
         else {
             mTopic = savedInstanceState.getParcelable("topic");
-            mPageNumber = savedInstanceState.getInt("page");
-
+            currentPage = savedInstanceState.getInt("page");
             mMessages = savedInstanceState.getParcelableArrayList("messages");
+
             mMessageListAdapter.updateMessages(mMessages);
         }
 
@@ -133,9 +122,14 @@ public class MessageListFragment extends Fragment implements
         mRootView = inflater.inflate(R.layout.fragment_message_list, container, false);
         mContainer = container;
 
-        mMessageList = (ListView) mRootView.findViewById(R.id.listview_messages);
+        mMessageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
+        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        mMessageList.setLayoutManager(linearLayoutManager);
+        mMessageList.setAdapter(mMessageListAdapter);
+
         mQuickpostButton = (FloatingActionButton) mRootView.findViewById(R.id.new_message);
-        TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title);
+        TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title_text);
         Intent intent = getActivity().getIntent();
 
         // Display topic title
@@ -146,25 +140,33 @@ public class MessageListFragment extends Fragment implements
         mQuickpostButton.setOnClickListener(this);
 
         // Set up other listeners
-        mMessageList.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-        mMessageList.setOnItemLongClickListener(this);
-        mMessageList.setOnTouchListener(pageSwipeHandler);
+        mRootView.setOnTouchListener(pageSwipeHandler);
 
         // Set up MessageListAdapter so we can display posts
         mMessageList.setAdapter(mMessageListAdapter);
 
-        // Scroll to bottom of page if necessary
-        if (intent.getBooleanExtra("last_page", false)) {
-            scrollToBottom();
+        return mRootView;
+    }
+
+    @Override
+    public void onResume() {
+        if (mLivelinksSubscriber != null) {
+            mLivelinksSubscriber = null;
         }
 
-        return mRootView;
+        super.onResume();
     }
 
     @Override
     public void onStop() {
         // Clear adapter before stopping activity
         mMessageListAdapter.clearMessages();
+
+        // Make sure that livelinks loader is destroyed
+        if (mLivelinksSubscriber != null) {
+            mLivelinksSubscriber.unsubscribe();
+        }
+
         super.onStop();
     }
 
@@ -176,7 +178,7 @@ public class MessageListFragment extends Fragment implements
             outState.putParcelableArrayList("messages", messageArray);
         }
         outState.putParcelable("topic", mTopic);
-        outState.putInt("page", mPageNumber);
+        outState.putInt("page", currentPage);
 
         super.onSaveInstanceState(outState);
     }
@@ -204,50 +206,52 @@ public class MessageListFragment extends Fragment implements
         return mArgs;
     }
 
-    private void loadMessageList(Bundle args, int loaderId) {
+    private void loadMessageList(Bundle args, int id) {
         LoaderManager loaderManager = getLoaderManager();
 
-        if (mFirstRun) {
-            loaderManager.initLoader(loaderId, args, this).forceLoad();
-            mFirstRun = false;
+        if (loaderManager.getLoader(id) == null) {
+            currentPage = getActivity().getIntent().getIntExtra("page", 1);
+            loaderManager.initLoader(id, args, this).forceLoad();
         }
         else {
-            loaderManager.restartLoader(loaderId, args, this).forceLoad();
+            loaderManager.restartLoader(id, args, this).forceLoad();
         }
     }
 
     public void refreshMessageList() {
-        // TODO: Need to account for cases where new post pushes topic onto next page
-        mOldAdapterCount = mMessageListAdapter.getCount();
         loadMessageList(mArgs, REFRESH);
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Contextual action mode methods
+    // MessageListAdapter.ClickListener methods
     ///////////////////////////////////////////////////////////////////////////
+
     @Override
-    public boolean onItemLongClick(AdapterView<?> adapter, View view, int position, long id) {
-
-        if (mActionMode != null && mSelection == -1) {
-            // We can't do anything
-            return false;
+    public void onItemClick(int position) {
+        if (mActionMode != null) {
+            // This would let us select multiple items easily
+            // mMessageListAdapter.toggleSelection(position);
+            mMessageListAdapter.clearSelection();
         }
+    }
 
-        // Cast getActivity() value to AppCompatActivity so we can use startSupportActionMode
+    @Override
+    public boolean onItemLongClick(int position) {
         mActionMode = ((AppCompatActivity) getActivity())
                 .startSupportActionMode(mActionModeCallback);
 
-        if (mSelection > -1) {
-            // Set old position to false
-            mMessageList.setItemChecked(mSelection, false);
+        if (!mMessageListAdapter.isSelected(position)) {
+            mMessageListAdapter.clearSelection();
+            mMessageListAdapter.setSelection(position);
+            mSelectedMessage = mMessageListAdapter.getItem(position);
         }
-
-        mMessageList.setItemChecked(position, true);
-        mSelectedMessage = mMessageListAdapter.getItem(position);
-        mSelection = position;
 
         return true;
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // ActionMode methods
+    ///////////////////////////////////////////////////////////////////////////
 
     private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
 
@@ -292,7 +296,7 @@ public class MessageListFragment extends Fragment implements
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            mMessageList.setItemChecked(mSelection, false);
+            mMessageListAdapter.clearSelection();
             mSelectedMessage = null;
             mActionMode = null;
         }
@@ -347,7 +351,7 @@ public class MessageListFragment extends Fragment implements
             @Override
             public void onPreLoad() {
                 mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Loading messages...");
+                mDialog.setMessage("Posting message...");
                 mDialog.show();
             }
 
@@ -392,7 +396,7 @@ public class MessageListFragment extends Fragment implements
                 mQuickpostHandler.postMessage(message);
 
                 // Clean up UI
-                mMessageList.setItemChecked(mSelection, false);
+                mMessageListAdapter.clearSelection();
                 mSelectedMessage = null;
                 popup.dismiss();
             }
@@ -412,8 +416,8 @@ public class MessageListFragment extends Fragment implements
         public void onSwipeLeft() {
             if (nextPageUrl != null) {
                 loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
-                mPageNumber++;
-                Toaster.makeToast(getContext(), "Page " + mPageNumber);
+                currentPage++;
+                Toaster.makeToast(getContext(), "Page " + currentPage);
             }
         }
 
@@ -421,30 +425,11 @@ public class MessageListFragment extends Fragment implements
         public void onSwipeRight() {
             if (prevPageUrl != null) {
                 loadMessageList(buildArgsForLoader(prevPageUrl, false), LOAD_MESSAGE);
-                mPageNumber--;
-                Toaster.makeToast(getContext(), "Page " + mPageNumber);
+                currentPage--;
+                Toaster.makeToast(getContext(), "Page " + currentPage);
             }
         }
     };
-
-    View.OnClickListener snackbarAction = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            loadMessageList(buildArgsForLoader(mTopic.getLastPageUrl(), false), LOAD_MESSAGE);
-        }
-    };
-
-    private void scrollToBottom() {
-        final ListView messageList = (ListView) mRootView.findViewById(R.id.listview_messages);
-
-        messageList.post(new Runnable() {
-            @Override
-            public void run() {
-                // Minus 1 from count as position is 0-indexed
-                messageList.setSelection(mMessageListAdapter.getCount() - 1);
-            }
-        });
-    }
 
     private void scrollToPosition(final int position) {
 
@@ -484,19 +469,14 @@ public class MessageListFragment extends Fragment implements
             mMessages = (List<Message>) data;
             mMessageListAdapter.updateMessages(mMessages);
 
-            if (mPageNumber == mTopic.getLastPage(0) && mLivelinksSubscriber == null) {
+            boolean isLastPage = currentPage == mTopic.getLastPage(0);
+            if (isLastPage && mLivelinksSubscriber == null) {
                 initLivelinksSubscriber();
             }
-
-            if (loader.getId() == REFRESH) {
-                int adapterCount = mMessageListAdapter.getCount();
-                if (adapterCount > mOldAdapterCount) {
-                    // Scroll to first unread post
-                    scrollToPosition(adapterCount);
-                } else {
-                    // No new posts - just scroll to end of message list
-                    scrollToPosition(adapterCount - 1);
-                }
+            else if (!isLastPage && mLivelinksSubscriber != null) {
+                // User navigated from last page to a different page - can't use livelinks anymore
+                // as we can't get an accurate post count
+                mLivelinksSubscriber.unsubscribe();
             }
         }
 
@@ -513,18 +493,12 @@ public class MessageListFragment extends Fragment implements
     }
 
     public void initLivelinksSubscriber() {
-        // TODO: Replace these with actual values
         final String DEBUG_USER_ID = "5599";
         final int DEBUG_INBOX_COUNT = 0;
 
-        int totalPosts;
-        if (mPageNumber == 1) {
-            totalPosts = mMessageListAdapter.getCount();
-        }
-        else {
-            // Account for posts on previous pages & add current adapter count
-            totalPosts = ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getCount();
-        }
+        // Calculate total number of posts in topic to avoid bug where posts would be duplicated
+        // due to inaccurate total from topic list
+        final int totalPosts = getTotalPosts();
 
         mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
                 DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT) {
@@ -539,56 +513,47 @@ public class MessageListFragment extends Fragment implements
                 List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
 
                 int sizeOfNewMessages = newMessages.size();
-                int currentTopicSize = mTopic.size();
-
-                // We have to set position manually because count from scraper will be incorrect
+                // We have to set position manually because count from moremessages.php will be incorrect
                 for (int i = 0; i < sizeOfNewMessages; i++) {
                     Message message = newMessages.get(i);
-                    message.setPosition(currentTopicSize + (i + 1));
+                    message.setPosition(totalPosts + (i + 1));
                 }
 
-                Log.v(LOG_TAG, "position = " + position);
-                Log.v(LOG_TAG, "size = " + currentTopicSize);
-
-                if (position > currentTopicSize) {
-
+                if (position > totalPosts) {
                     mTopic.addToSize(sizeOfNewMessages);
-
-                    if (mPageNumber == mTopic.getLastPage(0)) {
-                        // We can append new post to current page
-                        mMessageListAdapter.appendMessages(newMessages);
-                        animateTimestampChange();
-                    } else {
-                        // Notify user of new post and allow them to navigate to last page
-                        int lastPage = mTopic.getLastPage(0);
-                        String message = "New post on page " + lastPage;
-
-                        Snackbar.make(mRootView, message, Snackbar.LENGTH_INDEFINITE)
-                                .setAction(R.string.snackbar_view, snackbarAction)
-                                .show();
-                    }
-                } else {
+                    mMessageListAdapter.appendMessages(newMessages);
+                    animateTimestampChange();
+                }
+                else {
                     // Position of new message should never be less than size of topic.
                     // Do nothing and hope for the best
                     Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
-                            "Position = " + position + ", topic size = " + currentTopicSize);
+                            "Position = " + position + ", topic size = " + totalPosts);
                 }
             }
         };
     }
 
+    private int getTotalPosts() {
+        if (currentPage > 1) {
+            // Account for posts on previous pages & add current adapter count
+            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getItemCount();
+        }
+        else {
+            return mMessageListAdapter.getItemCount();
+        }
+    }
+
     public void animateTimestampChange() {
         final Animation fadeOut = new AlphaAnimation(1.0f, 0.0f);
-        fadeOut.setDuration(500);
+        fadeOut.setDuration(250);
 
         final Animation fadeIn = new AlphaAnimation(0.0f, 1.0f);
-        fadeIn.setDuration(500);
+        fadeIn.setDuration(250);
 
-        int firstVisiblePosition = mMessageList.getFirstVisiblePosition();
+        /*int firstVisiblePosition = mMessageList.getFirstVisiblePosition();
         int lastVisiblePosition = mMessageList.getLastVisiblePosition();
         int visibleSize = lastVisiblePosition - firstVisiblePosition;
-        Log.v(LOG_TAG, "first position: " + firstVisiblePosition);
-        Log.v(LOG_TAG, "last position: " + lastVisiblePosition);
 
         for (int i = 0; i < visibleSize; i++) {
             View view = mMessageList.getChildAt(i);
@@ -603,6 +568,6 @@ public class MessageListFragment extends Fragment implements
             View view = mMessageList.getChildAt(i);
             TextView timestamp = (TextView) view.findViewById(R.id.list_item_time);
             timestamp.startAnimation(fadeIn);
-        }
+        }*/
     }
 }

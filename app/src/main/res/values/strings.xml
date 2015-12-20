@@ -30,13 +30,8 @@
     <string name="post_message_ok">Message posted</string>
 
     <string name="arrow">➤</string>
-    <string name="title_activity_topic_list_bar">TopicListBarActivity</string>
-
-    <string name="title_section1">Section 1</string>
-    <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string>
 
     <string name="bookmarks">Bookmarks</string>
-    <string name="drawer_open">Open navigation drawer</string>
-    <string name="drawer_close">Close navigation drawer</string>
+    <string name="drawer_open">Open bookmarks</string>
+    <string name="drawer_close">Close bookmarks</string>
 </resources>

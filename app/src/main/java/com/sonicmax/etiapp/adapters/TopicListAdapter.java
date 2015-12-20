@@ -3,6 +3,7 @@ package com.sonicmax.etiapp.adapters;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.CardView;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -143,11 +144,11 @@ public class TopicListAdapter extends BaseAdapter {
 
         // Highlight topic if pinned
         if (topic.getTags().toString().matches(".*\\bPinned\\b.*")) {
-            convertView.setBackgroundColor(HEADER_GREY);
+            ((CardView) convertView).setCardBackgroundColor(HEADER_GREY);
         }
         else {
             // We have to manually set the default colour because the adapter will reuse views
-            convertView.setBackgroundColor(BG_GREY);
+            ((CardView) convertView).setCardBackgroundColor(BG_GREY);
         }
 
         return convertView;

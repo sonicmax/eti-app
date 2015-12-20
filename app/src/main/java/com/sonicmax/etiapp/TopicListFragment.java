@@ -88,7 +88,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
         View rootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
 
-        mBoardName = (TextView) rootView.findViewById(R.id.board_name);
+        mBoardName = (TextView) rootView.findViewById(R.id.board_name_text);
         String name = getActivity().getIntent().getStringExtra("boardname");
         mBoardName.setText(name);
 

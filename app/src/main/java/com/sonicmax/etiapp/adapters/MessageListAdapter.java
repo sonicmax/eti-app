@@ -1,12 +1,17 @@
 package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.RecyclerView;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Checkable;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -18,6 +23,7 @@ import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -26,15 +32,18 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MessageListAdapter extends BaseAdapter {
+public class MessageListAdapter extends SelectableAdapter {
 
     private final String LOG_TAG = MessageListAdapter.class.getSimpleName();
+    private final int BG_GREY;
+    private final int FG_GREY;
+
     private final Context mContext;
+    private final ClickListener mClickListener;
 
     private Builder mBuilder;
     private SimpleDateFormat mDateFormat;
     private List<Message> mMessages = Collections.emptyList();
-    private ListView mListView;
 
     private int CURRENT_YEAR;
     private int CURRENT_MONTH;
@@ -43,11 +52,16 @@ public class MessageListAdapter extends BaseAdapter {
     private int CURRENT_MINUTE;
     private int CURRENT_SECOND;
 
-    public MessageListAdapter(Context context) {
+    public MessageListAdapter(Context context, ClickListener clickListener) {
         final String etiTimestamp = "MM/dd/yyyy hh:mm:ss aa";
 
         mContext = context;
         mDateFormat = new SimpleDateFormat(etiTimestamp, Locale.US);
+        mClickListener = clickListener;
+
+        // Resolve colours from resources for use in onBindViewHolder() method
+        BG_GREY = ContextCompat.getColor(context, R.color.bg_grey);
+        FG_GREY = ContextCompat.getColor(context, R.color.fg_grey);
 
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             mBuilder = new MessageBuilder(mContext);
@@ -76,7 +90,7 @@ public class MessageListAdapter extends BaseAdapter {
     }
 
     private void startTimer() {
-        final int ONE_MINUTE = 60000;
+        final int THIRTY_SECONDS = 30000;
 
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -85,7 +99,7 @@ public class MessageListAdapter extends BaseAdapter {
                 setCurrentTime();
             }
 
-        }, 0, ONE_MINUTE);
+        }, 0, THIRTY_SECONDS);
     }
 
     public void setCurrentTime() {
@@ -100,11 +114,10 @@ public class MessageListAdapter extends BaseAdapter {
     }
 
     @Override
-    public int getCount() {
+    public int getItemCount() {
         return mMessages.size();
     }
 
-    @Override
     public Message getItem(int position) {
         return mMessages.get(position);
     }
@@ -114,61 +127,85 @@ public class MessageListAdapter extends BaseAdapter {
         return position;
     }
 
-    private static class ViewHolder {
-        public final TextView userView;
-        public final TextView timeView;
-        public final TextView postNumberView;
-        public final TextView messageView;
+    public class MessageViewHolder extends RecyclerView.ViewHolder
+            implements View.OnClickListener, View.OnLongClickListener{
 
-        public ViewHolder(TextView username, TextView time, TextView count, TextView message) {
-            this.userView = username;
-            this.timeView = time;
-            this.postNumberView = count;
-            this.messageView = message;
+        private final String LOG_TAG = MessageViewHolder.class.getSimpleName();
+
+        private final CardView cardView;
+        private final TextView userView;
+        private final TextView timeView;
+        private final TextView postNumberView;
+        private final TextView messageView;
+
+        public MessageViewHolder(View view) {
+            super(view);
+            cardView = (CardView) view;
+            userView = (TextView) view.findViewById(R.id.list_item_username);
+            timeView = (TextView) view.findViewById(R.id.list_item_time);
+            postNumberView = (TextView) view.findViewById(R.id.list_item_count);
+            messageView = (TextView) view.findViewById(R.id.list_item_message_body);
+
+            // Set MaxCardElevation to 6 so we can increase it dynamically when selecting cards
+            cardView.setMaxCardElevation(6);
+
+            // Dispatch click events to ClickListener
+            userView.setOnClickListener(this);
+            view.setOnLongClickListener(this);
+
+            // messageView.setLongClickable(true);
+            // messageView.setMovementMethod(LinkMovementMethod.getInstance());
+        }
+
+        @Override
+        public void onClick(View view) {
+            if (mClickListener != null) {
+                mClickListener.onItemClick(getAdapterPosition());
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            if (mClickListener != null) {
+                return mClickListener.onItemLongClick(getAdapterPosition());
+            }
+
+            return false;
         }
     }
 
+    public interface ClickListener {
+        void onItemClick(int position);
+        boolean onItemLongClick(int position);
+    }
+
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-
+    public MessageViewHolder onCreateViewHolder(ViewGroup viewGroup, int position) {
         // Fix to ensure that ClickableSpans work correctly in ListView
-        parent.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        viewGroup.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
 
-        mListView = (ListView) parent;
-        TextView userView, timeView, postNumberView, messageView;
+        return new MessageViewHolder(LayoutInflater.
+                from(viewGroup.getContext()).
+                inflate(R.layout.list_item_message, viewGroup, false));
+    }
 
-        if (convertView == null) {
-
-            convertView = LayoutInflater.from(mContext)
-                    .inflate(R.layout.list_item_message, parent, false);
-
-            userView = (TextView) convertView.findViewById(R.id.list_item_username);
-            timeView = (TextView) convertView.findViewById(R.id.list_item_time);
-            postNumberView = (TextView) convertView.findViewById(R.id.list_item_count);
-            messageView = (TextView) convertView.findViewById(R.id.list_item_message_body);
-
-            convertView.setTag(new ViewHolder(userView, timeView, postNumberView, messageView));
-
-        } else {
-            ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-            userView = viewHolder.userView;
-            timeView = viewHolder.timeView;
-            postNumberView = viewHolder.postNumberView;
-            messageView = viewHolder.messageView;
-        }
-
+    @Override
+    public void onBindViewHolder(MessageViewHolder viewHolder, int position) {
         Message message = getItem(position);
-        messageView.setText(mBuilder.buildMessage(message.getHtml()));
 
-        userView.setText(message.getUser());
-        timeView.setText(getFuzzyTimestamp(message.getTimestamp()));
-        postNumberView.setText(message.getPosition());
+        viewHolder.messageView.setText(mBuilder.buildMessage(message.getHtml()));
+        viewHolder.userView.setText(message.getUser());
+        viewHolder.timeView.setText(getFuzzyTimestamp(message.getTimestamp()));
+        viewHolder.postNumberView.setText(message.getPosition());
 
-        messageView.setMovementMethod(LinkMovementMethod.getInstance());
-        messageView.setLongClickable(true);
-        userView.setOnClickListener(filterHandler);
-
-        return convertView;
+        if (isSelected(position)) {
+            viewHolder.cardView.setCardBackgroundColor(FG_GREY);
+            viewHolder.cardView.setCardElevation(6);
+        }
+        else {
+            viewHolder.cardView.setCardBackgroundColor(BG_GREY);
+            viewHolder.cardView.setCardElevation(2);
+        }
     }
 
     private String getFuzzyTimestamp(String timestamp) {
@@ -251,17 +288,5 @@ public class MessageListAdapter extends BaseAdapter {
 
         return "Just now";
     }
-
-    private View.OnClickListener filterHandler = new View.OnClickListener() {
-
-        @Override
-        public void onClick(View view) {
-
-            final boolean FILTERED = true;
-            final int position = mListView.getPositionForView((View) view.getParent());
-            Message target = mMessages.get(position);
-            // TODO: Implement LoaderCallbacks here or use fragment
-        }
-    };
 
 }
