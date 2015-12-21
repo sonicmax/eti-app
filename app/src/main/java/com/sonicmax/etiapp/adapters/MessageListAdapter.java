@@ -5,14 +5,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.Checkable;
-import android.widget.ListView;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.objects.Message;
@@ -20,98 +17,56 @@ import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.ui.Builder;
 import com.sonicmax.etiapp.ui.MessageBuilder;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
+import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class MessageListAdapter extends SelectableAdapter {
-
-    private final String LOG_TAG = MessageListAdapter.class.getSimpleName();
     private final int BG_GREY;
     private final int FG_GREY;
-
     private final Context mContext;
     private final ClickListener mClickListener;
 
-    private Builder mBuilder;
-    private SimpleDateFormat mDateFormat;
+    private int mLastPosition;
+    private Builder mMessageBuilder;
+    private FuzzyTimestampBuilder mTimestampBuilder;
     private List<Message> mMessages = Collections.emptyList();
 
-    private int CURRENT_YEAR;
-    private int CURRENT_MONTH;
-    private int CURRENT_DAY_OF_MONTH;
-    private int CURRENT_HOUR_OF_DAY;
-    private int CURRENT_MINUTE;
-    private int CURRENT_SECOND;
-
     public MessageListAdapter(Context context, ClickListener clickListener) {
-        final String etiTimestamp = "MM/dd/yyyy hh:mm:ss aa";
+        final String etiDateFormat = "MM/dd/yyyy hh:mm:ss aa";
 
         mContext = context;
-        mDateFormat = new SimpleDateFormat(etiTimestamp, Locale.US);
         mClickListener = clickListener;
+        mTimestampBuilder = new FuzzyTimestampBuilder(etiDateFormat);
 
         // Resolve colours from resources for use in onBindViewHolder() method
         BG_GREY = ContextCompat.getColor(context, R.color.bg_grey);
         FG_GREY = ContextCompat.getColor(context, R.color.fg_grey);
 
         if (android.os.Build.VERSION.SDK_INT >= 21) {
-            mBuilder = new MessageBuilder(mContext);
+            mMessageBuilder = new MessageBuilder(mContext);
         } else {
-            mBuilder = new SupportMessageBuilder(mContext);
+            mMessageBuilder = new SupportMessageBuilder(mContext);
         }
-
-        startTimer();
     }
 
     public void updateMessages(List<Message> messages) {
-        setCurrentTime();
         mMessages.clear();
         mMessages = messages;
         notifyDataSetChanged();
+        mLastPosition = messages.size() - 1;
     }
 
     public void appendMessages(List<Message> messages) {
         mMessages.addAll(messages);
         notifyItemRangeChanged(mMessages.size() - 1,
-                mMessages.size() + messages.size() - 1);
+                mMessages.size() + messages.size() - 2);
     }
 
     public void clearMessages() {
         mMessages.clear();
         notifyDataSetChanged();
-    }
-
-    private void startTimer() {
-        final int THIRTY_SECONDS = 30000;
-
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                setCurrentTime();
-            }
-
-        }, 0, THIRTY_SECONDS);
-    }
-
-    public void setCurrentTime() {
-        // Set current date/time so we can create fuzzy timestamps (eg "1 minute ago")
-        GregorianCalendar calendar = new GregorianCalendar();
-        CURRENT_YEAR = calendar.get(GregorianCalendar.YEAR);
-        CURRENT_MONTH = calendar.get(GregorianCalendar.MONTH);
-        CURRENT_DAY_OF_MONTH = calendar.get(GregorianCalendar.DAY_OF_MONTH);
-        CURRENT_HOUR_OF_DAY = calendar.get(GregorianCalendar.HOUR_OF_DAY);
-        CURRENT_MINUTE = calendar.get(GregorianCalendar.MINUTE);
-        CURRENT_SECOND = calendar.get(GregorianCalendar.SECOND);
     }
 
     @Override
@@ -131,8 +86,6 @@ public class MessageListAdapter extends SelectableAdapter {
     public class MessageViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener{
 
-        private final String LOG_TAG = MessageViewHolder.class.getSimpleName();
-
         private final CardView cardView;
         private final TextView userView;
         private final TextView timeView;
@@ -151,11 +104,11 @@ public class MessageListAdapter extends SelectableAdapter {
             cardView.setMaxCardElevation(6);
 
             // Dispatch click events to ClickListener
-            userView.setOnClickListener(this);
-            view.setOnLongClickListener(this);
+            cardView.setOnLongClickListener(this);
 
             // messageView.setLongClickable(true);
             // messageView.setMovementMethod(LinkMovementMethod.getInstance());
+            // userView.setOnClickListener(this);
         }
 
         @Override
@@ -194,100 +147,33 @@ public class MessageListAdapter extends SelectableAdapter {
     public void onBindViewHolder(MessageViewHolder viewHolder, int position) {
         Message message = getItem(position);
 
-        viewHolder.messageView.setText(mBuilder.buildMessage(message.getHtml()));
+        viewHolder.messageView.setText(mMessageBuilder.buildMessage(message.getHtml()));
         viewHolder.userView.setText(message.getUser());
-        viewHolder.timeView.setText(getFuzzyTimestamp(message.getTimestamp()));
+        viewHolder.timeView.setText(mTimestampBuilder.getFuzzyTimestamp(message.getTimestamp()));
         viewHolder.postNumberView.setText(message.getPosition());
 
         if (isSelected(position)) {
+            // Increase card elevation in accordance with design guidelines
             viewHolder.cardView.setCardBackgroundColor(FG_GREY);
             viewHolder.cardView.setCardElevation(6);
         }
         else {
+            // We need to manually set default background color/card elevation
             viewHolder.cardView.setCardBackgroundColor(BG_GREY);
             viewHolder.cardView.setCardElevation(2);
         }
+
+        // Animate new posts as they are added to adapter (but not for initial page load)
+        if (position > mLastPosition) {
+            slideInFromRight(viewHolder.cardView);
+            mLastPosition = position;
+        }
     }
 
-    private String getFuzzyTimestamp(String timestamp) {
-        Date date;
-
-        try {
-            date = mDateFormat.parse(timestamp);
-        } catch (ParseException e) {
-            Log.e(LOG_TAG, "Error parsing date for getView method", e);
-            return null;
-        }
-
-        GregorianCalendar postCalendar = new GregorianCalendar();
-        postCalendar.setTime(date);
-
-        return getDifference(postCalendar);
-    }
-
-    private String getDifference(GregorianCalendar postCalendar) {
-
-        int postYear = postCalendar.get(GregorianCalendar.YEAR);
-
-        if (CURRENT_YEAR > postYear) {
-            if (CURRENT_YEAR - postYear > 1) {
-                return (CURRENT_YEAR - postYear) + " years ago";
-            } else {
-                return "1 year ago";
-            }
-        }
-
-        int postMonth = postCalendar.get(GregorianCalendar.MONTH);
-
-        if (CURRENT_MONTH > postMonth) {
-            if (CURRENT_MONTH - postMonth > 1) {
-                return (CURRENT_MONTH - postMonth) + " months ago";
-            } else {
-                return "1 month ago";
-            }
-        }
-
-        int postDay = postCalendar.get(GregorianCalendar.DAY_OF_MONTH);
-
-        if (CURRENT_DAY_OF_MONTH > postDay) {
-            if (CURRENT_DAY_OF_MONTH - postDay > 1) {
-                return (CURRENT_DAY_OF_MONTH - postDay) + " days ago";
-            } else {
-                return "1 day ago";
-            }
-        }
-
-        int postHour = postCalendar.get(GregorianCalendar.HOUR_OF_DAY);
-
-        if (CURRENT_HOUR_OF_DAY > postHour) {
-            if (CURRENT_HOUR_OF_DAY - postHour > 1) {
-                return (CURRENT_HOUR_OF_DAY - postHour) + " hours ago";
-            } else {
-                return "1 hour ago";
-            }
-        }
-
-        int postMinute = postCalendar.get(GregorianCalendar.MINUTE);
-
-        if (CURRENT_MINUTE > postMinute) {
-            if (CURRENT_MINUTE - postMinute > 1) {
-                return (CURRENT_MINUTE - postMinute) + " minutes ago";
-            } else {
-                return "1 minute ago";
-            }
-        }
-
-        int postSecond = postCalendar.get(GregorianCalendar.SECOND);
-
-        if (CURRENT_SECOND > postSecond) {
-            if (CURRENT_SECOND - postSecond > 1) {
-                return (CURRENT_SECOND - postSecond) + " seconds ago";
-            } else {
-                return "1 second ago";
-            }
-        }
-
-        return "Just now";
+    private void slideInFromRight(View view) {
+        // Animate new livelinks posts as they are added to adapter
+        Animation animation = AnimationUtils.loadAnimation(mContext, R.anim.slide_in_from_right);
+        view.startAnimation(animation);
     }
 
 }
