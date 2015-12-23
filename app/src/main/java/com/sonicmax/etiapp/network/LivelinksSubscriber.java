@@ -185,16 +185,18 @@ public class LivelinksSubscriber {
 
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
-            String response = (String) data;
-            switch (loader.getId()) {
-                case LIVELINKS:
-                    handleLivelinksResponse(response);
-                    break;
+            if (data != null) {
+                String response = (String) data;
+                switch (loader.getId()) {
+                    case LIVELINKS:
+                        handleLivelinksResponse(response);
+                        break;
 
-                case FETCH_MESSAGE:
-                    onReceiveUpdate(response, mTopicSize);
-                    subscribe();
-                    break;
+                    case FETCH_MESSAGE:
+                        onReceiveUpdate(response, mTopicSize);
+                        subscribe();
+                        break;
+                }
             }
         }
 
