@@ -123,7 +123,7 @@ public class LivelinksSubscriber {
         JSONObject parsedResponse = parseLivelinksResponse(response);
 
         if (parsedResponse.length() == 0) {
-            // Empty response means that request timed out. Happens every 70 seconds
+            // Empty response means that request timed out.
             subscribe();
         }
 
@@ -164,8 +164,7 @@ public class LivelinksSubscriber {
             }
 
             if (newInboxSize > mInboxSize) {
-                // Notify user that they have new PMs. We should then store this locally
-                // To avoid having to make unnecessary web requests.
+                // Notify user that they have new PMs
             }
         }
     }
