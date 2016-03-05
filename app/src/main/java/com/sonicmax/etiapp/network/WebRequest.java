@@ -176,7 +176,9 @@ public class WebRequest {
         int size = SharedPreferenceManager.getInt(mContext, "cookie_array_size");
         for (int i = 0; i < size; i++) {
             String cookie = SharedPreferenceManager.getString(mContext, "cookie_array" + i);
-            mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
+            if (cookie != null) {
+                mCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
+            }
         }
     }
 
