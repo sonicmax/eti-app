@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.sonicmax.etiapp.utilities.FormDataBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.YetiUriBuilder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class WebRequest {
         values.put("payload", args.getString("payload"));
 
         if (args.getString("url") == null) {
-            this.uri = createUriForRequest(requestType);
+            this.uri = new YetiUriBuilder(requestType, values).build();
         }
         else {
             this.uri = Uri.parse(args.getString("url"));
@@ -196,62 +197,5 @@ public class WebRequest {
                 SharedPreferenceManager.putBoolean(mContext, "logged_in", true);
             }
         }
-    }
-
-    private Uri createUriForRequest(String requestType) {
-        Uri.Builder builder = new Uri.Builder();
-        builder.scheme("https");
-
-        switch (requestType) {
-            case "topiclist":
-                builder.authority("boards.endoftheinter.net")
-                        .appendPath("topics")
-                        .appendPath(values.get("tags").toString());
-                break;
-
-            case "newtopic":
-                builder.authority("boards.endoftheinter.net")
-                        .appendPath("postmsg.php");
-                break;
-
-            case "newmessage":
-                builder.authority("boards.endoftheinter.net")
-                        .appendPath("postmsg.php")
-                        .appendQueryParameter("topic", values.get("id").toString());
-                break;
-
-            case "livelinks":
-                builder.authority("evt0.endoftheinter.net")
-                        .appendPath("subscribe");
-                break;
-
-            case "moremessages":
-                builder.authority("boards.endoftheinter.net")
-                        .appendPath("moremessages.php")
-                        .appendQueryParameter("topic", values.get("topic").toString())
-                        .appendQueryParameter("old", values.get("old").toString())
-                        .appendQueryParameter("new", values.get("new").toString())
-                        .appendQueryParameter("filter", values.get("filter").toString());
-                break;
-            
-            case "home":
-                builder.authority("endoftheinter.net")
-                        .appendPath("main.php");
-                break;
-
-            case "login":
-                builder.authority("iphone.endoftheinter.net");
-                break;
-
-            case "logout":
-                builder.authority("endoftheinter.net")
-                        .appendPath("logout.php");
-                break;
-
-            default:
-                break;
-        }
-
-        return builder.build();
     }
 }
