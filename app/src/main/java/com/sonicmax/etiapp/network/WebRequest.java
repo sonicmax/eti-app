@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.sonicmax.etiapp.utilities.FormDataBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import java.io.BufferedReader;
@@ -33,7 +34,6 @@ public class WebRequest {
     private ContentValues values;
     private URL url;
     private Uri uri;
-    private String mPayload;
     private CookieManager mCookieManager;
 
     /**
@@ -46,7 +46,7 @@ public class WebRequest {
         this.httpMethod = args.getString("method");
         this.requestType = args.getString("type");
         this.values = args.getParcelable("values");
-        this.mPayload = args.getString("payload");
+        values.put("payload", args.getString("payload"));
 
         if (args.getString("url") == null) {
             this.uri = createUriForRequest(requestType);
@@ -89,12 +89,11 @@ public class WebRequest {
 
             if (httpMethod.equals("POST")) {
 
-                formData = createFormDataForRequest(requestType, values);
-
-                if (formData == null) {
-                    // Cancel request
+                if (values == null) {
                     return null;
                 }
+
+                formData = new FormDataBuilder(requestType, values).build();
 
                 // Set request headers
                 connection.setDoOutput(true);
@@ -112,8 +111,6 @@ public class WebRequest {
                 writer = new PrintWriter(connection.getOutputStream());
                 writer.print(formData);
                 writer.close();
-
-                // Log.v(LOG_TAG, connection.getHeaderFields().toString());
 
                 if (requestType.equals("login")) {
                     // Get cookies from response
@@ -256,53 +253,5 @@ public class WebRequest {
         }
 
         return builder.build();
-    }
-
-    private String createFormDataForRequest(String requestType, ContentValues values) {
-        String topic, formData, message, h, submit;
-        try {
-            switch (requestType) {
-                case "newmessage":
-                    topic = values.get("id").toString();
-                    message = values.get("message").toString();
-                    h = values.get("h").toString();
-                    submit = "Post Message";
-                    formData = "topic=" + topic + "&message=" + message + "&h=" + h
-                            + "&submit=" + submit;
-                    break;
-
-                case "newtopic":
-                    String title = values.get("title").toString();
-                    String tag = values.get("tag").toString();
-                    message = values.get("message").toString();
-                    h = values.get("h").toString();
-                    submit = "Post Message";
-                    formData = "title=" + title + "&tag=" + tag
-                            + "&message=" + message + "&h=" + h
-                            + "&submit=" + submit;
-                    break;
-
-                case "login":
-                    String username = values.get("username").toString();
-                    String password = values.get("password").toString();
-                    formData = "username=" + username + "&password=" + password;
-                    break;
-
-                case "livelinks":
-                    formData = mPayload;
-                    break;
-
-                default:
-                    return null;
-            }
-
-            URLEncoder.encode(formData, "UTF-8");
-
-        } catch (UnsupportedEncodingException e) {
-            Log.e(LOG_TAG, "Error creating form data: ", e);
-            return null;
-        }
-
-        return formData;
     }
 }
