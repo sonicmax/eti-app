@@ -3,13 +3,17 @@ package com.sonicmax.etiapp.ui;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.ImageSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 
+import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.utilities.LineBreakConverter;
 
 import org.jsoup.Jsoup;
@@ -33,9 +37,12 @@ public class SupportMessageBuilder extends Builder {
     private Context mContext;
     // Quote depth indicates the current level of nesting while iterating over quoted-message elements
     private int quoteDepth = 0;
+    private Drawable mSpinner;
 
     public SupportMessageBuilder(Context context) {
         mContext = context;
+        mSpinner = ContextCompat.getDrawable(context, R.drawable.spinner_16_inner_holo);
+        mSpinner.setBounds(0, 0, mSpinner.getIntrinsicWidth(), mSpinner.getIntrinsicHeight());
     }
 
     @Override
@@ -141,9 +148,12 @@ public class SupportMessageBuilder extends Builder {
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "imgs":
-                            // TODO: Implement image thumbnails
-                            builder.append("[Images]");
-                            builder.append(NEWLINE);
+                            SpannableStringBuilder imageSpan = getImagesFrom(element);
+                            builder.append(imageSpan);
+                            builder.setSpan(new SpannableStringBuilder(),
+                                    builder.length() - imageSpan.length(),
+                                    builder.length(),
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "spoiler_closed":
                             String spoilerCaption = getSpoilerCaption(element);
@@ -175,22 +185,25 @@ public class SupportMessageBuilder extends Builder {
         return builder;
     }
 
-    private String getImagesFrom(Element imgs) {
-
-        final String OPEN_IMG = "<img imgsrc=\"";
-        final String CLOSE_IMG = "\" />";
+    private SpannableStringBuilder getImagesFrom(Element imgs) {
+        SpannableStringBuilder output = new SpannableStringBuilder();
 
         // Iterate over image anchor tags to get src attribute
         Elements anchors = imgs.getElementsByTag("a");
-        String imgOutput = "";
         int anchorLength = anchors.size();
 
         for (int j = 0; j < anchorLength; j++) {
             Element imgAnchor = anchors.get(j);
-            imgOutput += OPEN_IMG  + imgAnchor.attr("imgsrc") + CLOSE_IMG + NEWLINE;
+            // Apparently the only way we can append ImageSpans is to append a string, and then use setSpan.
+            String stupidEmptyString = " ";
+            output.append(stupidEmptyString);
+            output.setSpan(new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                    output.length() - stupidEmptyString.length(),
+                    output.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
-        return imgOutput;
+        return output;
     }
 
     private String getSpoilerCaption(Element spoiler) {

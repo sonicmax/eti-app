@@ -1,10 +1,16 @@
 package com.sonicmax.etiapp.adapters;
 
+import android.app.ActivityManager;
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.util.LruCache;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
+import android.text.style.ImageSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,27 +18,36 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
-import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.network.ImageLoader;
+import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.ui.Builder;
 import com.sonicmax.etiapp.ui.MessageBuilder;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
+import com.sonicmax.etiapp.utilities.ImageCache;
 
 import java.util.Collections;
 import java.util.List;
 
 public class MessageListAdapter extends SelectableAdapter {
+    private final String LOG_TAG = MessageListAdapter.class.getSimpleName();
     private final int BG_GREY;
     private final int FG_GREY;
     private final Context mContext;
     private final ClickListener mClickListener;
+    private final Builder mMessageBuilder;
+    private final FuzzyTimestampBuilder mTimestampBuilder;
+    private final ImageCache mImageCache;
 
     private int mLastPosition;
-    private Builder mMessageBuilder;
-    private FuzzyTimestampBuilder mTimestampBuilder;
     private List<Message> mMessages = Collections.emptyList();
 
+    /**
+     * Adapter to display Message objects in a RecyclerView.
+     * @param context
+     * @param clickListener Listener to dispatch click/long click events back to fragment
+     */
     public MessageListAdapter(Context context, ClickListener clickListener) {
         final String etiDateFormat = "MM/dd/yyyy hh:mm:ss aa";
 
@@ -49,19 +64,25 @@ public class MessageListAdapter extends SelectableAdapter {
         } else {
             mMessageBuilder = new SupportMessageBuilder(mContext);
         }
+
+        mImageCache = new ImageCache(context);
     }
 
-    public void updateMessages(List<Message> messages) {
+    ///////////////////////////////////////////////////////////////////////////
+    // Getters/setters/etc
+    ///////////////////////////////////////////////////////////////////////////
+
+    public void replaceAllMessages(List<Message> messages) {
         mMessages.clear();
         mMessages = messages;
         notifyDataSetChanged();
         mLastPosition = messages.size() - 1;
     }
 
-    public void appendMessages(List<Message> messages) {
+    public void addMessages(List<Message> messages) {
         mMessages.addAll(messages);
-        notifyItemRangeChanged(mMessages.size() - 1,
-                mMessages.size() + messages.size() - 2);
+        // Account for 0-indexing in item range
+        notifyItemRangeChanged(mMessages.size() - 1, mMessages.size() + messages.size() - 2);
     }
 
     public void clearMessages() {
@@ -69,13 +90,13 @@ public class MessageListAdapter extends SelectableAdapter {
         notifyDataSetChanged();
     }
 
+    public Message getItem(int position) {
+        return mMessages.get(position);
+    }
+
     @Override
     public int getItemCount() {
         return mMessages.size();
-    }
-
-    public Message getItem(int position) {
-        return mMessages.get(position);
     }
 
     @Override
@@ -83,6 +104,17 @@ public class MessageListAdapter extends SelectableAdapter {
         return position;
     }
 
+    public void setCurrentTime() {
+        mTimestampBuilder.setCurrentTime();
+    }
+
+    public void clearLruCache() {
+        mImageCache.clearLruCache();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Methods which modify UI elements
+    ///////////////////////////////////////////////////////////////////////////
     public class MessageViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener{
 
@@ -103,27 +135,21 @@ public class MessageListAdapter extends SelectableAdapter {
             // Set MaxCardElevation to 6 so we can increase it dynamically when selecting cards
             cardView.setMaxCardElevation(6);
 
-            // Dispatch click events to ClickListener
+            // Dispatch long click events to ClickListener so we can handle them in fragment
             cardView.setOnLongClickListener(this);
 
-            // messageView.setLongClickable(true);
-            // messageView.setMovementMethod(LinkMovementMethod.getInstance());
-            // userView.setOnClickListener(this);
+            // Handle ClickableSpans
+            messageView.setMovementMethod(LinkMovementMethod.getInstance());
         }
 
         @Override
         public void onClick(View view) {
-            if (mClickListener != null) {
-                mClickListener.onItemClick(getAdapterPosition());
-            }
+            mClickListener.onItemClick(getAdapterPosition());
         }
 
         @Override
         public boolean onLongClick(View view) {
-            if (mClickListener != null) {
-                return mClickListener.onItemLongClick(getAdapterPosition());
-            }
-
+            mClickListener.onItemLongClick(getAdapterPosition());
             return false;
         }
     }
@@ -135,19 +161,55 @@ public class MessageListAdapter extends SelectableAdapter {
 
     @Override
     public MessageViewHolder onCreateViewHolder(ViewGroup viewGroup, int position) {
-        // Fix to ensure that ClickableSpans work correctly in ListView
-        viewGroup.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-
         return new MessageViewHolder(LayoutInflater.
                 from(viewGroup.getContext()).
                 inflate(R.layout.list_item_message, viewGroup, false));
     }
 
     @Override
-    public void onBindViewHolder(MessageViewHolder viewHolder, int position) {
+    public void onBindViewHolder(final MessageViewHolder viewHolder, final int position) {
         Message message = getItem(position);
 
-        viewHolder.messageView.setText(mMessageBuilder.buildMessage(message.getHtml()));
+        final SpannableStringBuilder messageSpan = mMessageBuilder.buildMessage(message.getHtml());
+        viewHolder.messageView.setText(messageSpan);
+
+        // Check whether we need to load images
+        if (messageSpan.getSpans(0, messageSpan.length(), ImageSpan.class).length > 0) {
+
+            new ImageLoader(mContext) {
+
+                @Override
+                public boolean onPreLoad(ImageSpan img) {
+                    // Check LRU cache before attempting to load image
+                    BitmapDrawable cachedBitmap = mImageCache.getBitmapFromCache(img.getSource());
+
+                    if (cachedBitmap != null) {
+                        onFinishLoad(cachedBitmap, img);
+                        return false;
+                    }
+                    else {
+                        return true; // ImageLoader.loadImages() will continue to execute
+                    }
+                }
+
+                @Override
+                public void onFinishLoad(BitmapDrawable bitmap, ImageSpan img) {
+                    ImageSpan newImg = new ImageSpan(bitmap, img.getSource());
+                    mImageCache.addBitmapToCache(img.getSource(), bitmap);
+
+                    // Find position of placeholder, remove and replace with loaded image
+                    int start = messageSpan.getSpanStart(img);
+                    int end = messageSpan.getSpanEnd(img);
+                    messageSpan.removeSpan(img);
+                    messageSpan.setSpan(newImg, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                    // Update view
+                    viewHolder.messageView.setText(messageSpan);
+                }
+
+            }.loadImages(messageSpan, position);
+        }
+
         viewHolder.userView.setText(message.getUser());
         viewHolder.timeView.setText(mTimestampBuilder.getFuzzyTimestamp(message.getTimestamp()));
         viewHolder.postNumberView.setText(message.getPosition());
@@ -175,5 +237,4 @@ public class MessageListAdapter extends SelectableAdapter {
         Animation animation = AnimationUtils.loadAnimation(mContext, R.anim.slide_in_from_right);
         view.startAnimation(animation);
     }
-
 }

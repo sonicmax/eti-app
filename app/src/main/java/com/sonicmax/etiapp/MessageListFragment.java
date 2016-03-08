@@ -109,7 +109,7 @@ public class MessageListFragment extends Fragment implements
             currentPage = savedInstanceState.getInt("page");
             mMessages = savedInstanceState.getParcelableArrayList("messages");
 
-            mMessageListAdapter.updateMessages(mMessages);
+            mMessageListAdapter.replaceAllMessages(mMessages);
         }
 
         super.onCreate(savedInstanceState);
@@ -161,6 +161,7 @@ public class MessageListFragment extends Fragment implements
     public void onStop() {
         // Clear adapter before stopping activity
         mMessageListAdapter.clearMessages();
+        mMessageListAdapter.clearLruCache();
 
         // Make sure that livelinks loader is destroyed
         if (mLivelinksSubscriber != null) {
@@ -467,7 +468,7 @@ public class MessageListFragment extends Fragment implements
         if (data != null) {
             // We can be sure that data will safely cast to List<Message>.
             mMessages = (List<Message>) data;
-            mMessageListAdapter.updateMessages(mMessages);
+            mMessageListAdapter.replaceAllMessages(mMessages);
 
             boolean isLastPage = currentPage == mTopic.getLastPage(0);
             if (isLastPage && mLivelinksSubscriber == null) {
@@ -521,12 +522,11 @@ public class MessageListFragment extends Fragment implements
 
                 if (position > totalPosts) {
                     mTopic.addToSize(sizeOfNewMessages);
-                    mMessageListAdapter.appendMessages(newMessages);
+                    mMessageListAdapter.addMessages(newMessages);
                     animateTimestampChange();
                 }
                 else {
                     // Position of new message should never be less than size of topic.
-                    // Do nothing and hope for the best
                     Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
                             "Position = " + position + ", topic size = " + totalPosts);
                 }

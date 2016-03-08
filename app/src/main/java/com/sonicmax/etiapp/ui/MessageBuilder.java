@@ -4,7 +4,8 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.net.Uri;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ImageSpan;
@@ -12,6 +13,7 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 
+import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.utilities.LineBreakConverter;
 
 import org.jsoup.Jsoup;
@@ -34,9 +36,12 @@ public class MessageBuilder extends Builder {
     private Context mContext;
     // Quote depth indicates the current level of nesting while iterating over quoted-message elements
     private int quoteDepth = 0;
+    private Drawable mSpinner;
 
     public MessageBuilder(Context context) {
         mContext = context;
+        mSpinner = ContextCompat.getDrawable(context, R.drawable.spinner_16_inner_holo);
+        mSpinner.setBounds(0, 0, mSpinner.getIntrinsicWidth(), mSpinner.getIntrinsicHeight());
     }
 
     @Override
@@ -149,17 +154,18 @@ public class MessageBuilder extends Builder {
 
     @TargetApi(21)
     private SpannableStringBuilder getImagesFrom(Element imgs) {
+        SpannableStringBuilder output = new SpannableStringBuilder();
 
         // Iterate over image anchor tags to get src attribute
         Elements anchors = imgs.getElementsByTag("a");
-        SpannableStringBuilder output = new SpannableStringBuilder();
         int anchorLength = anchors.size();
 
         for (int j = 0; j < anchorLength; j++) {
             Element imgAnchor = anchors.get(j);
-            ImageSpan image = new ImageSpan(mContext,
-                    Uri.parse(imgAnchor.attr("imgsrc")));
-            output.append("", image, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            // Apparently this is the only way to append an ImageSpan
+            output.append(" ",
+                    new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         return output;
