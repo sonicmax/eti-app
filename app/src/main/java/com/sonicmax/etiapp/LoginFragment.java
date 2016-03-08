@@ -17,7 +17,7 @@ import android.widget.EditText;
 
 import com.sonicmax.etiapp.network.LoginScriptBuilder;
 import com.sonicmax.etiapp.network.WebRequest;
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.Toaster;
 
@@ -122,7 +122,7 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
         final Context context = getContext();
 
         switch (id) {
-            // TODO: Perform SCRIPT_BUILD and STATUS_CHECK in same AsyncLoadHandler
+            // TODO: Perform SCRIPT_BUILD and STATUS_CHECK in same AsyncLoader
             case SCRIPT_BUILD:
                 return new LoginScriptBuilder(context);
 
@@ -134,7 +134,7 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
                 mDialog.setMessage(getDialogMessage(id));
                 mDialog.show();
 
-                return new AsyncLoadHandler(context, args) {
+                return new AsyncLoader(context, args) {
                     @Override
                     public String loadInBackground() {
                         return new WebRequest(context, args).sendRequest();

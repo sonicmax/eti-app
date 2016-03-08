@@ -18,7 +18,7 @@ import android.widget.TextView;
 
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Topic;
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 public class PostMessageFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
@@ -116,7 +116,7 @@ public class PostMessageFragment extends Fragment implements LoaderManager.Loade
         mDialog.setMessage("Posting message...");
         mDialog.show();
 
-        return new AsyncLoadHandler(context, args) {
+        return new AsyncLoader(context, args) {
 
             @Override
             public String loadInBackground() {

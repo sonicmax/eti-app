@@ -12,7 +12,7 @@ import android.widget.PopupWindow;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.objects.Topic;
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 public class QuickpostHandler {
@@ -89,7 +89,7 @@ public class QuickpostHandler {
 
             onPreLoad();
 
-            return new AsyncLoadHandler(mContext, args) {
+            return new AsyncLoader(mContext, args) {
                 @Override
                 public String loadInBackground() {
                     return new WebRequest(mContext, args).sendRequest();

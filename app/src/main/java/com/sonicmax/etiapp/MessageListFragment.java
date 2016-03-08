@@ -43,7 +43,7 @@ import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.network.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.Toaster;
@@ -453,7 +453,7 @@ public class MessageListFragment extends Fragment implements
         mDialog.setMessage("Loading messages...");
         mDialog.show();
 
-        return new AsyncLoadHandler(context, args) {
+        return new AsyncLoader(context, args) {
             @Override
             public List<Message> loadInBackground() {
                 String html = new WebRequest(context, args).sendRequest();

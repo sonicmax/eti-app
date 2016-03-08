@@ -17,7 +17,7 @@ import com.sonicmax.etiapp.adapters.BoardListAdapter;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Board;
 import com.sonicmax.etiapp.scrapers.BoardListScraper;
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -131,7 +131,7 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
         mDialog.setMessage("Getting bookmarks...");
         mDialog.show();
 
-        return new AsyncLoadHandler(context, args) {
+        return new AsyncLoader(context, args) {
 
             @Override
             public List<Board> loadInBackground() {

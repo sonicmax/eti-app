@@ -7,19 +7,24 @@ import android.support.v4.content.AsyncTaskLoader;
 /**
  * Generic AsyncTaskLoader implementation
  */
-public class AsyncLoadHandler extends AsyncTaskLoader<Object> {
-
-    final String LOG_TAG = AsyncLoadHandler.class.getSimpleName();
+public class AsyncLoader extends AsyncTaskLoader<Object> {
+    private final String LOG_TAG = AsyncLoader.class.getSimpleName();
+    private final Bundle mArgs;
 
     private Object mData;
 
-    public AsyncLoadHandler(Context context, Bundle args) {
+    public AsyncLoader(Context context, Bundle args) {
         super(context);
+        mArgs = args;
+    }
+
+    public Bundle getArgs() {
+        return mArgs;
     }
 
     @Override
     public Object loadInBackground() {
-        // This method should be overridden after instantiating AsyncLoadHandler
+        // This method should be overridden after instantiating AsyncLoader
         return null;
     }
 

@@ -8,7 +8,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.util.Log;
 
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -173,7 +173,7 @@ public class LivelinksSubscriber {
 
         @Override
         public Loader<Object> onCreateLoader(int id, final Bundle args) {
-            return new AsyncLoadHandler(mContext, args) {
+            return new AsyncLoader(mContext, args) {
 
                 @Override
                 public String loadInBackground() {

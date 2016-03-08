@@ -21,7 +21,7 @@ import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 import com.sonicmax.etiapp.scrapers.TopicListScraper;
-import com.sonicmax.etiapp.utilities.AsyncLoadHandler;
+import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.Toaster;
 
 import java.util.ArrayList;
@@ -231,7 +231,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
                 mDialog.setMessage("Loading topics...");
                 mDialog.show();
 
-                return new AsyncLoadHandler(context, args) {
+                return new AsyncLoader(context, args) {
 
                     @Override
                     public List<Topic> loadInBackground() {
@@ -245,7 +245,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
                 mDialog.setMessage("Loading...");
                 mDialog.show();
 
-                return new AsyncLoadHandler(context, args) {
+                return new AsyncLoader(context, args) {
 
                     @Override
                     public String loadInBackground() {
