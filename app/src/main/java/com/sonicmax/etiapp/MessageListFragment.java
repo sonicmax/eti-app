@@ -159,9 +159,11 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onStop() {
-        // Clear adapter before stopping activity
+        // Clear adapter and memory cache before stopping activity
         mMessageListAdapter.clearMessages();
-        mMessageListAdapter.clearLruCache();
+        mMessageListAdapter.clearMemoryCache();
+        // Close disk cache
+        mMessageListAdapter.closeDiskCache();
 
         // Make sure that livelinks loader is destroyed
         if (mLivelinksSubscriber != null) {
