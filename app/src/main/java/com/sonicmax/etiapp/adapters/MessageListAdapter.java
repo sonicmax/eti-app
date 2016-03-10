@@ -1,16 +1,17 @@
 package com.sonicmax.etiapp.adapters;
 
-import android.app.ActivityManager;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.util.LruCache;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ImageSpan;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,6 +40,7 @@ public class MessageListAdapter extends SelectableAdapter {
     private final Builder mMessageBuilder;
     private final FuzzyTimestampBuilder mTimestampBuilder;
     private final ImageCache mImageCache;
+    private DisplayMetrics mDisplayMetrics = new DisplayMetrics();
 
     private int mLastPosition;
     private List<Message> mMessages = Collections.emptyList();
@@ -66,6 +68,7 @@ public class MessageListAdapter extends SelectableAdapter {
         }
 
         mImageCache = new ImageCache(context);
+        ((FragmentActivity) context).getWindowManager().getDefaultDisplay().getMetrics(mDisplayMetrics);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -108,8 +111,12 @@ public class MessageListAdapter extends SelectableAdapter {
         mTimestampBuilder.setCurrentTime();
     }
 
-    public void clearLruCache() {
+    public void clearMemoryCache() {
         mImageCache.clearLruCache();
+    }
+
+    public void closeDiskCache() {
+        mImageCache.closeDiskCache();;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -181,7 +188,7 @@ public class MessageListAdapter extends SelectableAdapter {
                 @Override
                 public boolean onPreLoad(ImageSpan img) {
                     // Check LRU cache before attempting to load image
-                    BitmapDrawable cachedBitmap = mImageCache.getBitmapFromCache(img.getSource());
+                    Bitmap cachedBitmap = mImageCache.getBitmapFromCache(img.getSource());
 
                     if (cachedBitmap != null) {
                         onFinishLoad(cachedBitmap, img);
@@ -193,8 +200,9 @@ public class MessageListAdapter extends SelectableAdapter {
                 }
 
                 @Override
-                public void onFinishLoad(BitmapDrawable bitmap, ImageSpan img) {
-                    ImageSpan newImg = new ImageSpan(bitmap, img.getSource());
+                public void onFinishLoad(Bitmap bitmap, ImageSpan img) {
+                    BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap);
+                    ImageSpan newImg = new ImageSpan(bitmapDrawable, img.getSource());
                     mImageCache.addBitmapToCache(img.getSource(), bitmap);
 
                     // Find position of placeholder, remove and replace with loaded image
@@ -230,6 +238,24 @@ public class MessageListAdapter extends SelectableAdapter {
             slideInFromRight(viewHolder.cardView);
             mLastPosition = position;
         }
+    }
+
+    private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap) {
+        BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), bitmap);
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        if (width > mDisplayMetrics.widthPixels) {
+            // Scale BitmapDrawable to fit screen. In an ideal world, we would decode
+            // the bounds first & downsample large images, but decoding multiple
+            // times was can cause "SkImageDecoder:: Factory returned null" errors
+            height = height / (width / mDisplayMetrics.widthPixels);
+            width = mDisplayMetrics.widthPixels;
+        }
+
+        bitmapDrawable.setBounds(0, 0, width, height);
+
+        return bitmapDrawable;
     }
 
     private void slideInFromRight(View view) {
