@@ -4,7 +4,7 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.sonicmax.etiapp.objects.Message;
-import com.sonicmax.etiapp.MessageListFragment;
+import com.sonicmax.etiapp.fragments.MessageListFragment;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import org.jsoup.Jsoup;

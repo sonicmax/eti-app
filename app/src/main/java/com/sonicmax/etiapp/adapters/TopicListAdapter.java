@@ -13,7 +13,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.sonicmax.etiapp.MessageListActivity;
+import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.objects.Topic;
 

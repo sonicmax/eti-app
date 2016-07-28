@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
-import com.sonicmax.etiapp.TopicListActivity;
+import com.sonicmax.etiapp.activities.TopicListActivity;
 
 /**
  * Span which displays tag name and allows user to navigate to its topic list

@@ -6,7 +6,7 @@ import android.text.Spanned;
 
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.objects.Topic;
-import com.sonicmax.etiapp.TopicListFragment;
+import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.ui.TagSpan;
 
 import org.jsoup.Jsoup;

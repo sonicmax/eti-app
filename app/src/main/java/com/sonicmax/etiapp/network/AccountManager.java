@@ -9,7 +9,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 
 import com.sonicmax.etiapp.utilities.AsyncLoader;
-import com.sonicmax.etiapp.LoginActivity;
+import com.sonicmax.etiapp.activities.LoginActivity;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 
