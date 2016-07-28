@@ -27,15 +27,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *  Parses message HTML and creates SpannableStringBuilder with equivalent formatting.
+ *  Parses HTML from message.php and creates SpannableStringBuilder with equivalent formatting.
  */
 
 public class MessageBuilder extends Builder {
-
     private final String NEWLINE = "\n";
     private Context mContext;
     // Quote depth indicates the current level of nesting while iterating over quoted-message elements
-    private int quoteDepth = 0;
+    private int mQuoteDepth = 0;
     private Drawable mSpinner;
 
     public MessageBuilder(Context context) {
@@ -132,7 +131,7 @@ public class MessageBuilder extends Builder {
                             break;
                         case "spoiler_closed":
                             builder.append(getSpoilerCaption(element),
-                                    new SpoilerSpan(getSpoilerContents(element)),
+                                    new SpoilerSpan(mContext, getSpoilerContents(element)),
                                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "quoted-message":
@@ -198,7 +197,7 @@ public class MessageBuilder extends Builder {
         final String QUOTE_ARROW = "⇗";
 
         // Increase quote depth to account for gap/stripe width in CustomQuoteSpan.
-        quoteDepth++;
+        mQuoteDepth++;
 
         SpannableStringBuilder output = new SpannableStringBuilder();
 
@@ -229,29 +228,29 @@ public class MessageBuilder extends Builder {
             }
 
             output.append(username,
-                    new QuoteBackgroundSpan(LIGHT_GREY, quoteDepth),
+                    new QuoteBackgroundSpan(LIGHT_GREY, mQuoteDepth),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             output.append(NEWLINE);
         }
 
         // Use quote depth to determine which alpha value to use for background colour.
-        int alpha = quoteDepth * 10;
+        int alpha = mQuoteDepth * 10;
 
-        if (quoteDepth < 3) {
+        if (mQuoteDepth < 3) {
             output.append(getQuoteContents(quote),
-                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), quoteDepth),
+                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), mQuoteDepth),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         else {
             // TODO: Create method for displaying omitted quote (to match ChromeLL behaviour)
             output.append("\n[quoted text omitted]",
-                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), quoteDepth),
+                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), mQuoteDepth),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         // Reduce quote depth after appending contents.
-        quoteDepth--;
+        mQuoteDepth--;
 
         return output;
     }

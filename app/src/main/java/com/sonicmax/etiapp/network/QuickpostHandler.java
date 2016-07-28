@@ -35,7 +35,7 @@ public class QuickpostHandler {
         };
     }
 
-    public void onPreLoad() {}
+    public void onPreload() {}
 
     public void onSuccess() {}
 
@@ -74,7 +74,7 @@ public class QuickpostHandler {
         }
     }
 
-    public void setInvisible() {
+    public void hideButton() {
         mQuickpostButton.setVisibility(View.INVISIBLE);
     }
 
@@ -87,7 +87,7 @@ public class QuickpostHandler {
         @Override
         public Loader<Object> onCreateLoader(final int id, final Bundle args) {
 
-            onPreLoad();
+            onPreload();
 
             return new AsyncLoader(mContext, args) {
                 @Override

@@ -45,7 +45,7 @@ public class LoginScriptBuilder extends AsyncTaskLoader<Object> {
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
 
-        // Convert little-endian to big-endian if needed (
+        // Convert little-endian to big-endian if needed
         if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
             ipAddress = Integer.reverseBytes(ipAddress);
         }
@@ -54,7 +54,6 @@ public class LoginScriptBuilder extends AsyncTaskLoader<Object> {
 
         try {
             return InetAddress.getByAddress(ipByteArray).getHostAddress();
-
         } catch (UnknownHostException ex) {
             Log.e("wifiIpAddress", "Unable to get host address.");
             return null;

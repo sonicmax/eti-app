@@ -37,7 +37,7 @@ public class TestLivelinks extends AndroidTestCase {
                 .shiftLeft(SHIFT_CONSTANT) // SHIFT_CONSTANT is 48
                      1000000000000000000000000000000000000000000000000000000000
 
-                .or(BigInteger.valueOf(ID));
+                .or(BigInteger.valueOf(TOPIC_ID));
                      1000000000000000000000000000000000100011011110010111000111
                      (equals 144115188085085408)
         */

@@ -1,9 +1,13 @@
 package com.sonicmax.etiapp.ui;
 
+import android.content.Context;
 import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.View;
+
+import com.sonicmax.etiapp.utilities.Toaster;
 
 /**
  * Reveals spoiler-tagged content on click.
@@ -11,16 +15,17 @@ import android.view.View;
 
 public class SpoilerSpan extends ClickableSpan {
 
+    private Context mContext;
     private SpannableStringBuilder mSpoilerContent;
 
-    public SpoilerSpan(SpannableStringBuilder spoilerContent) {
+    public SpoilerSpan(Context context, SpannableStringBuilder spoilerContent) {
+        mContext = context;
         mSpoilerContent = spoilerContent;
-        Log.v("poop", spoilerContent.toString());
     }
 
     @Override
     public void onClick(View view) {
-        Log.v("spoiler", mSpoilerContent.toString());
+        // For debugging
+        Toaster.makeToast(mContext, mSpoilerContent.toString());
     }
-
 }

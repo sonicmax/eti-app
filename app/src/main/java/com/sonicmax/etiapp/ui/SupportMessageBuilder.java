@@ -32,11 +32,10 @@ import java.util.regex.Pattern;
  */
 
 public class SupportMessageBuilder extends Builder {
-
     private final String NEWLINE = "\n";
     private Context mContext;
     // Quote depth indicates the current level of nesting while iterating over quoted-message elements
-    private int quoteDepth = 0;
+    private int mQuoteDepth = 0;
     private Drawable mSpinner;
 
     public SupportMessageBuilder(Context context) {
@@ -99,32 +98,28 @@ public class SupportMessageBuilder extends Builder {
                         case "a":
                             String href = element.attr("href");
                             builder.append(href);
-                            builder.setSpan(
-                                    new StyleSpan(android.graphics.Typeface.BOLD),
+                            builder.setSpan(new StyleSpan(android.graphics.Typeface.BOLD),
                                     builder.length() - href.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "b":
                             builder.append(text);
-                            builder.setSpan(
-                                    new StyleSpan(Typeface.BOLD),
+                            builder.setSpan(new StyleSpan(Typeface.BOLD),
                                     builder.length() - text.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "i":
                             builder.append(text);
-                            builder.setSpan(
-                                    new StyleSpan(Typeface.ITALIC),
+                            builder.setSpan(new StyleSpan(Typeface.ITALIC),
                                     builder.length() - text.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "u":
                             builder.append(text);
-                            builder.setSpan(
-                                    new UnderlineSpan(),
+                            builder.setSpan(new UnderlineSpan(),
                                     builder.length() - text.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -141,8 +136,7 @@ public class SupportMessageBuilder extends Builder {
                         case "pr":
                             String text = LineBreakConverter.convert(element.html());
                             builder.append(text);
-                            builder.setSpan(
-                                    new TypefaceSpan("monospace"),
+                            builder.setSpan(new TypefaceSpan("monospace"),
                                     builder.length() - text.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -158,8 +152,7 @@ public class SupportMessageBuilder extends Builder {
                         case "spoiler_closed":
                             String spoilerCaption = getSpoilerCaption(element);
                             builder.append(spoilerCaption);
-                            builder.setSpan(
-                                    new SpoilerSpan(getSpoilerContents(element)),
+                            builder.setSpan(new SpoilerSpan(mContext, getSpoilerContents(element)),
                                     builder.length() - spoilerCaption.length(),
                                     builder.length(),
                                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -167,8 +160,7 @@ public class SupportMessageBuilder extends Builder {
                         case "quoted-message":
                             SpannableStringBuilder quotes = getQuotesFrom(element);
                             builder.append(quotes);
-                            builder.setSpan(
-                                    new CustomQuoteSpan(DARK_GREY),
+                            builder.setSpan(new CustomQuoteSpan(DARK_GREY),
                                     builder.length() - quotes.length(),
                                     builder.length(),
                                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -232,7 +224,7 @@ public class SupportMessageBuilder extends Builder {
         final String QUOTE_ARROW = "⇗";
 
         // Increase quote depth to account for gap/stripe width in CustomQuoteSpan.
-        quoteDepth++;
+        mQuoteDepth++;
 
         SpannableStringBuilder output = new SpannableStringBuilder();
 
@@ -263,7 +255,7 @@ public class SupportMessageBuilder extends Builder {
 
             output.append(username);
             output.setSpan(
-                    new QuoteBackgroundSpan(LIGHT_GREY, quoteDepth),
+                    new QuoteBackgroundSpan(LIGHT_GREY, mQuoteDepth),
                     output.length() - username.length(),
                     output.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -272,13 +264,13 @@ public class SupportMessageBuilder extends Builder {
         }
 
         // Use quote depth to determine which alpha value to use for background colour.
-        int alpha = quoteDepth * 10;
+        int alpha = mQuoteDepth * 10;
 
-        if (quoteDepth < 3) {
+        if (mQuoteDepth < 3) {
             SpannableStringBuilder quotes = getQuoteContents(quote);
             output.append(quotes);
             output.setSpan(
-                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), quoteDepth),
+                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), mQuoteDepth),
                     output.length() - quotes.length(),
                     output.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -287,14 +279,14 @@ public class SupportMessageBuilder extends Builder {
             // TODO: Create method for displaying omitted quote (to match ChromeLL behaviour)
             output.append("[quoted text omitted]");
             output.setSpan(
-                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), quoteDepth),
+                    new QuoteBackgroundSpan(Color.argb(alpha, 0, 0, 0), mQuoteDepth),
                     output.length() - 21,
                     output.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         // Reduce quote depth after appending contents.
-        quoteDepth--;
+        mQuoteDepth--;
 
         return output;
     }

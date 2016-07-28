@@ -16,25 +16,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class WebRequest {
-
     private final String LOG_TAG = WebRequest.class.getSimpleName();
     private Context mContext;
-    private String httpMethod;
-    private String requestType;
-    private ContentValues values;
-    private URL url;
-    private Uri uri;
+    private String mMethod;
+    private String mRequestType;
+    private ContentValues mValues;
+    private URL mUrl;
+    private Uri mUri;
     private CookieManager mCookieManager;
 
     /**
@@ -43,17 +40,16 @@ public class WebRequest {
      * @param args Values for HTTPSUrlConnection
      */
     public WebRequest(Context context, Bundle args) {
-        this.mContext = context;
-        this.httpMethod = args.getString("method");
-        this.requestType = args.getString("type");
-        this.values = args.getParcelable("values");
-        values.put("payload", args.getString("payload"));
+        mContext = context;
+        mMethod = args.getString("method");
+        mRequestType = args.getString("type");
+        mValues = args.getParcelable("values");
 
         if (args.getString("url") == null) {
-            this.uri = new YetiUriBuilder(requestType, values).build();
+            mUri = new YetiUriBuilder(mRequestType, mValues).build();
         }
         else {
-            this.uri = Uri.parse(args.getString("url"));
+            mUri = Uri.parse(args.getString("url"));
         }
 
         mCookieManager = new CookieManager();
@@ -71,37 +67,37 @@ public class WebRequest {
         String formData;
 
         try {
-            if (url == null) {
-                url = new URL(uri.toString());
+            if (mUrl == null) {
+                mUrl = new URL(mUri.toString());
             }
 
-            Log.v(LOG_TAG, url.toString());
-            connection = (HttpsURLConnection) url.openConnection();
+            // Log.v(LOG_TAG, url.toString());
+            connection = (HttpsURLConnection) mUrl.openConnection();
 
             if (mCookieManager.getCookieStore().getCookies().size() > 0) {
                 connection.setRequestProperty("Cookie",
                         TextUtils.join(";", mCookieManager.getCookieStore().getCookies()));
             } else {
-                // Get stored cookies from sharedPreferences
+                // Use stored cookies from sharedPreferences
                 getCookies();
                 connection.setRequestProperty("Cookie",
                         TextUtils.join(";", mCookieManager.getCookieStore().getCookies()));
             }
 
-            if (httpMethod.equals("POST")) {
+            if (mMethod.equals("POST")) {
 
-                if (values == null) {
+                if (mValues == null) {
                     return null;
                 }
 
-                formData = new FormDataBuilder(requestType, values).build();
+                formData = new FormDataBuilder(mRequestType, mValues).build();
 
                 // Set request headers
                 connection.setDoOutput(true);
                 connection.setInstanceFollowRedirects(true);
                 connection.setFixedLengthStreamingMode(formData.getBytes().length);
 
-                if (requestType.equals("livelinks")) {
+                if (mRequestType.equals("livelinks")) {
                     connection.setRequestProperty("Content-Type", PLAIN_TEXT);
                 }
                 else {
@@ -113,13 +109,13 @@ public class WebRequest {
                 writer.print(formData);
                 writer.close();
 
-                if (requestType.equals("login")) {
+                if (mRequestType.equals("login")) {
                     // Get cookies from response
                     Map<String, List<String>> headerFields = connection.getHeaderFields();
                     storeCookies(headerFields);
                 }
 
-                if (!requestType.equals("livelinks")) {
+                if (!mRequestType.equals("livelinks")) {
                     // Return response code so we know whether POST was successful or not.
                     // For livelinks requests we want to return the response itself.
                     return Integer.toString(connection.getResponseCode());
