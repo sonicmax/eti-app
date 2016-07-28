@@ -17,6 +17,7 @@ import android.widget.ListView;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.network.AccountManager;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,16 +52,17 @@ public class TopicListActivity extends AppCompatActivity {
     }
 
     private void populateDrawerAdapter() {
-        final List<String> nameArray = new ArrayList<>();
-        nameArray.add("aa");
-        nameArray.add("aa");
-        nameArray.add("aa");
+        final List<String> nameArray = SharedPreferenceManager.getStringList(this, "bookmark_names");
+        final List<String> urlArray = SharedPreferenceManager.getStringList(this, "bookmark_urls");
         mDrawerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameArray);
         mDrawerList.setAdapter(mDrawerAdapter);
 
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.topic_list_container);
+                fragment.loadTopicList(nameArray.get(position), urlArray.get(position));
                 mDrawerLayout.closeDrawers();
             }
         });

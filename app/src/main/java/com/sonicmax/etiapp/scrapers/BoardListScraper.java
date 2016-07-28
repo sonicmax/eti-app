@@ -47,8 +47,8 @@ public class BoardListScraper {
             boards.add(new Board(name, url));
         }
 
-        SharedPreferenceManager.putStringList(mContext, "board_names", boardNames);
-        SharedPreferenceManager.putStringList(mContext, "board_urls", boardUrls);
+        SharedPreferenceManager.putStringList(mContext, "bookmark_names", boardNames);
+        SharedPreferenceManager.putStringList(mContext, "bookmark_urls", boardUrls);
 
         return boards;
     }
