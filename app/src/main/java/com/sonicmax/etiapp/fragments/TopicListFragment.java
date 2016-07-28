@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.fragments;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -15,6 +15,9 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.MessageListActivity;
+import com.sonicmax.etiapp.activities.PostTopicActivity;
 import com.sonicmax.etiapp.adapters.TopicListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.network.WebRequest;
@@ -101,6 +104,12 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         topicList.setOnTouchListener(topicSwipeHandler);
 
         return rootView;
+    }
+
+    @Override
+    public void onResume() {
+        // loadTopicList(mUrl);
+        super.onResume();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.fragments;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -13,6 +13,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.adapters.BoardListAdapter;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Board;

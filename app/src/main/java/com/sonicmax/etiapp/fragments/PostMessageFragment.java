@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.fragments;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -16,6 +16,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.utilities.AsyncLoader;

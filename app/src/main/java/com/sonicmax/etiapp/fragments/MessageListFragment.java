@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.fragments;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -23,17 +23,15 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.view.WindowManager.LayoutParams;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.PostMessageActivity;
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.network.LivelinksSubscriber;
@@ -60,7 +58,6 @@ public class MessageListFragment extends Fragment implements
     private final int REFRESH = 1;
 
     private View mRootView;
-    private RecyclerView mMessageList;
     private FloatingActionButton mQuickpostButton;
     private MessageListScraper mScraper;
     private MessageListAdapter mMessageListAdapter;
@@ -70,6 +67,7 @@ public class MessageListFragment extends Fragment implements
     private Topic mTopic;
     private Message mSelectedMessage;
     private ViewGroup mContainer;
+    private LinearLayoutManager mLayoutManager;
     private List<Message> mMessages;
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
@@ -87,6 +85,7 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
+        // this = MessageListAdapter.ClickListener
         mMessageListAdapter = new MessageListAdapter(context, this);
         super.onAttach(context);
     }
@@ -120,30 +119,27 @@ public class MessageListFragment extends Fragment implements
                              Bundle savedInstanceState) {
 
         mRootView = inflater.inflate(R.layout.fragment_message_list, container, false);
+        mQuickpostButton = (FloatingActionButton) mRootView.findViewById(R.id.new_message);
+
+        // Keep reference to container incase we need to inflate quickpost view
         mContainer = container;
 
-        mMessageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
-        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        mMessageList.setLayoutManager(linearLayoutManager);
-        mMessageList.setAdapter(mMessageListAdapter);
+        // Prepare RecyclerView so we can display posts after loading has finished
+        RecyclerView messageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
+        mLayoutManager = new LinearLayoutManager(getContext());
+        mLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        messageList.setLayoutManager(mLayoutManager);
+        messageList.setAdapter(mMessageListAdapter);
 
-        mQuickpostButton = (FloatingActionButton) mRootView.findViewById(R.id.new_message);
+        // Display current topic title
         TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title_text);
         Intent intent = getActivity().getIntent();
-
-        // Display topic title
         mTitle = intent.getStringExtra("title");
         topicTitle.setText(mTitle);
 
-        // Set up quickpost handler and click listener
+        // Set listeners
         mQuickpostButton.setOnClickListener(this);
-
-        // Set up other listeners
         mRootView.setOnTouchListener(pageSwipeHandler);
-
-        // Set up MessageListAdapter so we can display posts
-        mMessageList.setAdapter(mMessageListAdapter);
 
         return mRootView;
     }
@@ -185,6 +181,7 @@ public class MessageListFragment extends Fragment implements
 
         super.onSaveInstanceState(outState);
     }
+
     @Override
     public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
@@ -260,10 +257,9 @@ public class MessageListFragment extends Fragment implements
 
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            // Inflate a menu resource providing context menu items
+            // Inflate context menu layout
             MenuInflater inflater = mode.getMenuInflater();
             inflater.inflate(R.menu.menu_message_action, menu);
-
             return true;
         }
 
@@ -352,19 +348,10 @@ public class MessageListFragment extends Fragment implements
         mQuickpostHandler = new QuickpostHandler(getContext(), mQuickpostButton, mTopic) {
 
             @Override
-            public void onPreLoad() {
+            public void onPreload() {
                 mDialog = new ProgressDialog(getContext());
                 mDialog.setMessage("Posting message...");
                 mDialog.show();
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                if (mDialog != null && mDialog.isShowing()) {
-                    mDialog.hide();
-                }
-
-                Snackbar.make(mRootView, errorMessage, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
@@ -375,9 +362,18 @@ public class MessageListFragment extends Fragment implements
 
                 Snackbar.make(mRootView, R.string.post_message_ok, Snackbar.LENGTH_SHORT).show();
             }
+
+            @Override
+            public void onError(String errorMessage) {
+                if (mDialog != null && mDialog.isShowing()) {
+                    mDialog.hide();
+                }
+
+                Snackbar.make(mRootView, errorMessage, Snackbar.LENGTH_SHORT).show();
+            }
         };
 
-        mQuickpostHandler.setInvisible();
+        mQuickpostHandler.hideButton();
 
         // Add listener which allows user to post/reply to message
         button.setOnClickListener(new View.OnClickListener() {
@@ -406,7 +402,7 @@ public class MessageListFragment extends Fragment implements
 
         });
 
-        // Make sure that quickpost button is made visible after popup window is dismissed
+        // Makes sure that quickpost button is made visible after popup window is dismissed
         popup.setOnDismissListener(mQuickpostHandler.dismissListener);
     }
 
@@ -553,12 +549,12 @@ public class MessageListFragment extends Fragment implements
         final Animation fadeIn = new AlphaAnimation(0.0f, 1.0f);
         fadeIn.setDuration(250);
 
-        /*int firstVisiblePosition = mMessageList.getFirstVisiblePosition();
-        int lastVisiblePosition = mMessageList.getLastVisiblePosition();
+        int firstVisiblePosition = mLayoutManager.findFirstVisibleItemPosition();
+        int lastVisiblePosition = mLayoutManager.findLastVisibleItemPosition();
         int visibleSize = lastVisiblePosition - firstVisiblePosition;
 
         for (int i = 0; i < visibleSize; i++) {
-            View view = mMessageList.getChildAt(i);
+            View view = mLayoutManager.getChildAt(i);
             TextView timestamp = (TextView) view.findViewById(R.id.list_item_time);
             timestamp.startAnimation(fadeOut);
         }
@@ -567,9 +563,16 @@ public class MessageListFragment extends Fragment implements
         mMessageListAdapter.notifyDataSetChanged();
 
         for (int i = 0; i < visibleSize; i++) {
-            View view = mMessageList.getChildAt(i);
+            View view = mLayoutManager.getChildAt(i);
             TextView timestamp = (TextView) view.findViewById(R.id.list_item_time);
             timestamp.startAnimation(fadeIn);
-        }*/
+        }
+    }
+
+    /**
+     * For debugging
+     */
+    public void clearMemCache() {
+        mMessageListAdapter.clearMemoryCache();
     }
 }

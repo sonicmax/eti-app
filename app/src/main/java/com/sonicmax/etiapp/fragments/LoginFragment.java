@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.fragments;
 
 import android.app.ProgressDialog;
 import android.content.ContentValues;
@@ -15,6 +15,9 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.BoardListActivity;
+import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.network.LoginScriptBuilder;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
@@ -163,14 +166,14 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
                 args.putString("type", "url");
                 args.putString("url", response);
 
+                Toaster.makeToast(getContext(), "IP: " + response);
+
                 getLoaderManager().initLoader(STATUS_CHECK, args, this).forceLoad();
                 break;
 
             case STATUS_CHECK:
-                Log.v(LOG_TAG, "Status check response = " + response);
-
                 // FOR DEBUG ONLY
-                Toaster.makeToast(getContext(), "Status check response = " + response);
+                // Toaster.makeToast(getContext(), "Status check response = " + response);
 
                 // response = "1";
 
@@ -193,11 +196,28 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
                 break;
 
             case LOGIN:
-                // Get list of bookmarks from main.php & start BoardListActivity
                 SharedPreferenceManager.putBoolean(context, "is_logged_in", true);
                 mDialog.dismiss();
-                Intent intent = new Intent(context, BoardListActivity.class);
-                context.startActivity(intent);
+
+                // Check whether we have already saved list of bookmarks.
+                // Bookmark lists are serialized under keys "bookmark_thing0", "bookmark_thing0", (etc)
+                String firstBookmarkName = SharedPreferenceManager.getString(getContext(), "bookmark_names0");
+                String firstBookmarkUrl = SharedPreferenceManager.getString(getContext(), "bookmark_urls0");
+
+                if (firstBookmarkName != null && firstBookmarkUrl != null) {
+                    // Open topic list to first scraped bookmark
+                    Intent intent = new Intent(context, TopicListActivity.class);
+                    intent.putExtra("boardname", firstBookmarkName);
+                    intent.putExtra("url", firstBookmarkUrl);
+                    context.startActivity(intent);
+                    getActivity().overridePendingTransition(R.anim.slide_in_from_right,
+                            R.anim.slide_out_to_left);
+                }
+                else {
+                    // Get list of bookmarks from main.php & start BoardListActivity
+                    Intent intent = new Intent(context, BoardListActivity.class);
+                    context.startActivity(intent);
+                }
                 break;
         }
     }
