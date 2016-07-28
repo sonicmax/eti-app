@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
+<selector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto">
 
     <item android:state_selected="true"
-        android:drawable="@android:color/holo_blue_dark"/>
+        card_view:cardElevation="6dp"/>
 
     <item android:state_activated="true"
-        android:drawable="@android:color/holo_blue_dark"/>
+        card_view:cardElevation="6dp"/>
 
     <item android:state_pressed="true"
-        android:drawable="@android:color/darker_gray"/>
+        card_view:cardElevation="6dp"/>
 
-    <item android:drawable="@android:color/transparent" />
+    <item card_view:cardElevation="2dp"/>
 
 </selector>
