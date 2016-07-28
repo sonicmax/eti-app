@@ -12,6 +12,7 @@ import android.text.style.ImageSpan;
 import android.util.Log;
 
 import com.sonicmax.etiapp.utilities.AsyncLoader;
+import com.sonicmax.etiapp.utilities.ImageLoaderQueue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,15 +29,17 @@ public class ImageLoader {
     private Queue<Bundle> mImageQueue;
     private Iterator<Bundle> mQueueIterator;
     private ImageSpan[] mImageSpans;
+    private ImageLoaderListener mCallbacks;
 
 
-    public ImageLoader(Context context) {
+    public ImageLoader(Context context, ImageLoaderListener loaderQueue) {
         mContext = context;
         mLoaderManager = ((FragmentActivity) context).getSupportLoaderManager();
         mImageQueue = new LinkedList<>();
+        mCallbacks = loaderQueue;
     }
 
-    public void loadImages(SpannableStringBuilder message, int position) {
+    public ImageLoader populateQueue(SpannableStringBuilder message, int position) {
         mImageSpans = message.getSpans(0, message.length(), ImageSpan.class);
 
         for (int i = 0; i < mImageSpans.length; i++) {
@@ -52,11 +55,16 @@ public class ImageLoader {
                 loaderArgs.putInt("id", id);
                 loaderArgs.putInt("index", i);
                 loaderArgs.putString("src", img.getSource());
+
                 // Add bundle to queue for later use
                 mImageQueue.add(loaderArgs);
             }
         }
 
+        return this;
+    }
+
+    public void load() {
         // Start iterating over queue
         mQueueIterator = mImageQueue.iterator();
         getNextFromQueue();
@@ -72,6 +80,10 @@ public class ImageLoader {
             } else {
                 mLoaderManager.restartLoader(id, args, callbacks).forceLoad();
             }
+        }
+
+        else {
+            mCallbacks.onQueueComplete();
         }
     }
 
@@ -90,6 +102,13 @@ public class ImageLoader {
      * @param imageSpan Original placeholder ImageSpan
      */
     public void onFinishLoad(Bitmap bitmap, ImageSpan imageSpan) {}
+
+    /**
+     * Called after current batch of images have been loaded. Implemented in ImageLoaderQueue
+     */
+    public interface ImageLoaderListener {
+        void onQueueComplete();
+    }
 
     /**
      * Callbacks for AsyncLoader

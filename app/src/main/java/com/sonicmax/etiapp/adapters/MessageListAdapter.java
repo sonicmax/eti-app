@@ -27,6 +27,7 @@ import com.sonicmax.etiapp.ui.MessageBuilder;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 import com.sonicmax.etiapp.utilities.ImageCache;
+import com.sonicmax.etiapp.utilities.ImageLoaderQueue;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,9 +38,10 @@ public class MessageListAdapter extends SelectableAdapter {
     private final int FG_GREY;
     private final Context mContext;
     private final ClickListener mClickListener;
-    private final Builder mMessageBuilder;
     private final FuzzyTimestampBuilder mTimestampBuilder;
+    private final Builder mMessageBuilder;
     private final ImageCache mImageCache;
+    private final ImageLoaderQueue mImageLoaderQueue;
     private DisplayMetrics mDisplayMetrics = new DisplayMetrics();
 
     private int mLastPosition;
@@ -68,13 +70,15 @@ public class MessageListAdapter extends SelectableAdapter {
         }
 
         mImageCache = new ImageCache(context);
-        ((FragmentActivity) context).getWindowManager().getDefaultDisplay().getMetrics(mDisplayMetrics);
+        mImageLoaderQueue = new ImageLoaderQueue();
+
+        ((FragmentActivity) context).getWindowManager().getDefaultDisplay()
+                .getMetrics(mDisplayMetrics);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Getters/setters/etc
     ///////////////////////////////////////////////////////////////////////////
-
     public void replaceAllMessages(List<Message> messages) {
         mMessages.clear();
         mMessages = messages;
@@ -183,7 +187,7 @@ public class MessageListAdapter extends SelectableAdapter {
         // Check whether we need to load images
         if (messageSpan.getSpans(0, messageSpan.length(), ImageSpan.class).length > 0) {
 
-            new ImageLoader(mContext) {
+            mImageLoaderQueue.push(new ImageLoader(mContext, mImageLoaderQueue) {
 
                 @Override
                 public boolean onPreLoad(ImageSpan img) {
@@ -215,7 +219,7 @@ public class MessageListAdapter extends SelectableAdapter {
                     viewHolder.messageView.setText(messageSpan);
                 }
 
-            }.loadImages(messageSpan, position);
+            }.populateQueue(messageSpan, position));
         }
 
         viewHolder.userView.setText(message.getUser());
@@ -240,6 +244,10 @@ public class MessageListAdapter extends SelectableAdapter {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
+
     private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap) {
         BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), bitmap);
         int width = bitmap.getWidth();
@@ -247,7 +255,7 @@ public class MessageListAdapter extends SelectableAdapter {
 
         if (width > mDisplayMetrics.widthPixels) {
             // Scale BitmapDrawable to fit screen. In an ideal world, we would decode
-            // the bounds first & downsample large images, but decoding multiple
+            // the bounds first & downsample large images, but decoding Bitmap multiple
             // times was can cause "SkImageDecoder:: Factory returned null" errors
             height = height / (width / mDisplayMetrics.widthPixels);
             width = mDisplayMetrics.widthPixels;
@@ -263,4 +271,6 @@ public class MessageListAdapter extends SelectableAdapter {
         Animation animation = AnimationUtils.loadAnimation(mContext, R.anim.slide_in_from_right);
         view.startAnimation(animation);
     }
+
+
 }
