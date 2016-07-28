@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.activities;
 
 import android.app.ProgressDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -6,18 +6,20 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.network.AccountManager;
 
-public class PostTopicActivity extends AppCompatActivity {
+public class PostMessageActivity extends AppCompatActivity {
 
-    private String LOG_TAG = PostTopicActivity.class.getSimpleName();
-    @SuppressWarnings("unused")
     private ProgressDialog mDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_new_topic);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setElevation(4);
+        }
+        setContentView(R.layout.activity_new_message);
     }
 
 

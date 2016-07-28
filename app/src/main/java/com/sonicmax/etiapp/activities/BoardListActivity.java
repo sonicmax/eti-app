@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.activities;
 
 import android.app.ProgressDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.network.AccountManager;
 
 public class BoardListActivity extends AppCompatActivity {
@@ -17,6 +18,9 @@ public class BoardListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setElevation(4);
+        }
         setContentView(R.layout.activity_board_list);
     }
 

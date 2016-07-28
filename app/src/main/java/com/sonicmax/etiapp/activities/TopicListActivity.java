@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.activities;
 
 import android.app.ProgressDialog;
 import android.content.res.Configuration;
@@ -14,10 +14,11 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.network.AccountManager;
-import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
-import com.sonicmax.etiapp.utilities.Toaster;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TopicListActivity extends AppCompatActivity {
@@ -27,7 +28,7 @@ public class TopicListActivity extends AppCompatActivity {
     private ProgressDialog mDialog;
     private ListView mDrawerList;
     private DrawerLayout mDrawerLayout;
-    private ArrayAdapter<String> mAdapter;
+    private ArrayAdapter<String> mDrawerAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
 
     @Override
@@ -39,33 +40,33 @@ public class TopicListActivity extends AppCompatActivity {
         mDrawerList = (ListView)findViewById(R.id.drawer_list);
         mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
 
-        addDrawerItems();
-        setupDrawer();
+        populateDrawerAdapter();
+        initDrawer();
 
         if (getSupportActionBar() != null) {
+            getSupportActionBar().setElevation(4);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
         }
     }
 
-    private void addDrawerItems() {
-        final List<String> nameArray = SharedPreferenceManager.getStringList(this, "board_names");
-        final List<String> urlArray = SharedPreferenceManager.getStringList(this, "board_urls");
-        mAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameArray);
-        mDrawerList.setAdapter(mAdapter);
+    private void populateDrawerAdapter() {
+        final List<String> nameArray = new ArrayList<>();
+        nameArray.add("aa");
+        nameArray.add("aa");
+        nameArray.add("aa");
+        mDrawerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameArray);
+        mDrawerList.setAdapter(mDrawerAdapter);
 
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.topic_list_container);
-                fragment.loadTopicList(nameArray.get(position), urlArray.get(position));
                 mDrawerLayout.closeDrawers();
             }
         });
     }
 
-    private void setupDrawer() {
+    private void initDrawer() {
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
                 R.string.drawer_open, R.string.drawer_close) {
 
@@ -81,7 +82,7 @@ public class TopicListActivity extends AppCompatActivity {
         };
 
         mDrawerToggle.setDrawerIndicatorEnabled(true);
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
     }
 

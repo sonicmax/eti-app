@@ -1,28 +1,28 @@
-package com.sonicmax.etiapp;
+package com.sonicmax.etiapp.activities;
 
-import android.app.ProgressDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.sonicmax.etiapp.network.AccountManager;
+import com.sonicmax.etiapp.R;
 
-public class PostMessageActivity extends AppCompatActivity {
-
-    private ProgressDialog mDialog;
+public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_new_message);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setElevation(4);
+        }
+        setContentView(R.layout.activity_login);
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_new_topic, menu);
+        getMenuInflater().inflate(R.menu.menu_login, menu);
         return true;
     }
 
@@ -35,9 +35,6 @@ public class PostMessageActivity extends AppCompatActivity {
 
         if (id == R.id.action_settings) {
             return true;
-        }
-        else if (id == R.id.action_logout) {
-            new AccountManager(this, mDialog).requestLogout();
         }
 
         return super.onOptionsItemSelected(item);
