@@ -26,6 +26,7 @@ public class ImageLoader {
     private final String LOG_TAG = ImageLoader.class.getSimpleName();
     private Context mContext;
     private LoaderManager mLoaderManager;
+    private int mCurrentLoaderId;
     private Queue<Bundle> mImageQueue;
     private Iterator<Bundle> mQueueIterator;
     private ImageSpan[] mImageSpans;
@@ -39,6 +40,12 @@ public class ImageLoader {
         mCallbacks = loaderQueue;
     }
 
+    /**
+     * Populates queue with ImageSpans to load from message
+     * @param message Message to be loaded
+     * @param position Position of message in current page
+     * @return "this" - for method chaining
+     */
     public ImageLoader populateQueue(SpannableStringBuilder message, int position) {
         mImageSpans = message.getSpans(0, message.length(), ImageSpan.class);
 
@@ -48,11 +55,11 @@ public class ImageLoader {
             if (onPreLoad(img)) { // returns true if image doesn't exist in LRU cache
 
                 // Concatenate position and index to create (probably unique) id for loader.
-                int id = Integer.parseInt(Integer.toString(position) + "00" + Integer.toString(i));
+                mCurrentLoaderId = Integer.parseInt(Integer.toString(position) + "00" + Integer.toString(i));
 
                 // Create bundle containing args to be passed to loader
                 Bundle loaderArgs = new Bundle(3);
-                loaderArgs.putInt("id", id);
+                loaderArgs.putInt("id", mCurrentLoaderId);
                 loaderArgs.putInt("index", i);
                 loaderArgs.putString("src", img.getSource());
 
@@ -64,10 +71,21 @@ public class ImageLoader {
         return this;
     }
 
+    /**
+     * Begins iterating over queue.
+     */
     public void load() {
-        // Start iterating over queue
         mQueueIterator = mImageQueue.iterator();
         getNextFromQueue();
+    }
+
+    /**
+     * Aborts current task.
+     */
+    public void abort() {
+        if (mLoaderManager.getLoader(mCurrentLoaderId) != null) {
+            mLoaderManager.destroyLoader(mCurrentLoaderId);
+        }
     }
 
     private void getNextFromQueue() {
@@ -163,8 +181,8 @@ public class ImageLoader {
         public void onLoadFinished(Loader<Object> loader, Object data) {
             int index = ((AsyncLoader) loader).getArgs().getInt("index");
             onFinishLoad((Bitmap) data, mImageSpans[index]);
-            getNextFromQueue();
             mLoaderManager.destroyLoader(loader.getId());
+            getNextFromQueue();
         }
 
         @Override

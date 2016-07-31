@@ -187,7 +187,9 @@ public class MessageListAdapter extends SelectableAdapter {
         // Check whether we need to load images
         if (messageSpan.getSpans(0, messageSpan.length(), ImageSpan.class).length > 0) {
 
-            mImageLoaderQueue.push(new ImageLoader(mContext, mImageLoaderQueue) {
+            // Push new ImageLoader to queue
+            mImageLoaderQueue.push(viewHolder.getAdapterPosition(),
+                    new ImageLoader(mContext, mImageLoaderQueue) {
 
                 @Override
                 public boolean onPreLoad(ImageSpan img) {
@@ -244,6 +246,19 @@ public class MessageListAdapter extends SelectableAdapter {
         }
     }
 
+    @Override
+    public void onViewDetachedFromWindow(MessageViewHolder holder) {
+        // If view is no longer in window, we should remove ImageLoader from queue.
+        mImageLoaderQueue.removeFromQueue(holder.getAdapterPosition());
+        super.onViewDetachedFromWindow(holder);
+    }
+
+    @Override
+    public boolean onFailedToRecycleView(MessageViewHolder holder) {
+        // Force adapter to recycle the ViewHolder.
+        return true;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
@@ -254,7 +269,7 @@ public class MessageListAdapter extends SelectableAdapter {
         int height = bitmap.getHeight();
 
         if (width > mDisplayMetrics.widthPixels) {
-            // Scale BitmapDrawable to fit screen. In an ideal world, we would decode
+            // Scale BitmapDrawable to fit screen. In an ideal world, we would also decode
             // the bounds first & downsample large images, but decoding Bitmap multiple
             // times was can cause "SkImageDecoder:: Factory returned null" errors
             height = height / (width / mDisplayMetrics.widthPixels);
