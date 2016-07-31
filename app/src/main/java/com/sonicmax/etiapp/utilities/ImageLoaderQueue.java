@@ -58,8 +58,8 @@ public class ImageLoaderQueue implements ImageLoader.ImageLoaderListener {
 
     private void getNextFromQueue() {
         if (!mQueue.isEmpty()) {
-            mPositions.remove(); // We can discard this value
-            ImageLoader imgLoader = mQueue.remove();
+            mPositions.pop(); // We can discard this value
+            ImageLoader imgLoader = mQueue.pop();
             imgLoader.load();
         }
     }
