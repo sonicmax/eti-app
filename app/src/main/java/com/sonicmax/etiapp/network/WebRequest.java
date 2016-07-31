@@ -9,7 +9,7 @@ import android.util.Log;
 
 import com.sonicmax.etiapp.utilities.FormDataBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
-import com.sonicmax.etiapp.utilities.YetiUriBuilder;
+import com.sonicmax.etiapp.utilities.EtiUriBuilder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class WebRequest {
         mValues = args.getParcelable("values");
 
         if (args.getString("url") == null) {
-            mUri = new YetiUriBuilder(mRequestType, mValues).build();
+            mUri = new EtiUriBuilder(mRequestType, mValues).build();
         }
         else {
             mUri = Uri.parse(args.getString("url"));

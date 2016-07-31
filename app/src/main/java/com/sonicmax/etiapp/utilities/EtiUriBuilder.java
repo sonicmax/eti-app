@@ -4,13 +4,13 @@ import android.content.ContentValues;
 import android.net.Uri;
 
 /**
- * Created by Max on 3/6/2016.
+ * Class which creates Uri for WebRequest using request type and provided values
  */
-public class YetiUriBuilder {
+public class EtiUriBuilder {
     private String mRequestType;
     private ContentValues mValues;
 
-    public YetiUriBuilder(String requestType, ContentValues values) {
+    public EtiUriBuilder(String requestType, ContentValues values) {
         mRequestType = requestType;
         mValues = values;
     }
