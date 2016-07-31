@@ -188,7 +188,7 @@ public class MessageListAdapter extends SelectableAdapter {
         if (messageSpan.getSpans(0, messageSpan.length(), ImageSpan.class).length > 0) {
 
             // Push new ImageLoader to queue
-            mImageLoaderQueue.push(viewHolder.getAdapterPosition(),
+            mImageLoaderQueue.add(viewHolder.getAdapterPosition(),
                     new ImageLoader(mContext, mImageLoaderQueue) {
 
                 @Override

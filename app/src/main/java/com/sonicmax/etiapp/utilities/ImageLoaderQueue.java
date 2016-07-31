@@ -18,7 +18,7 @@ public class ImageLoaderQueue implements ImageLoader.ImageLoaderListener {
      * @param position Result of MessageViewHolder.getAdapterPosition()
      * @param loader ImageLoader for MessageViewHolder
      */
-    public void push(int position, ImageLoader loader) {
+    public void add(int position, ImageLoader loader) {
         if (!mPositions.contains(position)) {
 
             mQueue.add(loader);
