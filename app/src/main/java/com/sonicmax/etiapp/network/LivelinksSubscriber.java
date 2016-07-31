@@ -17,8 +17,8 @@ import java.math.BigInteger;
 
 public class LivelinksSubscriber {
     private final String LOG_TAG = LivelinksSubscriber.class.getSimpleName();
-    private final int LIVELINKS = 1;
-    private final int FETCH_MESSAGE = 2;
+    private final int LIVELINKS = 2;
+    private final int FETCH_MESSAGE = 3;
     private final int SHIFT_CONSTANT = 48;
 
     private final Context mContext;
@@ -43,7 +43,12 @@ public class LivelinksSubscriber {
         Bundle args = new Bundle(3);
         args.putString("method", "POST");
         args.putString("type", "livelinks");
-        args.putString("payload", payload.toString());
+
+        ContentValues values = new ContentValues(1);
+        values.put("payload", payload.toString());
+
+        args.putParcelable("values", values);
+
 
         LoaderManager manager = ((FragmentActivity) mContext).getSupportLoaderManager();
 
@@ -62,8 +67,13 @@ public class LivelinksSubscriber {
         }
     }
 
+    /**
+     * Called after FETCH_MESSAGE request completes. Override when instantiating class
+     * @param message Response from FETCH_MESSAGE request
+     * @param position Position of new message in topic
+     */
     public void onReceiveUpdate(String message, int position) {
-        // Override this when instantiating LivelinksSubscriber
+        // TODO: Should probably use an interface for this
     }
 
     public BigInteger getTopicPayload() {
@@ -90,8 +100,9 @@ public class LivelinksSubscriber {
             payload.put(topic.toString(), mTopicSize);
             payload.put(inbox.toString(), 0);
             Log.v(LOG_TAG, "Payload: " + payload.toString());
+
         } catch (JSONException e) {
-            throw new AssertionError(e);
+            Log.e(LOG_TAG, "Error creating livelinks payload", e);
         }
 
         return payload;
@@ -144,11 +155,13 @@ public class LivelinksSubscriber {
                 Bundle args = new Bundle(3);
                 args.putString("method", "GET");
                 args.putString("type", "moremessages");
+
                 ContentValues values = new ContentValues(4);
                 values.put("topic", mTopicId);
                 values.put("old", mTopicSize);
                 values.put("new", newTopicSize);
                 values.put("filter", 0);
+
                 args.putParcelable("values", values);
 
                 // Update mTopicSize for subsequent requests
@@ -173,6 +186,7 @@ public class LivelinksSubscriber {
 
         @Override
         public Loader<Object> onCreateLoader(int id, final Bundle args) {
+
             return new AsyncLoader(mContext, args) {
 
                 @Override

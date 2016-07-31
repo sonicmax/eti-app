@@ -87,6 +87,7 @@ public class WebRequest {
             if (mMethod.equals("POST")) {
 
                 if (mValues == null) {
+                    Log.e(LOG_TAG, "Cannot make POST request without ContentValues");
                     return null;
                 }
 
@@ -144,7 +145,7 @@ public class WebRequest {
             response = builder.toString();
 
         } catch (IOException e){
-            Log.e(LOG_TAG, "Error ", e);
+            Log.e(LOG_TAG, "Error requesting data ", e);
             // Error requesting data - no need to continue.
             return null;
 
