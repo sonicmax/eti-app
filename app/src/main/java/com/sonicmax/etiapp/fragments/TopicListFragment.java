@@ -18,6 +18,7 @@ import android.widget.TextView;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.activities.PostTopicActivity;
+import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.adapters.TopicListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.network.WebRequest;
@@ -35,6 +36,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
     private final int LOAD_TOPIC_LIST = 0;
     private final int POST_TOPIC = 1;
 
+    private boolean mInternalServerError = false;
     private TopicListAdapter mTopicListAdapter;
     private String mUrl;
     private ProgressDialog mDialog;
@@ -49,9 +51,11 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
 
     public TopicListFragment() {}
 
+
     ///////////////////////////////////////////////////////////////////////////
     // Fragment methods
     ///////////////////////////////////////////////////////////////////////////
+
     @Override
     public void onAttach(Context context) {
         // Create adapter to display list of topics
@@ -137,9 +141,11 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         super.onDetach();
     }
 
+
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
+
     public void loadTopicList(String name, String url) {
         if (name != null) {
             mBoardName.setText(name);
@@ -151,6 +157,7 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         args.putString("url", url);
 
         LoaderManager loaderManager = getLoaderManager();
+
         if (loaderManager.getLoader(LOAD_TOPIC_LIST) == null) {
             loaderManager.initLoader(LOAD_TOPIC_LIST, args, this).forceLoad();
             mFirstRun = false;
@@ -218,26 +225,51 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
         Bundle args = new Bundle();
         args.putString("method", "GET");
         args.putString("type", "newtopic");
+
         LoaderManager loaderManager = getLoaderManager();
+
         if (loaderManager.getLoader(POST_TOPIC) == null) {
             getLoaderManager().initLoader(POST_TOPIC, args, this).forceLoad();
-        }
-        else {
+
+        } else {
             getLoaderManager().restartLoader(POST_TOPIC, args, this).forceLoad();
         }
     }
 
+    private void handleInternalServerError() {
+        final String name = "Message History";
+        final String url = "https://boards.endoftheinter.net/history.php?b";
+        loadTopicList(name, url);
+    }
+
+    private void dismissDialog() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+    }
+
+
     ///////////////////////////////////////////////////////////////////////////
     // Loader callbacks
     ///////////////////////////////////////////////////////////////////////////
+
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
+        final String HTTP_INTERNAL_SERVER_ERROR = "500";
         final Context context = getContext();
 
         switch (id) {
             case LOAD_TOPIC_LIST:
                 mDialog = new ProgressDialog(context);
-                mDialog.setMessage("Loading topics...");
+
+                if (mInternalServerError) {
+                    // NOTE: mDialog will already be showing at this point
+                    mDialog.setMessage("Internal server error. Loading message history...");
+
+                } else {
+                    mDialog.setMessage("Loading topics...");
+                }
+
                 mDialog.show();
 
                 return new AsyncLoader(context, args) {
@@ -245,7 +277,15 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
                     @Override
                     public List<Topic> loadInBackground() {
                         String html = new WebRequest(context, args).sendRequest();
-                        return new TopicListScraper(getContext()).scrapeTopics(html);
+
+                        if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
+                            mInternalServerError = true;
+                            return null;
+
+                        } else {
+                            mInternalServerError = false;
+                            return new TopicListScraper(getContext()).scrapeTopics(html);
+                        }
                     }
                 };
 
@@ -289,10 +329,15 @@ public class TopicListFragment extends Fragment implements LoaderManager.LoaderC
                     context.startActivity(intent);
                     break;
             }
-        }
 
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
+            dismissDialog();
+
+        } else {
+            if (mInternalServerError) {
+                // We can try to load message history
+                dismissDialog();
+                handleInternalServerError();
+            }
         }
     }
 

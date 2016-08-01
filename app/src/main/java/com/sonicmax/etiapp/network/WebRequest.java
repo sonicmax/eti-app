@@ -56,9 +56,9 @@ public class WebRequest {
     }
 
     public String sendRequest() {
-
         final String FORM_DATA = "application/x-www-form-urlencoded";
         final String PLAIN_TEXT = "text/plain;charset=UTF-8";
+        final int HTTP_INTERNAL_SERVER_ERROR = 500;
 
         HttpsURLConnection connection = null;
         PrintWriter writer;
@@ -77,6 +77,7 @@ public class WebRequest {
             if (mCookieManager.getCookieStore().getCookies().size() > 0) {
                 connection.setRequestProperty("Cookie",
                         TextUtils.join(";", mCookieManager.getCookieStore().getCookies()));
+
             } else {
                 // Use stored cookies from sharedPreferences
                 getCookies();
@@ -84,10 +85,11 @@ public class WebRequest {
                         TextUtils.join(";", mCookieManager.getCookieStore().getCookies()));
             }
 
+            // Handle POST requests
             if (mMethod.equals("POST")) {
 
                 if (mValues == null) {
-                    Log.e(LOG_TAG, "Cannot make POST request without ContentValues");
+                    Log.e(LOG_TAG, "Cannot make POST request without mValues");
                     return null;
                 }
 
@@ -118,20 +120,29 @@ public class WebRequest {
 
                 if (!mRequestType.equals("livelinks")) {
                     // Return response code so we know whether POST was successful or not.
-                    // For livelinks requests we want to return the response itself.
+                    // For livelinks requests we want to wait for actual response
                     return Integer.toString(connection.getResponseCode());
                 }
+            }
+
+            // Return response code as string if we encounter internal server error
+            if (mRequestType.matches("home|topiclist")
+                    && connection.getResponseCode() == HTTP_INTERNAL_SERVER_ERROR) {
+                return Integer.toString(connection.getResponseCode());
             }
 
             // Read input stream into a String
             InputStream inputStream = connection.getInputStream();
             StringBuilder builder = new StringBuilder();
+
             if (inputStream == null) {
                 // No data to read.
                 return null;
             }
+
             reader = new BufferedReader(new InputStreamReader(inputStream));
             String line;
+
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
                 builder.append('\n');

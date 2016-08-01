@@ -25,9 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BookmarkManagerFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
-
-    private final int LOAD_BOARDS = 0;
-
     private BoardListAdapter mBoardListAdapter;
     private ProgressDialog mDialog;
     private List<Board> mBookmarks;
@@ -47,14 +44,16 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        final int LOAD_BOARDS = 0;
 
         if (savedInstanceState == null
                 || savedInstanceState.getParcelableArrayList("bookmarks") == null) {
 
-            // Prepare args for loader and scrape bookmarks from main.php
+            // Prepare args for loader and scrape bookmarks from history.php
+            // (using history.php because it will work even if tag server is broken)
             Bundle args = new Bundle();
             args.putString("method", "GET");
-            args.putString("type", "home");
+            args.putString("type", "bookmarks");
 
             LoaderManager loaderManager = getLoaderManager();
 
@@ -135,7 +134,6 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
 
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
         final Context context = getContext();
-        final String HTTP_INTERNAL_SERVER_ERROR = "500";
 
         mDialog = new ProgressDialog(context);
         mDialog.setMessage("Getting bookmarks...");
@@ -146,15 +144,7 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
             @Override
             public List<Board> loadInBackground() {
                 String html = new WebRequest(context, args).sendRequest();
-
-                // Probably means the tag server was down - but we can still access message history
-                if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
-                    handleInternalServerError();
-                    return null;
-
-                } else {
-                    return new BoardListScraper(context).scrapeBoards(html);
-                }
+                return new BoardListScraper(context).scrapeBoards(html);
             }
         };
     }
@@ -165,6 +155,7 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
             // We can be sure that data will safely cast to List<Board>.
             mBookmarks = (List<Board>) data;
             mBoardListAdapter.updateBoards(mBookmarks);
+
         }
 
         if (mDialog != null && mDialog.isShowing()) {
@@ -175,20 +166,4 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
     }
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Helper methods
-    ///////////////////////////////////////////////////////////////////////////
-
-    private void handleInternalServerError() {
-        Context context = getContext();
-        Intent intent = new Intent(context, TopicListActivity.class);
-        intent.putExtra("url", "http://boards.endoftheinter.net/history.php?b");
-        intent.putExtra("boardname", "Message History");
-        context.startActivity(intent);
-        getActivity().overridePendingTransition(R.anim.slide_in_from_right,
-                R.anim.slide_out_to_left);
-    }
-
 }
