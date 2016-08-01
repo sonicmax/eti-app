@@ -9,9 +9,9 @@ import android.view.MenuItem;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.network.AccountManager;
 
-public class BoardListActivity extends AppCompatActivity {
+public class BookmarkManagerActivity extends AppCompatActivity {
 
-    private final String LOG_TAG = BoardListActivity.class.getSimpleName();
+    private final String LOG_TAG = BookmarkManagerActivity.class.getSimpleName();
     @SuppressWarnings("unused")
     private ProgressDialog mDialog;
 
@@ -21,14 +21,14 @@ public class BoardListActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setElevation(4);
         }
-        setContentView(R.layout.activity_board_list);
+        setContentView(R.layout.activity_bookmarks);
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_board_list, menu);
+        getMenuInflater().inflate(R.menu.menu_bookmarks, menu);
         return true;
     }
 

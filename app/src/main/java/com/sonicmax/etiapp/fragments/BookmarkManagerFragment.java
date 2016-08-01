@@ -24,7 +24,7 @@ import com.sonicmax.etiapp.utilities.AsyncLoader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BoardListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
+public class BookmarkManagerFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
 
     private final int LOAD_BOARDS = 0;
 
@@ -32,11 +32,13 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
     private ProgressDialog mDialog;
     private List<Board> mBookmarks;
 
-    public BoardListFragment() {}
+    public BookmarkManagerFragment() {}
+
 
     ///////////////////////////////////////////////////////////////////////////
     // Fragment methods
     ///////////////////////////////////////////////////////////////////////////
+
     @Override
     public void onAttach(Context context) {
         mBoardListAdapter = new BoardListAdapter(context);
@@ -55,6 +57,7 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
             args.putString("type", "home");
 
             LoaderManager loaderManager = getLoaderManager();
+
             if (loaderManager.getLoader(LOAD_BOARDS) == null) {
                 getLoaderManager().initLoader(LOAD_BOARDS, args, this).forceLoad();
             } else {
@@ -75,7 +78,7 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View rootView = inflater.inflate(R.layout.fragment_board_list, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_bookmarks, container, false);
 
         ListView boardList = (ListView) rootView.findViewById(R.id.listview_boards);
         boardList.setAdapter(mBoardListAdapter);
@@ -105,9 +108,11 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
         super.onDetach();
     }
 
+
     ///////////////////////////////////////////////////////////////////////////
     // Click listener for UI
     ///////////////////////////////////////////////////////////////////////////
+
     AdapterView.OnItemClickListener boardClickHandler = new AdapterView.OnItemClickListener() {
 
         @Override
@@ -123,11 +128,14 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
         }
     };
 
+
     ///////////////////////////////////////////////////////////////////////////
     // Loader callbacks
     ///////////////////////////////////////////////////////////////////////////
+
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
         final Context context = getContext();
+        final String HTTP_INTERNAL_SERVER_ERROR = "500";
 
         mDialog = new ProgressDialog(context);
         mDialog.setMessage("Getting bookmarks...");
@@ -138,7 +146,15 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
             @Override
             public List<Board> loadInBackground() {
                 String html = new WebRequest(context, args).sendRequest();
-                return new BoardListScraper(context).scrapeBoards(html);
+
+                // Probably means the tag server was down - but we can still access message history
+                if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
+                    handleInternalServerError();
+                    return null;
+
+                } else {
+                    return new BoardListScraper(context).scrapeBoards(html);
+                }
             }
         };
     }
@@ -159,4 +175,20 @@ public class BoardListFragment extends Fragment implements LoaderManager.LoaderC
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void handleInternalServerError() {
+        Context context = getContext();
+        Intent intent = new Intent(context, TopicListActivity.class);
+        intent.putExtra("url", "http://boards.endoftheinter.net/history.php?b");
+        intent.putExtra("boardname", "Message History");
+        context.startActivity(intent);
+        getActivity().overridePendingTransition(R.anim.slide_in_from_right,
+                R.anim.slide_out_to_left);
+    }
+
 }

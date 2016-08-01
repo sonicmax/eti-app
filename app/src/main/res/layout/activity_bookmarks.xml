@@ -2,8 +2,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/board_list_activity"
-    android:name="com.sonicmax.etiapp.fragments.BoardListFragment"
+    android:name="com.sonicmax.etiapp.fragments.BookmarkManagerFragment"
     android:label="@string/app_name"
-    tools:layout="@layout/fragment_board_list"
+    tools:layout="@layout/fragment_bookmarks"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
