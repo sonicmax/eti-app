@@ -71,7 +71,7 @@ public class WebRequest {
                 mUrl = new URL(mUri.toString());
             }
 
-            // Log.v(LOG_TAG, url.toString());
+            Log.v(LOG_TAG, mUrl.toString());
             connection = (HttpsURLConnection) mUrl.openConnection();
 
             if (mCookieManager.getCookieStore().getCookies().size() > 0) {

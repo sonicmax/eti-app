@@ -414,6 +414,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeLeft() {
             if (nextPageUrl != null) {
+
                 loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
                 currentPage++;
                 Toaster.makeToast(getContext(), "Page " + currentPage);
@@ -423,6 +424,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeRight() {
             if (prevPageUrl != null) {
+
                 loadMessageList(buildArgsForLoader(prevPageUrl, false), LOAD_MESSAGE);
                 currentPage--;
                 Toaster.makeToast(getContext(), "Page " + currentPage);
@@ -469,6 +471,7 @@ public class MessageListFragment extends Fragment implements
             mMessageListAdapter.replaceAllMessages(mMessages);
 
             boolean isLastPage = currentPage == mTopic.getLastPage(0);
+
             if (isLastPage && mLivelinksSubscriber == null) {
                 initLivelinksSubscriber();
             }
@@ -503,7 +506,7 @@ public class MessageListFragment extends Fragment implements
                 DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT) {
 
             @Override
-            public void onReceiveUpdate(String response, int position) {
+            public void onReceiveNewPost(String response, int position) {
                 // Can't parse HTML unless we remove these characters
                 String escapedResponse = response.replace("\\/", "/")
                         .replace("\\\"", "\"")
@@ -528,6 +531,12 @@ public class MessageListFragment extends Fragment implements
                     Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
                             "Position = " + position + ", topic size = " + totalPosts);
                 }
+            }
+
+            @Override
+            public void onReceivePrivateMessage(int unreadMessages) {
+                Snackbar.make(mRootView, unreadMessages + R.string.unread_messages, Snackbar.LENGTH_INDEFINITE)
+                        .show();
             }
         };
     }

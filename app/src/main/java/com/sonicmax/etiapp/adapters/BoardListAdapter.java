@@ -65,7 +65,7 @@ public class BoardListAdapter extends BaseAdapter {
         if (convertView == null) {
 
             convertView = LayoutInflater.from(context)
-                    .inflate(R.layout.list_item_board, parent, false);
+                    .inflate(R.layout.list_item_bookmark, parent, false);
             nameView = (TextView) convertView.findViewById(R.id.list_item_board_title);
             convertView.setTag(new ViewHolder(nameView));
 

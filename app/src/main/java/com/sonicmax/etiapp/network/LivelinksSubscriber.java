@@ -72,7 +72,15 @@ public class LivelinksSubscriber {
      * @param message Response from FETCH_MESSAGE request
      * @param position Position of new message in topic
      */
-    public void onReceiveUpdate(String message, int position) {
+    public void onReceiveNewPost(String message, int position) {
+        // TODO: Should probably use an interface for this
+    }
+
+    /**
+     * Called after receiving new private message. Override when instantiating class
+     * @param unreadMessages Total number of unread PMs
+     */
+    public void onReceivePrivateMessage(int unreadMessages) {
         // TODO: Should probably use an interface for this
     }
 
@@ -177,7 +185,7 @@ public class LivelinksSubscriber {
             }
 
             if (newInboxSize > mInboxSize) {
-                // Notify user that they have new PMs
+                onReceivePrivateMessage(newInboxSize);
             }
         }
     }
@@ -206,7 +214,7 @@ public class LivelinksSubscriber {
                         break;
 
                     case FETCH_MESSAGE:
-                        onReceiveUpdate(response, mTopicSize);
+                        onReceiveNewPost(response, mTopicSize);
                         subscribe();
                         break;
                 }

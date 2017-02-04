@@ -1,10 +1,13 @@
 package com.sonicmax.etiapp.utilities;
 
+import android.util.Log;
+
 import com.sonicmax.etiapp.network.ImageLoader;
 
 import java.util.LinkedList;
 
 public class ImageLoaderQueue implements ImageLoader.ImageLoaderListener {
+    private static final String LOG_TAG = ImageLoaderQueue.class.getSimpleName();
     private final LinkedList<Integer> mPositions;
     private final LinkedList<ImageLoader> mQueue;
 
@@ -21,6 +24,8 @@ public class ImageLoaderQueue implements ImageLoader.ImageLoaderListener {
     public void add(int position, ImageLoader loader) {
         if (!mPositions.contains(position)) {
 
+            Log.v(LOG_TAG, "Adding new loader for position " + position);
+
             mQueue.add(loader);
             mPositions.add(position);
 
@@ -32,6 +37,7 @@ public class ImageLoaderQueue implements ImageLoader.ImageLoaderListener {
         }
 
         else {
+            Log.v(LOG_TAG, "Moving loader at position " + position + " to end of queue");
             // Remove previous instance of loader and push to end of queue
             removeFromQueue(position);
             mQueue.add(loader);

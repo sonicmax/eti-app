@@ -6,9 +6,6 @@ import android.util.Log;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
-/**
- * Created by Max on 3/6/2016.
- */
 public class FormDataBuilder {
     private final String LOG_TAG = FormDataBuilder.class.getSimpleName();
 

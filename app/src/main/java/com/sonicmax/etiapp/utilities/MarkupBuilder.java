@@ -8,6 +8,10 @@ import org.jsoup.select.Elements;
 
 import java.util.List;
 
+/**
+ * Class which takes HTML of selected message (as String) and creates ETI-formatted markup
+ * for quoting.
+ */
 public class MarkupBuilder {
 
     private final String NEWLINE = "\n";

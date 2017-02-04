@@ -122,7 +122,7 @@ public class ImageLoader {
     public void onFinishLoad(Bitmap bitmap, ImageSpan imageSpan) {}
 
     /**
-     * Called after current batch of images have been loaded. Implemented in ImageLoaderQueue
+     * Interface used to communicate between classes after ImageLoader has finished loading.
      */
     public interface ImageLoaderListener {
         void onQueueComplete();

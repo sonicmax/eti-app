@@ -15,5 +15,9 @@
         android:title="@string/action_refresh"
         android:orderInCategory="3"
         app:showAsAction="never" />
+    <item android:id="@+id/action_clear_mem_cache"
+        android:title="@string/action_clear_mem_cache"
+        android:orderInCategory="4"
+        app:showAsAction="never" />
 
 </menu>

@@ -99,13 +99,13 @@ public class QuickpostHandler {
 
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
+            // WebRequest returns HTTP response code as string
             final String HTTP_STATUS_OK = "200";
 
             if (data.equals(HTTP_STATUS_OK)) {
                 onSuccess();
             }
             else {
-                // TODO: Display different error depending on which status code is returned
                 onError((mContext.getResources().getString(R.string.error_message_failed)));
             }
         }

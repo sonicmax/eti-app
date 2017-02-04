@@ -12,6 +12,7 @@ import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -127,7 +128,7 @@ public class MessageListAdapter extends SelectableAdapter {
     // Methods which modify UI elements
     ///////////////////////////////////////////////////////////////////////////
     public class MessageViewHolder extends RecyclerView.ViewHolder
-            implements View.OnClickListener, View.OnLongClickListener{
+            implements View.OnClickListener, View.OnLongClickListener {
 
         private final CardView cardView;
         private final TextView userView;

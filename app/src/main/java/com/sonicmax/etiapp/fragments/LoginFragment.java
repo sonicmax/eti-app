@@ -16,7 +16,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.activities.BoardListActivity;
+import com.sonicmax.etiapp.activities.BookmarkManagerActivity;
 import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.network.LoginScriptBuilder;
 import com.sonicmax.etiapp.network.WebRequest;
@@ -35,9 +35,13 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
     private EditText mPassword;
     private ProgressDialog mDialog;
 
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Fragment methods
+    ///////////////////////////////////////////////////////////////////////////
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
 
         // Check whether "is_logged_in" flag has been set, so we can use stored cookies
@@ -72,43 +76,8 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
 
     }
 
-    private View.OnClickListener loginHandler = new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-
-            switch (view.getId()) {
-                case R.id.login_button:
-                    makeLoginRequest();
-                    break;
-            }
-        }
-    };
-
-    private void makeLoginRequest() {
-
-        Context context = getContext();
-
-        ContentValues values = new ContentValues(2);
-        String username = mUsername.getText().toString();
-        String password = mPassword.getText().toString();
-        values.put("username", username);
-        values.put("password", password);
-
-        Bundle args = new Bundle(3);
-        args.putString("method", "POST");
-        args.putString("type", "login");
-        args.putParcelable("values", values);
-
-        // Store credentials for later use
-        SharedPreferenceManager.putString(context, "username", username);
-        SharedPreferenceManager.putString(context, "password", password);
-
-        getLoaderManager().initLoader(LOGIN, args, this).forceLoad();
-    }
-
     @Override
     public void onDetach() {
-
         // Make sure that we don't leak progress dialog when exiting activity
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
@@ -117,11 +86,12 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
         super.onDetach();
     }
 
+
     ///////////////////////////////////////////////////////////////////////////
     // Loader callbacks
     ///////////////////////////////////////////////////////////////////////////
-    public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
+    public Loader<Object> onCreateLoader(int id, final Bundle args) {
         final Context context = getContext();
 
         switch (id) {
@@ -173,26 +143,24 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
 
             case STATUS_CHECK:
                 // FOR DEBUG ONLY
-                // Toaster.makeToast(getContext(), "Status check response = " + response);
-
-                // response = "1";
+                Toaster.makeToast(getContext(), "Status check response = " + response);
 
                 // Possible responses:
                 // "0"              Not logged in
                 // "1:username"     Logged in
 
                 if (response == null || response.trim().equals("0")) {
-                    // Wait for user to login - do nothing. Handle null responses here as well
+                    // Can't do anything else - wait for user to login manually
                     mDialog.dismiss();
-                }
 
-                else {
+                } else {
                     // Use stored cookies to get board list and start activity
                     mDialog.dismiss();
-                    Intent intent = new Intent(context, BoardListActivity.class);
+                    Intent intent = new Intent(context, BookmarkManagerActivity.class);
                     intent.putExtra("title", "ETI");
                     context.startActivity(intent);
                 }
+
                 break;
 
             case LOGIN:
@@ -200,7 +168,7 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
                 mDialog.dismiss();
 
                 // Check whether we have already saved list of bookmarks.
-                // Bookmark lists are serialized under keys "bookmark_thing0", "bookmark_thing0", (etc)
+                // Bookmark lists are serialized as "bookmark_thing0", "bookmark_thing1", (etc)
                 String firstBookmarkName = SharedPreferenceManager.getString(getContext(), "bookmark_names0");
                 String firstBookmarkUrl = SharedPreferenceManager.getString(getContext(), "bookmark_urls0");
 
@@ -212,18 +180,58 @@ public class LoginFragment extends Fragment implements LoaderManager.LoaderCallb
                     context.startActivity(intent);
                     getActivity().overridePendingTransition(R.anim.slide_in_from_right,
                             R.anim.slide_out_to_left);
-                }
-                else {
-                    // Get list of bookmarks from main.php & start BoardListActivity
-                    Intent intent = new Intent(context, BoardListActivity.class);
+
+                } else {
+                    // Get list of bookmarks from main.php & start BookmarkManagerActivity
+                    Intent intent = new Intent(context, BookmarkManagerActivity.class);
                     context.startActivity(intent);
                 }
+
                 break;
         }
+
+
     }
 
     public void onLoaderReset(Loader<Object> loader) {
         loader.reset();
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    private View.OnClickListener loginHandler = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            switch (view.getId()) {
+                case R.id.login_button:
+                    makeLoginRequest();
+                    break;
+            }
+        }
+    };
+
+    private void makeLoginRequest() {
+        Context context = getContext();
+
+        ContentValues values = new ContentValues(2);
+        String username = mUsername.getText().toString();
+        String password = mPassword.getText().toString();
+        values.put("username", username);
+        values.put("password", password);
+
+        Bundle args = new Bundle(3);
+        args.putString("method", "POST");
+        args.putString("type", "login");
+        args.putParcelable("values", values);
+
+        // Store credentials for later use
+        SharedPreferenceManager.putString(context, "username", username);
+        SharedPreferenceManager.putString(context, "password", password);
+
+        getLoaderManager().initLoader(LOGIN, args, this).forceLoad();
     }
 
     private String getDialogMessage(int id) {

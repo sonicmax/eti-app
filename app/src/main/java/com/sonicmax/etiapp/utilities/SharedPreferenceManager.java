@@ -64,7 +64,6 @@ public class SharedPreferenceManager {
         editor.putInt(key + "_size", list.size());
 
         for (int i = 0; i < list.size(); i++) {
-            Log.v("Help", "Storing value: " + list.get(i));
             editor.putString(key + i, list.get(i));
         }
 
