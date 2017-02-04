@@ -9,6 +9,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.text.SpannableStringBuilder;
 import android.text.style.ImageSpan;
+import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.sonicmax.etiapp.utilities.AsyncLoader;
@@ -31,6 +32,7 @@ public class ImageLoader {
     private Iterator<Bundle> mQueueIterator;
     private ImageSpan[] mImageSpans;
     private ImageLoaderListener mCallbacks;
+    private BitmapFactory.Options mBitmapFactoryOptions;
 
 
     public ImageLoader(Context context, ImageLoaderListener loaderQueue) {
@@ -38,6 +40,13 @@ public class ImageLoader {
         mLoaderManager = ((FragmentActivity) context).getSupportLoaderManager();
         mImageQueue = new LinkedList<>();
         mCallbacks = loaderQueue;
+        
+        DisplayMetrics metrics = context.getApplicationContext().getResources().getDisplayMetrics();
+        mBitmapFactoryOptions = new BitmapFactory.Options();
+        mBitmapFactoryOptions.inScreenDensity = metrics.densityDpi;
+        mBitmapFactoryOptions.inTargetDensity =  metrics.densityDpi;
+        mBitmapFactoryOptions.inDensity = DisplayMetrics.DENSITY_DEFAULT;
+        mBitmapFactoryOptions.inSampleSize = 2;
     }
 
     /**
@@ -140,7 +149,6 @@ public class ImageLoader {
 
                 @Override
                 public Bitmap loadInBackground() {
-                    Bitmap bitmap;
                     HttpURLConnection connection = null;
                     InputStream input = null;
 
@@ -150,11 +158,7 @@ public class ImageLoader {
                         connection.connect();
                         input = connection.getInputStream();
 
-                        BitmapFactory.Options options = new BitmapFactory.Options();
-                        options.inSampleSize = 2;
-                        bitmap = BitmapFactory.decodeStream(input, null, options);
-
-                        return bitmap;
+                        return BitmapFactory.decodeStream(input, null, mBitmapFactoryOptions);
 
                     } catch (IOException e) {
                         Log.e(LOG_TAG, "Error while loading image", e);
