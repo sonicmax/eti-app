@@ -37,7 +37,7 @@ public class ImageLoader {
 
 
     public ImageLoader(Context context, ImageLoaderListener loaderQueue) {
-        final int SAMPLE_SIZE = 4;
+        final int SAMPLE_SIZE = 2;
         
         mContext = context;
         mLoaderManager = ((FragmentActivity) context).getSupportLoaderManager();
