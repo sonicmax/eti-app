@@ -37,6 +37,8 @@ public class ImageLoader {
 
 
     public ImageLoader(Context context, ImageLoaderListener loaderQueue) {
+        final int SAMPLE_SIZE = 4;
+        
         mContext = context;
         mLoaderManager = ((FragmentActivity) context).getSupportLoaderManager();
         mImageQueue = new LinkedList<>();
@@ -47,7 +49,7 @@ public class ImageLoader {
         mBitmapFactoryOptions.inScreenDensity = metrics.densityDpi;
         mBitmapFactoryOptions.inTargetDensity =  metrics.densityDpi;
         mBitmapFactoryOptions.inDensity = DisplayMetrics.DENSITY_DEFAULT;
-        mBitmapFactoryOptions.inSampleSize = 2;
+        mBitmapFactoryOptions.inSampleSize = SAMPLE_SIZE;
     }
 
     /**
