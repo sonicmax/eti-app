@@ -25,6 +25,7 @@ import com.sonicmax.etiapp.network.ImageLoader;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.ui.Builder;
 import com.sonicmax.etiapp.ui.MessageBuilder;
+import com.sonicmax.etiapp.ui.QuotedImageSpan;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 import com.sonicmax.etiapp.utilities.ImageCache;
@@ -43,10 +44,11 @@ public class MessageListAdapter extends SelectableAdapter {
     private final Builder mMessageBuilder;
     private final ImageCache mImageCache;
     private final ImageLoaderQueue mImageLoaderQueue;
-    private DisplayMetrics mDisplayMetrics = new DisplayMetrics();
+    private final DisplayMetrics mDisplayMetrics;
 
+    private int mMaxWidth;
     private int mLastPosition;
-    private List<Message> mMessages = Collections.emptyList();
+    private List<Message> mMessages;
 
     /**
      * Adapter to display Message objects in a RecyclerView.
@@ -72,14 +74,20 @@ public class MessageListAdapter extends SelectableAdapter {
 
         mImageCache = new ImageCache(context);
         mImageLoaderQueue = new ImageLoaderQueue();
+        mMessages = Collections.emptyList();
+        mDisplayMetrics = new DisplayMetrics();
 
         ((FragmentActivity) context).getWindowManager().getDefaultDisplay()
                 .getMetrics(mDisplayMetrics);
+
+        // For now, just use screen width. This will be modified later
+        mMaxWidth = mDisplayMetrics.widthPixels;
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Getters/setters/etc
     ///////////////////////////////////////////////////////////////////////////
+
     public void replaceAllMessages(List<Message> messages) {
         mMessages.clear();
         mMessages = messages;
@@ -122,6 +130,10 @@ public class MessageListAdapter extends SelectableAdapter {
 
     public void closeDiskCache() {
         mImageCache.closeDiskCache();;
+    }
+
+    public void setMaxImageWidth(int width) {
+        mMaxWidth = width;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -265,25 +277,77 @@ public class MessageListAdapter extends SelectableAdapter {
     ///////////////////////////////////////////////////////////////////////////
 
     private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap) {
-        BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), bitmap);
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-
-        if (width > mDisplayMetrics.widthPixels) {
-            // Scale BitmapDrawable to fit screen. In an ideal world, we would also decode
-            // the bounds first & downsample large images, but decoding Bitmap multiple
-            // times was can cause "SkImageDecoder:: Factory returned null" errors
-            height = height / (width / mDisplayMetrics.widthPixels);
-            width = mDisplayMetrics.widthPixels;
-        }
-
-        bitmapDrawable.setBounds(0, 0, width, height);
+        Bitmap resizedBitmap = resizeBitmapToFitScreen(bitmap);
+        BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), resizedBitmap);
+        bitmapDrawable.setBounds(0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
 
         return bitmapDrawable;
     }
 
+    /**
+     * Basic method for resizing bitmaps to fit message list view. Returns original bitmap
+     * if no adjustments are required.
+     *
+     * In an ideal world, we would also decode the bounds first & downsample large images,
+     * but decoding Bitmap multiple times can cause "SkImageDecoder:: Factory returned null" errors
+     *
+     * @param bitmap Bitmap to be resized
+     * @return Resized Bitmap
+     */
+    private Bitmap resizeBitmapToFitScreen(Bitmap bitmap) {
+        final boolean SHOULD_FILTER = true;
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        if (width > mMaxWidth) {
+            // Scale Bitmap to fit screen.
+            float ratio = (float) width / (float) height;
+            int newWidth = mMaxWidth;
+            int newHeight = (int) ((float) mMaxWidth / ratio);
+
+            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, SHOULD_FILTER);
+        }
+
+        // TODO: Maybe we should upscale images that are too small?
+
+        return bitmap;
+    }
+
+    /**
+     * Shrinks bitmap to an arbitrary size (1/4 of maximum allowed width)
+     * Returns original bitmap if resizing is not necessary.
+     * Used to shrink images contained in nested quotes
+     *
+     * @param bitmap Bitmap to be shrunk
+     * @return Shrunk bitmap
+     */
+    private Bitmap shrinkBitmap(Bitmap bitmap) {
+        final boolean SHOULD_FILTER = true;
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        // Scale Bitmap to fit 1/4 of screen.
+        float ratio = (float) width / (float) height;
+        int newWidth = mMaxWidth / 4;
+        int newHeight = (int) ((float) newWidth / ratio);
+
+        if (newWidth < width) {
+            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, SHOULD_FILTER);
+        }
+        else {
+            return bitmap;
+        }
+    }
+
+    /**
+     * Slides given view in from right of screen.
+     * Used to animate new livelink posts as they are added to adapter
+     *
+     * @param view View to be animated
+     */
     private void slideInFromRight(View view) {
-        // Animate new livelinks posts as they are added to adapter
         Animation animation = AnimationUtils.loadAnimation(mContext, R.anim.slide_in_from_right);
         view.startAnimation(animation);
     }

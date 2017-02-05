@@ -125,7 +125,7 @@ public class MessageListFragment extends Fragment implements
         mContainer = container;
 
         // Prepare RecyclerView so we can display posts after loading has finished
-        RecyclerView messageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
+        final RecyclerView messageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
         mLayoutManager = new LinearLayoutManager(getContext());
         mLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         messageList.setLayoutManager(mLayoutManager);
@@ -140,6 +140,14 @@ public class MessageListFragment extends Fragment implements
         // Set listeners
         mQuickpostButton.setOnClickListener(this);
         mRootView.setOnTouchListener(pageSwipeHandler);
+
+        messageList.post(new Runnable() {
+            @Override
+            public void run() {
+                // Find width of message list and set maximum image width
+                mMessageListAdapter.setMaxImageWidth(messageList.getWidth());
+            }
+        });
 
         return mRootView;
     }
