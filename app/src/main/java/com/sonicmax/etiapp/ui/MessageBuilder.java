@@ -128,6 +128,7 @@ public class MessageBuilder extends Builder {
                             break;
                         case "imgs":
                             builder.append(getImagesFrom(element));
+                            builder.append(NEWLINE);
                             break;
                         case "spoiler_closed":
                             builder.append(getSpoilerCaption(element),
