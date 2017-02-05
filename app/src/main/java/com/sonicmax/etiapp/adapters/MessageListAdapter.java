@@ -12,7 +12,6 @@ import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,8 +23,8 @@ import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.network.ImageLoader;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.ui.Builder;
+import com.sonicmax.etiapp.ui.ImagePlaceholderSpan;
 import com.sonicmax.etiapp.ui.MessageBuilder;
-import com.sonicmax.etiapp.ui.QuotedImageSpan;
 import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 import com.sonicmax.etiapp.utilities.ImageCache;
@@ -205,12 +204,12 @@ public class MessageListAdapter extends SelectableAdapter {
                     new ImageLoader(mContext, mImageLoaderQueue) {
 
                 @Override
-                public boolean onPreLoad(ImageSpan img) {
+                public boolean onPreLoad(ImagePlaceholderSpan placeholder) {
                     // Check LRU cache before attempting to load image
-                    Bitmap cachedBitmap = mImageCache.getBitmapFromCache(img.getSource());
+                    Bitmap cachedBitmap = mImageCache.getBitmapFromCache(placeholder.getSource());
 
                     if (cachedBitmap != null) {
-                        onFinishLoad(cachedBitmap, img);
+                        onFinishLoad(cachedBitmap, placeholder);
                         return false;
                     }
                     else {
@@ -219,25 +218,16 @@ public class MessageListAdapter extends SelectableAdapter {
                 }
 
                 @Override
-                public void onFinishLoad(Bitmap bitmap, ImageSpan img) {
-                    BitmapDrawable bitmapDrawable;
-
-                    // TODO: This is bad, we should be resizing from within QuotedImageSpan
-                    if (img instanceof QuotedImageSpan) {
-                        bitmapDrawable = getDrawableFromBitmap(bitmap, true);
-                    }
-                    else {
-                        bitmapDrawable = getDrawableFromBitmap(bitmap, false);
-                    }
-
-                    ImageSpan newImg = new ImageSpan(bitmapDrawable, img.getSource());
-                    mImageCache.addBitmapToCache(img.getSource(), bitmap);
+                public void onFinishLoad(Bitmap bitmap, ImagePlaceholderSpan placeholder) {
+                    BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap, placeholder.isNested());
+                    ImageSpan img = new ImageSpan(bitmapDrawable, placeholder.getSource());
+                    mImageCache.addBitmapToCache(placeholder.getSource(), bitmap);
 
                     // Find position of placeholder, remove and replace with loaded image
-                    int start = messageSpan.getSpanStart(img);
-                    int end = messageSpan.getSpanEnd(img);
-                    messageSpan.removeSpan(img);
-                    messageSpan.setSpan(newImg, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    int start = messageSpan.getSpanStart(placeholder);
+                    int end = messageSpan.getSpanEnd(placeholder);
+                    messageSpan.removeSpan(placeholder);
+                    messageSpan.setSpan(img, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
                     // Update view
                     viewHolder.messageView.setText(messageSpan);

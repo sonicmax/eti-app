@@ -12,6 +12,7 @@ import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
+import com.sonicmax.etiapp.ui.ImagePlaceholderSpan;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.ImageLoaderQueue;
 
@@ -30,7 +31,7 @@ public class ImageLoader {
     private int mCurrentLoaderId;
     private Queue<Bundle> mImageQueue;
     private Iterator<Bundle> mQueueIterator;
-    private ImageSpan[] mImageSpans;
+    private ImagePlaceholderSpan[] mPlaceholders;
     private ImageLoaderListener mCallbacks;
     private BitmapFactory.Options mBitmapFactoryOptions;
 
@@ -56,12 +57,12 @@ public class ImageLoader {
      * @return "this" - for method chaining
      */
     public ImageLoader populateQueue(SpannableStringBuilder message, int position) {
-        mImageSpans = message.getSpans(0, message.length(), ImageSpan.class);
+        mPlaceholders = message.getSpans(0, message.length(), ImagePlaceholderSpan.class);
 
-        for (int i = 0; i < mImageSpans.length; i++) {
-            ImageSpan img = mImageSpans[i];
+        for (int i = 0; i < mPlaceholders.length; i++) {
+            ImagePlaceholderSpan placeholder = mPlaceholders[i];
 
-            if (onPreLoad(img)) { // returns true if image doesn't exist in LRU cache
+            if (onPreLoad(placeholder)) { // returns true if image doesn't exist in LRU cache
 
                 // Concatenate position and index to create (probably unique) id for loader.
                 mCurrentLoaderId = Integer.parseInt(Integer.toString(position) + "00" + Integer.toString(i));
@@ -70,7 +71,7 @@ public class ImageLoader {
                 Bundle loaderArgs = new Bundle(3);
                 loaderArgs.putInt("id", mCurrentLoaderId);
                 loaderArgs.putInt("index", i);
-                loaderArgs.putString("src", img.getSource());
+                loaderArgs.putString("src", placeholder.getSource());
 
                 // Add bundle to queue for later use
                 mImageQueue.add(loaderArgs);
@@ -116,19 +117,19 @@ public class ImageLoader {
 
     /**
      * Called before loader is initialised/restarted
-     * @param img Placeholder image
+     * @param placeholder Placeholder image
      * @return false to interrupt process() method, true to continue execution
      */
-    public boolean onPreLoad(ImageSpan img) {
+    public boolean onPreLoad(ImagePlaceholderSpan placeholder) {
         return true;
     }
 
     /**
      * Called after each image has finished loading
      * @param bitmap Loaded image
-     * @param imageSpan Original placeholder ImageSpan
+     * @param placeholder Placeholder to be replaced
      */
-    public void onFinishLoad(Bitmap bitmap, ImageSpan imageSpan) {}
+    public void onFinishLoad(Bitmap bitmap, ImagePlaceholderSpan placeholder) {}
 
     /**
      * Interface used to communicate between classes after ImageLoader has finished loading.
@@ -184,7 +185,7 @@ public class ImageLoader {
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
             int index = ((AsyncLoader) loader).getArgs().getInt("index");
-            onFinishLoad((Bitmap) data, mImageSpans[index]);
+            onFinishLoad((Bitmap) data, mPlaceholders[index]);
             mLoaderManager.destroyLoader(loader.getId());
             getNextFromQueue();
         }

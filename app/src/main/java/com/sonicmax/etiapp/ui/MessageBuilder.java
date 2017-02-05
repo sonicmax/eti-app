@@ -154,6 +154,8 @@ public class MessageBuilder extends Builder {
     @TargetApi(21)
     private SpannableStringBuilder getImagesFrom(Element imgs) {
         final String SPACE = " ";
+        final boolean NESTED = true;
+        final boolean NOT_NESTED = false;
 
         SpannableStringBuilder output = new SpannableStringBuilder();
 
@@ -166,12 +168,12 @@ public class MessageBuilder extends Builder {
             if (mQuoteDepth == 0) {
                 // Apparently this is the only way to append an ImageSpan
                 output.append(SPACE,
-                        new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                        new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NOT_NESTED),
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             else {
                 output.append(SPACE,
-                        new QuotedImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                        new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NESTED),
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }

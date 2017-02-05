@@ -178,6 +178,8 @@ public class SupportMessageBuilder extends Builder {
     }
 
     private SpannableStringBuilder getImagesFrom(Element imgs) {
+        final boolean NESTED = true;
+        final boolean NOT_NESTED = false;
         SpannableStringBuilder output = new SpannableStringBuilder();
 
         // Iterate over image anchor tags to get src attribute
@@ -191,13 +193,14 @@ public class SupportMessageBuilder extends Builder {
             output.append(stupidEmptyString);
 
             if (mQuoteDepth == 0) {
-                output.setSpan(new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                output.setSpan(new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NOT_NESTED),
                         output.length() - stupidEmptyString.length(),
                         output.length(),
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
+
             else {
-                output.setSpan(new QuotedImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                output.setSpan(new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NESTED),
                         output.length() - stupidEmptyString.length(),
                         output.length(),
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
