@@ -153,6 +153,8 @@ public class MessageBuilder extends Builder {
 
     @TargetApi(21)
     private SpannableStringBuilder getImagesFrom(Element imgs) {
+        final String SPACE = " ";
+
         SpannableStringBuilder output = new SpannableStringBuilder();
 
         // Iterate over image anchor tags to get src attribute
@@ -161,10 +163,17 @@ public class MessageBuilder extends Builder {
 
         for (int j = 0; j < anchorLength; j++) {
             Element imgAnchor = anchors.get(j);
-            // Apparently this is the only way to append an ImageSpan
-            output.append(" ",
-                    new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (mQuoteDepth == 0) {
+                // Apparently this is the only way to append an ImageSpan
+                output.append(SPACE,
+                        new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            else {
+                output.append(SPACE,
+                        new QuotedImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
         }
 
         return output;

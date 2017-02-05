@@ -220,7 +220,16 @@ public class MessageListAdapter extends SelectableAdapter {
 
                 @Override
                 public void onFinishLoad(Bitmap bitmap, ImageSpan img) {
-                    BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap);
+                    BitmapDrawable bitmapDrawable;
+
+                    // TODO: This is bad, we should be resizing from within QuotedImageSpan
+                    if (img instanceof QuotedImageSpan) {
+                        bitmapDrawable = getDrawableFromBitmap(bitmap, true);
+                    }
+                    else {
+                        bitmapDrawable = getDrawableFromBitmap(bitmap, false);
+                    }
+
                     ImageSpan newImg = new ImageSpan(bitmapDrawable, img.getSource());
                     mImageCache.addBitmapToCache(img.getSource(), bitmap);
 
@@ -276,8 +285,16 @@ public class MessageListAdapter extends SelectableAdapter {
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
 
-    private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap) {
-        Bitmap resizedBitmap = resizeBitmapToFitScreen(bitmap);
+    private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap, boolean shouldShrink) {
+        Bitmap resizedBitmap;
+
+        if (shouldShrink) {
+            resizedBitmap = shrinkBitmap(bitmap);
+        }
+        else {
+            resizedBitmap = resizeBitmapToFitScreen(bitmap);
+        }
+
         BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), resizedBitmap);
         bitmapDrawable.setBounds(0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
 

@@ -189,10 +189,20 @@ public class SupportMessageBuilder extends Builder {
             // Apparently the only way we can append ImageSpans is to append a string, and then use setSpan.
             String stupidEmptyString = " ";
             output.append(stupidEmptyString);
-            output.setSpan(new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
-                    output.length() - stupidEmptyString.length(),
-                    output.length(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            if (mQuoteDepth == 0) {
+                output.setSpan(new ImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                        output.length() - stupidEmptyString.length(),
+                        output.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            else {
+                output.setSpan(new QuotedImageSpan(mSpinner, imgAnchor.attr("imgsrc")),
+                        output.length() - stupidEmptyString.length(),
+                        output.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+
         }
 
         return output;
