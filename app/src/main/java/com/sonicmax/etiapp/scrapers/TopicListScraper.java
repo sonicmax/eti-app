@@ -53,11 +53,13 @@ public class TopicListScraper {
             TopicListFragment.prevPageUrl = URL_PREFIX + prevPageAnchor.attr("href");
         }
 
-        Element nextPageAnchor = infobar.getElementsByTag("a").get(0);
-
-        if (nextPageAnchor != null) {
+        Elements pageAnchors = infobar.getElementsByTag("a");
+        if (pageAnchors.size() > 0) {
+            Element nextPageAnchor = pageAnchors.get(0);
             TopicListFragment.nextPageUrl = URL_PREFIX + nextPageAnchor.attr("href");
-        } else {
+        }
+
+        else {
             TopicListFragment.nextPageUrl = null;
         }
 
