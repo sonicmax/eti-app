@@ -184,6 +184,7 @@ public class MessageListFragment extends Fragment implements
             ArrayList<Message> messageArray = new ArrayList<>(mMessages);
             outState.putParcelableArrayList("messages", messageArray);
         }
+
         outState.putParcelable("topic", mTopic);
         outState.putInt("page", currentPage);
 
@@ -204,7 +205,6 @@ public class MessageListFragment extends Fragment implements
     // Helper methods for loader
     ///////////////////////////////////////////////////////////////////////////
     private Bundle buildArgsForLoader(String url, boolean filter) {
-
         mArgs = new Bundle();
         mArgs.putString("method", "GET");
         mArgs.putString("type", "messagelist");
@@ -264,7 +264,6 @@ public class MessageListFragment extends Fragment implements
         if (nextPageUrl != null) {
             mMessageListAdapter.clearMessages();
             loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
-            currentPage++;
             Toaster.makeToast(getContext(), "Page " + currentPage);
             scrollToPosition(FIRST_POST);
         }
@@ -435,9 +434,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeLeft() {
             if (nextPageUrl != null) {
-
                 loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
-                currentPage++;
                 Toaster.makeToast(getContext(), "Page " + currentPage);
             }
         }
@@ -445,9 +442,7 @@ public class MessageListFragment extends Fragment implements
         @Override
         public void onSwipeRight() {
             if (prevPageUrl != null) {
-
                 loadMessageList(buildArgsForLoader(prevPageUrl, false), LOAD_MESSAGE);
-                currentPage--;
                 Toaster.makeToast(getContext(), "Page " + currentPage);
             }
         }
@@ -471,6 +466,7 @@ public class MessageListFragment extends Fragment implements
         return new AsyncLoader(context, args) {
             @Override
             public List<Message> loadInBackground() {
+                mScraper.setUrl(args.getString("url"));
                 String html = new WebRequest(context, args).sendRequest();
                 return mScraper.scrapeMessages(html, args.getBoolean("filter"));
             }
@@ -483,6 +479,7 @@ public class MessageListFragment extends Fragment implements
             // We can be sure that data will safely cast to List<Message>.
             mMessages = (List<Message>) data;
             mMessageListAdapter.replaceAllMessages(mMessages);
+            mMessageListAdapter.setCurrentPage(currentPage);
 
             boolean isLastPage = currentPage == mTopic.getLastPage(0);
 
@@ -490,8 +487,8 @@ public class MessageListFragment extends Fragment implements
                 initLivelinksSubscriber();
             }
             else if (!isLastPage && mLivelinksSubscriber != null) {
-                // User navigated from last page to a different page - can't use livelinks anymore
-                // as we can't get an accurate post count
+                // User navigated from last page to a different page.
+                // We should unsubscribe from livelinks updates
                 mLivelinksSubscriber.unsubscribe();
             }
         }
@@ -509,6 +506,7 @@ public class MessageListFragment extends Fragment implements
     }
 
     public void initLivelinksSubscriber() {
+        // TODO: Replace this with real data!!
         final String DEBUG_USER_ID = "5599";
         final int DEBUG_INBOX_COUNT = 0;
 

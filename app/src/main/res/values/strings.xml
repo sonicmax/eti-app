@@ -26,6 +26,7 @@
 
     <string name="snackbar_view">View</string>
 
+    <string name="continued_next_page">Continued on page </string>
     <string name="unread_messages"> unread PMs</string>
 
     <string name="error_5_chars_or_more">Your message must be at least 5 characters</string>

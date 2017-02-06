@@ -1,6 +1,7 @@
 package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.support.v4.app.FragmentActivity;
@@ -48,6 +49,7 @@ public class MessageListAdapter extends SelectableAdapter {
     private final DisplayMetrics mDisplayMetrics;
 
     private int mMaxWidth;
+    private int mCurrentPage;
     private int mLastPosition;
     private List<Message> mMessages;
 
@@ -144,6 +146,10 @@ public class MessageListAdapter extends SelectableAdapter {
         mMaxWidth = width;
     }
 
+    public void setCurrentPage(int page) {
+        mCurrentPage = page;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Methods which modify UI elements
     ///////////////////////////////////////////////////////////////////////////
@@ -230,6 +236,10 @@ public class MessageListAdapter extends SelectableAdapter {
     @Override
     public void onBindViewHolder(final MessageViewHolder viewHolder, final int position) {
         if (position == mMessages.size()) {
+            Resources resources = mContext.getResources();
+            String nextPageText = resources.getString(R.string.continued_next_page) + " " + (mCurrentPage + 1);
+            viewHolder.nextPageButton.setText(nextPageText);
+
             viewHolder.nextPageButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {

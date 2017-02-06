@@ -2,6 +2,7 @@ package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
 import android.net.Uri;
+import android.net.UrlQuerySanitizer;
 
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.fragments.MessageListFragment;
@@ -27,6 +28,10 @@ public class MessageListScraper {
         this.mUrl = url;
     }
 
+    public void setUrl(String url) {
+        mUrl = url;
+    }
+
     public List<Message> scrapeMessages(String html, boolean isFiltered) {
 
         Document document = Jsoup.parse(html);
@@ -41,7 +46,7 @@ public class MessageListScraper {
         }
 
         // Get current page number
-        int currentPage = getCurrentPage(Uri.parse(mUrl));
+        int currentPage = getCurrentPage(mUrl);
 
         // Check anchors of infobar to get prev/next page URLs (not found in moremessages.php)
         Elements infobarClass = document.getElementsByClass("infobar");
@@ -101,9 +106,9 @@ public class MessageListScraper {
         return messages;
     }
 
-    private int getCurrentPage(Uri uri) {
-
+    private int getCurrentPage(String url) {
         try {
+            Uri uri = Uri.parse(url);
             return Integer.parseInt(uri.getQueryParameter("page"));
 
         } catch (NumberFormatException e) {
@@ -113,7 +118,6 @@ public class MessageListScraper {
     }
 
     private void getPageUrls(Element infobar) {
-
         final String HTTPS = "https:";
 
         Element secondAnchor = infobar.getElementsByTag("a").get(1);
