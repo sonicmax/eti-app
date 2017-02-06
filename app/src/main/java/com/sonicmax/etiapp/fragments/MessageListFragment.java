@@ -441,14 +441,7 @@ public class MessageListFragment extends Fragment implements
     };
 
     private void scrollToPosition(final int position) {
-
-        final ListView messageList = (ListView) mRootView.findViewById(R.id.listview_messages);
-        messageList.post(new Runnable() {
-            @Override
-            public void run() {
-                messageList.setSelection(position);
-            }
-        });
+        mLayoutManager.scrollToPosition(position);
     }
 
     ///////////////////////////////////////////////////////////////////////////
