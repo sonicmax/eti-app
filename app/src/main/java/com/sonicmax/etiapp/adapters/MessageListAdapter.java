@@ -17,7 +17,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.network.ImageLoader;
@@ -38,7 +40,7 @@ public class MessageListAdapter extends SelectableAdapter {
     private final int BG_GREY;
     private final int FG_GREY;
     private final Context mContext;
-    private final ClickListener mClickListener;
+    private final EventInterface mEventInterface;
     private final FuzzyTimestampBuilder mTimestampBuilder;
     private final Builder mMessageBuilder;
     private final ImageCache mImageCache;
@@ -52,14 +54,14 @@ public class MessageListAdapter extends SelectableAdapter {
     /**
      * Adapter to display Message objects in a RecyclerView.
      * @param context
-     * @param clickListener Listener to dispatch click/long click events back to fragment
+     * @param eventInterface Interface to dispatch click/long click events back to fragment
      */
-    public MessageListAdapter(Context context, ClickListener clickListener) {
-        final String etiDateFormat = "MM/dd/yyyy hh:mm:ss aa";
+    public MessageListAdapter(Context context, EventInterface eventInterface) {
+        final String ETI_DATE_FORMAT = "MM/dd/yyyy hh:mm:ss aa";
 
         mContext = context;
-        mClickListener = clickListener;
-        mTimestampBuilder = new FuzzyTimestampBuilder(etiDateFormat);
+        mEventInterface = eventInterface;
+        mTimestampBuilder = new FuzzyTimestampBuilder(ETI_DATE_FORMAT);
 
         // Resolve colours from resources for use in onBindViewHolder() method
         BG_GREY = ContextCompat.getColor(context, R.color.bg_grey);
@@ -111,7 +113,14 @@ public class MessageListAdapter extends SelectableAdapter {
 
     @Override
     public int getItemCount() {
-        return mMessages.size();
+        int size = mMessages.size();
+        if (size < 50) {
+            return size;
+        }
+        else {
+            // Account for next page button
+            return size + 1;
+        }
     }
 
     @Override
@@ -141,120 +150,158 @@ public class MessageListAdapter extends SelectableAdapter {
     public class MessageViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
 
-        private final CardView cardView;
-        private final TextView userView;
-        private final TextView timeView;
-        private final TextView postNumberView;
-        private final TextView messageView;
+        private CardView cardView;
+        private TextView userView;
+        private TextView timeView;
+        private TextView postNumberView;
+        private TextView messageView;
+        private Button nextPageButton;
 
         public MessageViewHolder(View view) {
             super(view);
-            cardView = (CardView) view;
-            userView = (TextView) view.findViewById(R.id.list_item_username);
-            timeView = (TextView) view.findViewById(R.id.list_item_time);
-            postNumberView = (TextView) view.findViewById(R.id.list_item_count);
-            messageView = (TextView) view.findViewById(R.id.list_item_message_body);
 
-            // Set MaxCardElevation to 6 so we can increase it dynamically when selecting cards
-            cardView.setMaxCardElevation(6);
+            if (view.getId() == R.id.next_page_button) {
+                nextPageButton = (Button) view;
+            }
 
-            // Dispatch long click events to ClickListener so we can handle them in fragment
-            cardView.setOnLongClickListener(this);
+            else {
+                cardView = (CardView) view;
+                userView = (TextView) view.findViewById(R.id.list_item_username);
+                timeView = (TextView) view.findViewById(R.id.list_item_time);
+                postNumberView = (TextView) view.findViewById(R.id.list_item_count);
+                messageView = (TextView) view.findViewById(R.id.list_item_message_body);
 
-            // Handle ClickableSpans
-            messageView.setMovementMethod(LinkMovementMethod.getInstance());
+                // Set MaxCardElevation to 6 so we can increase it dynamically when selecting cards
+                cardView.setMaxCardElevation(6);
+
+                // Dispatch long click events to ClickListener so we can handle them in fragment
+                cardView.setOnLongClickListener(this);
+
+                // Handle ClickableSpans
+                messageView.setMovementMethod(LinkMovementMethod.getInstance());
+            }
         }
 
         @Override
         public void onClick(View view) {
-            mClickListener.onItemClick(getAdapterPosition());
+            mEventInterface.onItemClick(getAdapterPosition());
         }
 
         @Override
         public boolean onLongClick(View view) {
-            mClickListener.onItemLongClick(getAdapterPosition());
+            mEventInterface.onItemLongClick(getAdapterPosition());
             return false;
         }
     }
 
-    public interface ClickListener {
+    public interface EventInterface {
+        void onRequestNextPage();
         void onItemClick(int position);
         boolean onItemLongClick(int position);
     }
 
+    /**
+     * If adapter contains 50 posts, we want to display next_page_button as the 51st item
+     */
     @Override
-    public MessageViewHolder onCreateViewHolder(ViewGroup viewGroup, int position) {
-        return new MessageViewHolder(LayoutInflater.
-                from(viewGroup.getContext()).
-                inflate(R.layout.list_item_message, viewGroup, false));
+    public int getItemViewType(int position) {
+        return (position == 50) ? R.layout.next_page_button : R.layout.list_item_message;
+    }
+
+    @Override
+    public MessageViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
+        View itemView;
+
+        if (viewType == R.layout.list_item_message) {
+            itemView = LayoutInflater.
+                    from(viewGroup.getContext()).
+                    inflate(R.layout.list_item_message, viewGroup, false);
+        }
+
+        else {
+            itemView = LayoutInflater.
+                    from(viewGroup.getContext()).
+                    inflate(R.layout.next_page_button, viewGroup, false);
+        }
+
+        return new MessageViewHolder(itemView);
     }
 
     @Override
     public void onBindViewHolder(final MessageViewHolder viewHolder, final int position) {
-        Message message = getItem(position);
-
-        final SpannableStringBuilder messageSpan = mMessageBuilder.buildMessage(message.getHtml());
-        viewHolder.messageView.setText(messageSpan);
-
-        // Check whether we need to load images
-        if (messageSpan.getSpans(0, messageSpan.length(), ImageSpan.class).length > 0) {
-
-            // Push new ImageLoader to queue
-            mImageLoaderQueue.add(viewHolder.getAdapterPosition(),
-                    new ImageLoader(mContext, mImageLoaderQueue) {
-
+        if (position == mMessages.size()) {
+            viewHolder.nextPageButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public boolean onPreLoad(ImagePlaceholderSpan placeholder) {
-                    // Check LRU cache before attempting to load image
-                    Bitmap cachedBitmap = mImageCache.getBitmapFromCache(placeholder.getSource());
-
-                    if (cachedBitmap != null) {
-                        onFinishLoad(cachedBitmap, placeholder);
-                        return false;
-                    }
-                    else {
-                        return true; // ImageLoader.loadImages() will continue to execute
-                    }
+                public void onClick(View view) {
+                    mEventInterface.onRequestNextPage();
                 }
-
-                @Override
-                public void onFinishLoad(Bitmap bitmap, ImagePlaceholderSpan placeholder) {
-                    BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap, placeholder.isNested());
-                    ImageSpan img = new ImageSpan(bitmapDrawable, placeholder.getSource());
-                    mImageCache.addBitmapToCache(placeholder.getSource(), bitmap);
-
-                    // Find position of placeholder, remove and replace with loaded image
-                    int start = messageSpan.getSpanStart(placeholder);
-                    int end = messageSpan.getSpanEnd(placeholder);
-                    messageSpan.removeSpan(placeholder);
-                    messageSpan.setSpan(img, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-                    // Update view
-                    viewHolder.messageView.setText(messageSpan);
-                }
-
-            }.populateQueue(messageSpan, position));
+            });
         }
 
-        viewHolder.userView.setText(message.getUser());
-        viewHolder.timeView.setText(mTimestampBuilder.getFuzzyTimestamp(message.getTimestamp()));
-        viewHolder.postNumberView.setText(message.getPosition());
-
-        if (isSelected(position)) {
-            // Increase card elevation in accordance with design guidelines
-            viewHolder.cardView.setCardBackgroundColor(FG_GREY);
-            viewHolder.cardView.setCardElevation(6);
-        }
         else {
-            // We need to manually set default background color/card elevation
-            viewHolder.cardView.setCardBackgroundColor(BG_GREY);
-            viewHolder.cardView.setCardElevation(2);
-        }
+            Message message = getItem(position);
 
-        // Animate new posts as they are added to adapter (but not for initial page load)
-        if (position > mLastPosition) {
-            slideInFromRight(viewHolder.cardView);
-            mLastPosition = position;
+            final SpannableStringBuilder messageSpan = mMessageBuilder.buildMessage(message.getHtml());
+            viewHolder.messageView.setText(messageSpan);
+
+            // Check whether we need to load images
+            if (messageSpan.getSpans(0, messageSpan.length(), ImageSpan.class).length > 0) {
+
+                // Push new ImageLoader to queue
+                mImageLoaderQueue.add(viewHolder.getAdapterPosition(),
+                        new ImageLoader(mContext, mImageLoaderQueue) {
+
+                            @Override
+                            public boolean onPreLoad(ImagePlaceholderSpan placeholder) {
+                                // Check LRU cache before attempting to load image
+                                Bitmap cachedBitmap = mImageCache.getBitmapFromCache(placeholder.getSource());
+
+                                if (cachedBitmap != null) {
+                                    onFinishLoad(cachedBitmap, placeholder);
+                                    return false;
+                                } else {
+                                    return true; // ImageLoader.loadImages() will continue to execute
+                                }
+                            }
+
+                            @Override
+                            public void onFinishLoad(Bitmap bitmap, ImagePlaceholderSpan placeholder) {
+                                BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap, placeholder.isNested());
+                                ImageSpan img = new ImageSpan(bitmapDrawable, placeholder.getSource());
+                                mImageCache.addBitmapToCache(placeholder.getSource(), bitmap);
+
+                                // Find position of placeholder, remove and replace with loaded image
+                                int start = messageSpan.getSpanStart(placeholder);
+                                int end = messageSpan.getSpanEnd(placeholder);
+                                messageSpan.removeSpan(placeholder);
+                                messageSpan.setSpan(img, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                                // Update view
+                                viewHolder.messageView.setText(messageSpan);
+                            }
+
+                        }.populateQueue(messageSpan, position));
+            }
+
+            viewHolder.userView.setText(message.getUser());
+            viewHolder.timeView.setText(mTimestampBuilder.getFuzzyTimestamp(message.getTimestamp()));
+            viewHolder.postNumberView.setText(message.getPosition());
+
+            if (isSelected(position)) {
+                // Increase card elevation in accordance with design guidelines
+                viewHolder.cardView.setCardBackgroundColor(FG_GREY);
+                viewHolder.cardView.setCardElevation(6);
+            } else {
+                // We need to manually set default background color/card elevation
+                viewHolder.cardView.setCardBackgroundColor(BG_GREY);
+                viewHolder.cardView.setCardElevation(2);
+            }
+
+            // Animate new posts as they are added to adapter (but not for initial page load)
+            if (position > mLastPosition) {
+                slideInFromRight(viewHolder.cardView);
+                mLastPosition = position;
+            }
         }
     }
 

@@ -50,7 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MessageListFragment extends Fragment implements
-        MessageListAdapter.ClickListener, View.OnClickListener,
+        MessageListAdapter.EventInterface, View.OnClickListener,
         LoaderManager.LoaderCallbacks<Object> {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
@@ -231,7 +231,7 @@ public class MessageListFragment extends Fragment implements
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // MessageListAdapter.ClickListener methods
+    // MessageListAdapter.EventInterface methods
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
@@ -255,6 +255,19 @@ public class MessageListFragment extends Fragment implements
         }
 
         return true;
+    }
+
+    @Override
+    public void onRequestNextPage() {
+        final int FIRST_POST = 0;
+
+        if (nextPageUrl != null) {
+            mMessageListAdapter.clearMessages();
+            loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
+            currentPage++;
+            Toaster.makeToast(getContext(), "Page " + currentPage);
+            scrollToPosition(FIRST_POST);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
