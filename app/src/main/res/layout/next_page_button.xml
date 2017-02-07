@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:elevation="2dp"
+    android:layout_marginTop="20dp"
     android:gravity="center"
     android:id="@+id/next_page_button"
     android:text="@string/action_load_next_page">
