@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp.network;
+package com.sonicmax.etiapp.loaders;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -11,6 +11,8 @@ import android.util.Log;
 
 import com.sonicmax.etiapp.activities.BookmarkManagerActivity;
 import com.sonicmax.etiapp.activities.TopicListActivity;
+import com.sonicmax.etiapp.network.LoginScriptBuilder;
+import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.activities.LoginActivity;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;

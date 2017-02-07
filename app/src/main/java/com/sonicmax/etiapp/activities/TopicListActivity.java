@@ -17,10 +17,9 @@ import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.fragments.TopicListFragment;
-import com.sonicmax.etiapp.network.AccountManager;
+import com.sonicmax.etiapp.loaders.AccountManager;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TopicListActivity extends AppCompatActivity implements AccountManager.EventInterface {

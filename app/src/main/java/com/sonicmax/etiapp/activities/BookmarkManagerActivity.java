@@ -8,7 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.network.AccountManager;
+import com.sonicmax.etiapp.loaders.AccountManager;
 
 public class BookmarkManagerActivity extends AppCompatActivity implements AccountManager.EventInterface {
 

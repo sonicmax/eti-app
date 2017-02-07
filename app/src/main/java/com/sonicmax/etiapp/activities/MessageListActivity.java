@@ -9,7 +9,7 @@ import android.view.MenuItem;
 
 import com.sonicmax.etiapp.fragments.MessageListFragment;
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.network.AccountManager;
+import com.sonicmax.etiapp.loaders.AccountManager;
 
 public class MessageListActivity extends AppCompatActivity implements AccountManager.EventInterface {
 
