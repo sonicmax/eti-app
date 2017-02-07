@@ -1,6 +1,7 @@
 package com.sonicmax.etiapp.activities;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,7 +10,7 @@ import android.view.MenuItem;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.network.AccountManager;
 
-public class PostTopicActivity extends AppCompatActivity {
+public class PostTopicActivity extends AppCompatActivity implements AccountManager.EventInterface {
 
     private String LOG_TAG = PostTopicActivity.class.getSimpleName();
     @SuppressWarnings("unused")
@@ -43,9 +44,15 @@ public class PostTopicActivity extends AppCompatActivity {
             return true;
         }
         else if (id == R.id.action_logout) {
-            new AccountManager(this, mDialog).requestLogout();
+            new AccountManager(this, mDialog, this).requestLogout();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onLoadComplete(Intent intent) {
+        startActivity(intent);
+        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }

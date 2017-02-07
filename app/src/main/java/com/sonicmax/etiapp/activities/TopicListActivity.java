@@ -1,6 +1,7 @@
 package com.sonicmax.etiapp.activities;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
@@ -22,7 +23,7 @@ import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TopicListActivity extends AppCompatActivity {
+public class TopicListActivity extends AppCompatActivity implements AccountManager.EventInterface {
 
     private final String LOG_TAG = TopicListActivity.class.getSimpleName();
     @SuppressWarnings("unused")
@@ -121,7 +122,7 @@ public class TopicListActivity extends AppCompatActivity {
                     return true;
 
                 case R.id.action_logout:
-                    new AccountManager(this, mDialog).requestLogout();
+                    new AccountManager(this, mDialog, this).requestLogout();
                     break;
 
                 case R.id.action_refresh:
@@ -139,5 +140,11 @@ public class TopicListActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
+    }
+
+    @Override
+    public void onLoadComplete(Intent intent) {
+        startActivity(intent);
+        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }
