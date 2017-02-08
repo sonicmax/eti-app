@@ -29,7 +29,8 @@ public class MessageListScraper {
     }
 
     public List<Message> scrapeMessages(String html, boolean isFiltered) {
-
+        final String DIVIDER = " | ";
+        final String TRIMMED_DIVIDER = ")";
         Document document = Jsoup.parse(html);
 
         // Get hidden token and signature from quickpost elements, found in all non-archived topics
@@ -63,14 +64,23 @@ public class MessageListScraper {
             // we are in an anonymous topic or not
             String username, timeStamp;
             List<Node> children = messageTop.childNodes();
+
             if (userElement.tagName().equals("a")) {
                 username = userElement.text();
-                timeStamp = ((TextNode) children.get(5)).text().replace(" | ", "");
+                timeStamp = ((TextNode) children.get(5)).text().replace(DIVIDER, "");
+
+                // If user has changed their name recently, the TextNode at index 5 refers to
+                // the divider following the "Formerly known as" section.
+                // See: https://github.com/sonicmax/eti-app/issues/18
+                if (timeStamp.equals(TRIMMED_DIVIDER)) {
+                    timeStamp = ((TextNode) children.get(7)).text().replace(DIVIDER, "");
+                }
             }
+
             else {
                 // Anonymous topic - get human number from 2nd child of message-top element
-                username = ((TextNode) children.get(1)).text().replace(" | ", "");
-                timeStamp = ((TextNode) children.get(3)).text().replace(" | ", "");
+                username = ((TextNode) children.get(1)).text().replace(DIVIDER, "");
+                timeStamp = ((TextNode) children.get(3)).text().replace(DIVIDER, "");
             }
 
             // Pass null into Message object if topic has already been filtered
