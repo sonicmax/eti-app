@@ -28,10 +28,6 @@ public class MessageListScraper {
         this.mUrl = url;
     }
 
-    public void setUrl(String url) {
-        mUrl = url;
-    }
-
     public List<Message> scrapeMessages(String html, boolean isFiltered) {
 
         Document document = Jsoup.parse(html);

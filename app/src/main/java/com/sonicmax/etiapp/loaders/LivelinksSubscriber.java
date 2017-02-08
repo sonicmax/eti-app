@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp.network;
+package com.sonicmax.etiapp.loaders;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -8,12 +8,16 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.util.Log;
 
+import com.sonicmax.etiapp.network.WebRequest;
+import com.sonicmax.etiapp.objects.Message;
+import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public class LivelinksSubscriber {
     private final String LOG_TAG = LivelinksSubscriber.class.getSimpleName();
@@ -21,6 +25,8 @@ public class LivelinksSubscriber {
     private final int FETCH_MESSAGE = 3;
     private final int SHIFT_CONSTANT = 48;
 
+    private final EventInterface mEventInterface;
+    private final MessageListScraper mScraper;
     private final Context mContext;
     private final int mTopicId;
     private final int mUserId;
@@ -28,12 +34,17 @@ public class LivelinksSubscriber {
     private int mTopicSize;
     private int mInboxSize;
 
-    public LivelinksSubscriber(Context context, String topicId, String userId, int topicSize, int inboxSize) {
+    public LivelinksSubscriber(Context context, EventInterface eventInterface,
+                               String topicId, String userId, int topicSize, int inboxSize) {
         this.mContext = context;
+        this.mEventInterface = eventInterface;
         this.mTopicId = Integer.parseInt(topicId);
         this.mUserId = Integer.parseInt(userId);
         this.mTopicSize = topicSize;
         this.mInboxSize = inboxSize;
+
+        mScraper = new MessageListScraper(context, "");
+
         subscribe();
     }
 
@@ -67,21 +78,9 @@ public class LivelinksSubscriber {
         }
     }
 
-    /**
-     * Called after FETCH_MESSAGE request completes. Override when instantiating class
-     * @param message Response from FETCH_MESSAGE request
-     * @param position Position of new message in topic
-     */
-    public void onReceiveNewPost(String message, int position) {
-        // TODO: Should probably use an interface for this
-    }
-
-    /**
-     * Called after receiving new private message. Override when instantiating class
-     * @param unreadMessages Total number of unread PMs
-     */
-    public void onReceivePrivateMessage(int unreadMessages) {
-        // TODO: Should probably use an interface for this
+    public interface EventInterface {
+        void onReceiveNewPost(List<Message> messages, int position);
+        void onReceivePrivateMessage(int unreadMessages);
     }
 
     public BigInteger getTopicPayload() {
@@ -185,7 +184,7 @@ public class LivelinksSubscriber {
             }
 
             if (newInboxSize > mInboxSize) {
-                onReceivePrivateMessage(newInboxSize);
+                mEventInterface.onReceivePrivateMessage(newInboxSize);
             }
         }
     }
@@ -195,26 +194,50 @@ public class LivelinksSubscriber {
         @Override
         public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
-            return new AsyncLoader(mContext, args) {
+            switch (id) {
+                case LIVELINKS:
+                    return new AsyncLoader(mContext, args) {
 
-                @Override
-                public String loadInBackground() {
-                    return new WebRequest(mContext, args).sendRequest();
-                }
-            };
+                        @Override
+                        public String loadInBackground() {
+                            return new WebRequest(mContext, args).sendRequest();
+                        }
+                    };
+
+                case FETCH_MESSAGE:
+                    return new AsyncLoader(mContext, args) {
+
+                        @Override
+                        public List<Message> loadInBackground() {
+                            String response = new WebRequest(mContext, args).sendRequest();
+                            // Can't parse HTML unless we remove these characters
+                            String escapedResponse = response.replace("\\/", "/")
+                                    .replace("\\\"", "\"")
+                                    .replace("\\n", "");
+
+                            return mScraper.scrapeMessages(escapedResponse, false);
+                        }
+                    };
+
+                default:
+                    Log.e(LOG_TAG, "Invalid id: " + id);
+                    return null;
+            }
         }
 
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
             if (data != null) {
-                String response = (String) data;
                 switch (loader.getId()) {
                     case LIVELINKS:
+                        String response = (String) data;
                         handleLivelinksResponse(response);
                         break;
 
                     case FETCH_MESSAGE:
-                        onReceiveNewPost(response, mTopicSize);
+                        // data will safely cast to List<Message>
+                        List<Message> messages = (List<Message>) data;
+                        mEventInterface.onReceiveNewPost(messages, mTopicSize);
                         subscribe();
                         break;
                 }

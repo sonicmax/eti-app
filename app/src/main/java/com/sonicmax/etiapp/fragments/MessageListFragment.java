@@ -8,8 +8,6 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
@@ -27,21 +25,18 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.activities.PostMessageActivity;
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
-import com.sonicmax.etiapp.network.LivelinksSubscriber;
-import com.sonicmax.etiapp.network.WebRequest;
+import com.sonicmax.etiapp.loaders.MessageListLoader;
+import com.sonicmax.etiapp.loaders.LivelinksSubscriber;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.Topic;
-import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.network.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
-import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.Toaster;
@@ -50,17 +45,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MessageListFragment extends Fragment implements
-        MessageListAdapter.EventInterface, View.OnClickListener,
-        LoaderManager.LoaderCallbacks<Object> {
+        MessageListLoader.EventInterface, MessageListAdapter.EventInterface,
+        LivelinksSubscriber.EventInterface, View.OnClickListener {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
     private final int LOAD_MESSAGE = 0;
     private final int REFRESH = 1;
 
+    // TODO: Replace this with real data!!
+    private final String DEBUG_USER_ID = "5599";
+    private final int DEBUG_INBOX_COUNT = 0;
+
     private View mRootView;
     private FloatingActionButton mQuickpostButton;
-    private MessageListScraper mScraper;
     private MessageListAdapter mMessageListAdapter;
+    private MessageListLoader mMessageListLoader;
     private ActionMode mActionMode;
     private ProgressDialog mDialog;
     private Bundle mArgs;
@@ -99,7 +98,8 @@ public class MessageListFragment extends Fragment implements
             String url = (intent.getBooleanExtra("last_page", false))
                     ? mTopic.getLastPageUrl() : mTopic.getUrl();
 
-            mScraper = new MessageListScraper(getContext(), url);
+            mMessageListLoader = new MessageListLoader(getContext(), this, url);
+
             loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
         }
 
@@ -202,8 +202,30 @@ public class MessageListFragment extends Fragment implements
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Helper methods for loader
+    // Helper methods
     ///////////////////////////////////////////////////////////////////////////
+
+    private void scrollToPosition(final int position) {
+        mLayoutManager.scrollToPosition(position);
+    }
+
+    private int getTotalPosts() {
+        if (currentPage > 1) {
+            // Account for posts on previous pages & add current adapter count
+            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getItemCount();
+        }
+        else {
+            return mMessageListAdapter.getItemCount();
+        }
+    }
+
+    /**
+     * For debugging
+     */
+    public void clearMemCache() {
+        mMessageListAdapter.clearMemoryCache();
+    }
+
     private Bundle buildArgsForLoader(String url, boolean filter) {
         mArgs = new Bundle();
         mArgs.putString("method", "GET");
@@ -215,19 +237,52 @@ public class MessageListFragment extends Fragment implements
     }
 
     private void loadMessageList(Bundle args, int id) {
-        LoaderManager loaderManager = getLoaderManager();
+        mDialog = new ProgressDialog(getContext());
+        mDialog.setMessage("Loading messages...");
+        mDialog.show();
 
-        if (loaderManager.getLoader(id) == null) {
-            currentPage = getActivity().getIntent().getIntExtra("page", 1);
-            loaderManager.initLoader(id, args, this).forceLoad();
-        }
-        else {
-            loaderManager.restartLoader(id, args, this).forceLoad();
-        }
+        currentPage = getActivity().getIntent().getIntExtra("page", 1);
+        mMessageListLoader.load(args, id);
     }
 
     public void refreshMessageList() {
         loadMessageList(mArgs, REFRESH);
+    }
+
+    private void dismissDialog() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // MessageListLoader.EventInterface methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public void onLoadMessageList(List<Message> messages) {
+        mMessages = messages;
+        mMessageListAdapter.replaceAllMessages(mMessages);
+        mMessageListAdapter.setCurrentPage(currentPage);
+
+        boolean isLastPage = currentPage == mTopic.getLastPage(0);
+
+        if (isLastPage && mLivelinksSubscriber == null) {
+            // Calculate total number of posts in topic to avoid bug where posts would be duplicated
+            // due to inaccurate total from topic list
+            final int totalPosts = getTotalPosts();
+
+            mLivelinksSubscriber = new LivelinksSubscriber(getContext(), this, mTopic.getId(),
+                    DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT);
+        }
+
+        else if (!isLastPage && mLivelinksSubscriber != null) {
+            // User navigated from last page to a different page.
+            // We should unsubscribe from livelinks updates
+            mLivelinksSubscriber.unsubscribe();
+        }
+
+        dismissDialog();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -267,6 +322,41 @@ public class MessageListFragment extends Fragment implements
             Toaster.makeToast(getContext(), "Page " + currentPage);
             scrollToPosition(FIRST_POST);
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // LivelinksSubscriber.EventInterface methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public void onReceiveNewPost(List<Message> newMessages, int position) {
+        // Calculate total number of posts in topic to avoid bug where posts would be duplicated
+        // due to inaccurate total from topic list
+        final int totalPosts = getTotalPosts();
+
+        int sizeOfNewMessages = newMessages.size();
+        // We have to set position manually because count from moremessages.php will be incorrect
+        for (int i = 0; i < sizeOfNewMessages; i++) {
+            Message message = newMessages.get(i);
+            message.setPosition(totalPosts + (i + 1));
+        }
+
+        if (position > totalPosts) {
+            mTopic.addToSize(sizeOfNewMessages);
+            mMessageListAdapter.addMessages(newMessages);
+            animateTimestampChange();
+        }
+        else {
+            // Position of new message should never be less than size of topic.
+            Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
+                    "Position = " + position + ", topic size = " + totalPosts);
+        }
+    }
+
+    @Override
+    public void onReceivePrivateMessage(int messageCount) {
+        Snackbar.make(mRootView, messageCount + R.string.unread_messages, Snackbar.LENGTH_INDEFINITE)
+                .show();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -322,17 +412,8 @@ public class MessageListFragment extends Fragment implements
     };
 
     ///////////////////////////////////////////////////////////////////////////
-    // Methods for quickpost feature
+    // Quickpost window
     ///////////////////////////////////////////////////////////////////////////
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.new_message:
-                showQuickpostWindow();
-                break;
-        }
-
-    }
 
     private void showQuickpostWindow() {
         // Get device width (required for PopupWindow width)
@@ -427,8 +508,23 @@ public class MessageListFragment extends Fragment implements
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Methods for page changing
+    // User input listeners
     ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Captures floating action button clicks
+     */
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.new_message:
+                showQuickpostWindow();
+                break;
+        }
+
+    }
+
     OnSwipeListener pageSwipeHandler = new OnSwipeListener(getContext()) {
 
         @Override
@@ -448,120 +544,9 @@ public class MessageListFragment extends Fragment implements
         }
     };
 
-    private void scrollToPosition(final int position) {
-        mLayoutManager.scrollToPosition(position);
-    }
-
     ///////////////////////////////////////////////////////////////////////////
-    // Loader callbacks
+    // Animations
     ///////////////////////////////////////////////////////////////////////////
-    @Override
-    public Loader<Object> onCreateLoader(final int id, final Bundle args) {
-        final Context context = getContext();
-
-        mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Loading messages...");
-        mDialog.show();
-
-        return new AsyncLoader(context, args) {
-            @Override
-            public List<Message> loadInBackground() {
-                mScraper.setUrl(args.getString("url"));
-                String html = new WebRequest(context, args).sendRequest();
-                return mScraper.scrapeMessages(html, args.getBoolean("filter"));
-            }
-        };
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Object> loader, Object data) {
-        if (data != null) {
-            // We can be sure that data will safely cast to List<Message>.
-            mMessages = (List<Message>) data;
-            mMessageListAdapter.replaceAllMessages(mMessages);
-            mMessageListAdapter.setCurrentPage(currentPage);
-
-            boolean isLastPage = currentPage == mTopic.getLastPage(0);
-
-            if (isLastPage && mLivelinksSubscriber == null) {
-                initLivelinksSubscriber();
-            }
-            else if (!isLastPage && mLivelinksSubscriber != null) {
-                // User navigated from last page to a different page.
-                // We should unsubscribe from livelinks updates
-                mLivelinksSubscriber.unsubscribe();
-            }
-        }
-
-        else {
-            // Handle error
-        }
-
-        mDialog.dismiss();
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Object> loader) {
-        loader.reset();
-    }
-
-    public void initLivelinksSubscriber() {
-        // TODO: Replace this with real data!!
-        final String DEBUG_USER_ID = "5599";
-        final int DEBUG_INBOX_COUNT = 0;
-
-        // Calculate total number of posts in topic to avoid bug where posts would be duplicated
-        // due to inaccurate total from topic list
-        final int totalPosts = getTotalPosts();
-
-        mLivelinksSubscriber = new LivelinksSubscriber(getContext(), mTopic.getId(),
-                DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT) {
-
-            @Override
-            public void onReceiveNewPost(String response, int position) {
-                // Can't parse HTML unless we remove these characters
-                String escapedResponse = response.replace("\\/", "/")
-                        .replace("\\\"", "\"")
-                        .replace("\\n", "");
-
-                List<Message> newMessages = mScraper.scrapeMessages(escapedResponse, false);
-
-                int sizeOfNewMessages = newMessages.size();
-                // We have to set position manually because count from moremessages.php will be incorrect
-                for (int i = 0; i < sizeOfNewMessages; i++) {
-                    Message message = newMessages.get(i);
-                    message.setPosition(totalPosts + (i + 1));
-                }
-
-                if (position > totalPosts) {
-                    mTopic.addToSize(sizeOfNewMessages);
-                    mMessageListAdapter.addMessages(newMessages);
-                    animateTimestampChange();
-                }
-                else {
-                    // Position of new message should never be less than size of topic.
-                    Log.e(LOG_TAG, "Cannot add new post to topic. \n" +
-                            "Position = " + position + ", topic size = " + totalPosts);
-                }
-            }
-
-            @Override
-            public void onReceivePrivateMessage(int unreadMessages) {
-                Snackbar.make(mRootView, unreadMessages + R.string.unread_messages, Snackbar.LENGTH_INDEFINITE)
-                        .show();
-            }
-        };
-    }
-
-    private int getTotalPosts() {
-        if (currentPage > 1) {
-            // Account for posts on previous pages & add current adapter count
-            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getItemCount();
-        }
-        else {
-            return mMessageListAdapter.getItemCount();
-        }
-    }
 
     public void animateTimestampChange() {
         final Animation fadeOut = new AlphaAnimation(1.0f, 0.0f);
@@ -588,12 +573,5 @@ public class MessageListFragment extends Fragment implements
             TextView timestamp = (TextView) view.findViewById(R.id.list_item_time);
             timestamp.startAnimation(fadeIn);
         }
-    }
-
-    /**
-     * For debugging
-     */
-    public void clearMemCache() {
-        mMessageListAdapter.clearMemoryCache();
     }
 }

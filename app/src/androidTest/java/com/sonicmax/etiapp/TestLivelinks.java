@@ -3,7 +3,7 @@ package com.sonicmax.etiapp;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
-import com.sonicmax.etiapp.network.LivelinksSubscriber;
+import com.sonicmax.etiapp.loaders.LivelinksSubscriber;
 
 import org.json.JSONException;
 import org.json.JSONObject;
