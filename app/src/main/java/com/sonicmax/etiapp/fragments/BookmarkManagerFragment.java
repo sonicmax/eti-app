@@ -16,6 +16,7 @@ import android.widget.ListView;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.adapters.BoardListAdapter;
+import com.sonicmax.etiapp.loaders.BookmarkLoader;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Board;
 import com.sonicmax.etiapp.scrapers.BoardListScraper;
@@ -24,13 +25,15 @@ import com.sonicmax.etiapp.utilities.AsyncLoader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BookmarkManagerFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
+public class BookmarkManagerFragment extends Fragment
+        implements BookmarkLoader.EventInterface {
+
     private BoardListAdapter mBoardListAdapter;
     private ProgressDialog mDialog;
+    private BookmarkLoader mBookmarkLoader;
     private List<Board> mBookmarks;
 
     public BookmarkManagerFragment() {}
-
 
     ///////////////////////////////////////////////////////////////////////////
     // Fragment methods
@@ -39,6 +42,7 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
     @Override
     public void onAttach(Context context) {
         mBoardListAdapter = new BoardListAdapter(context);
+        mBookmarkLoader = new BookmarkLoader(context, this);
         super.onAttach(context);
     }
 
@@ -49,19 +53,11 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
         if (savedInstanceState == null
                 || savedInstanceState.getParcelableArrayList("bookmarks") == null) {
 
-            // Prepare args for loader and scrape bookmarks from history.php
-            // (using history.php because it will work even if tag server is broken)
-            Bundle args = new Bundle();
-            args.putString("method", "GET");
-            args.putString("type", "bookmarks");
+            mDialog = new ProgressDialog(getContext());
+            mDialog.setMessage("Getting bookmarks...");
+            mDialog.show();
 
-            LoaderManager loaderManager = getLoaderManager();
-
-            if (loaderManager.getLoader(LOAD_BOARDS) == null) {
-                getLoaderManager().initLoader(LOAD_BOARDS, args, this).forceLoad();
-            } else {
-                getLoaderManager().restartLoader(LOAD_BOARDS, args, this).forceLoad();
-            }
+            mBookmarkLoader.loadBookmarks();
         }
 
         else {
@@ -100,13 +96,35 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
     @Override
     public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-
+        dismissDialog();
         super.onDetach();
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    public void dismissDialog() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // EventInterface callbacks
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public void onLoadBookmarks(List<Board> bookmarks) {
+        dismissDialog();
+        mBookmarks = bookmarks;
+        mBoardListAdapter.updateBoards(bookmarks);
+    }
+
+    @Override
+    public void onLoadFail() {
+        // Lol error handling
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // Click listener for UI
@@ -126,44 +144,4 @@ public class BookmarkManagerFragment extends Fragment implements LoaderManager.L
                     R.anim.slide_out_to_left);
         }
     };
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Loader callbacks
-    ///////////////////////////////////////////////////////////////////////////
-
-    public Loader<Object> onCreateLoader(int id, final Bundle args) {
-        final Context context = getContext();
-
-        mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Getting bookmarks...");
-        mDialog.show();
-
-        return new AsyncLoader(context, args) {
-
-            @Override
-            public List<Board> loadInBackground() {
-                String html = new WebRequest(context, args).sendRequest();
-                return new BoardListScraper(context).scrapeBoards(html);
-            }
-        };
-    }
-
-    public void onLoadFinished(Loader<Object> loader, Object data) {
-
-        if (data != null) {
-            // We can be sure that data will safely cast to List<Board>.
-            mBookmarks = (List<Board>) data;
-            mBoardListAdapter.updateBoards(mBookmarks);
-
-        }
-
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-    }
-
-    public void onLoaderReset(Loader<Object> loader) {
-        loader.reset();
-    }
 }
