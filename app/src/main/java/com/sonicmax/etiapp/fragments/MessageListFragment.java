@@ -456,12 +456,14 @@ public class MessageListFragment extends Fragment implements
             }
 
             @Override
-            public void onSuccess() {
+            public void onSuccess(String message) {
                 if (mDialog != null && mDialog.isShowing()) {
                     mDialog.hide();
                 }
 
-                Snackbar.make(mRootView, R.string.post_message_ok, Snackbar.LENGTH_SHORT).show();
+                if (message != null) {
+                    Snackbar.make(mRootView, message, Snackbar.LENGTH_SHORT).show();
+                }
             }
 
             @Override

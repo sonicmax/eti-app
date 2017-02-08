@@ -37,7 +37,7 @@ public class QuickpostHandler {
 
     public void onPreload() {}
 
-    public void onSuccess() {}
+    public void onSuccess(String message) {}
 
     public void onError(String message) {}
 
@@ -99,12 +99,23 @@ public class QuickpostHandler {
 
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
-            // WebRequest returns HTTP response code as string
             final String HTTP_STATUS_OK = "200";
+            final String INTERNAL_ERROR = "-1";
 
-            if (data.equals(HTTP_STATUS_OK)) {
-                onSuccess();
+            // WebRequest returns HTTP response code as string
+            String responseCode = (String) data;
+
+            if (responseCode.equals(HTTP_STATUS_OK)) {
+                onSuccess(mContext.getResources().getString(R.string.post_message_ok));
             }
+
+            else if (responseCode.equals(INTERNAL_ERROR)){
+                // HTTPSUrlConnection returns -1 if there was some kind of error with the
+                // response headers. Assume the post was successful, but don't display
+                // "Message posted" message
+                onSuccess(null);
+            }
+
             else {
                 onError((mContext.getResources().getString(R.string.error_message_failed)));
             }
