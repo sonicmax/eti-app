@@ -7,8 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,23 +16,23 @@ import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.activities.MessageListActivity;
-import com.sonicmax.etiapp.network.WebRequest;
+import com.sonicmax.etiapp.loaders.PostHandler;
 import com.sonicmax.etiapp.objects.Topic;
-import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
-public class PostMessageFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
-
+public class PostMessageFragment extends Fragment implements PostHandler.EventInterface {
     private EditText mMessageBody;
     private TextView errorView;
     private Topic mTopic;
     private String mQuote;
     private ProgressDialog mDialog;
+    private PostHandler mPostHandler;
 
     public PostMessageFragment() {}
 
     @Override
     public void onAttach(Context context) {
+        mPostHandler = new PostHandler(context, this);
         Intent intent = ((Activity) context).getIntent();
         this.mTopic = intent.getParcelableExtra("topic");
         this.mQuote = intent.getStringExtra("quote");
@@ -63,19 +61,32 @@ public class PostMessageFragment extends Fragment implements LoaderManager.Loade
         return rootView;
     }
 
-    private View.OnClickListener newMessageHandler = new View.OnClickListener() {
+    ///////////////////////////////////////////////////////////////////////////
+    // PostHandler.EventInterface methods
+    ///////////////////////////////////////////////////////////////////////////
 
-        @Override
-        public void onClick(View view) {
-            switch (view.getId()) {
-                case R.id.post_new_message:
-                    postNewMessage();
-                    break;
-            }
-        }
-    };
+    @Override
+    public void onPostComplete() {
+        dismissDialog();
+        // Create new intent for MessageListActivity using Topic data
+        Intent intent = new Intent(getContext(), MessageListActivity.class);
+        intent.putExtra("topic", mTopic);
+        intent.putExtra("title", mTopic.getTitle());
+        intent.putExtra("last_page", true);
+        getContext().startActivity(intent);
+    }
 
-    private void postNewMessage() {
+    @Override
+    public void onPostFail() {
+        dismissDialog();
+        // Lol error handling
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void makeBundleAndPostMessage() {
         final String NEWLINE = "\n";
 
         // Make sure that total message length >= 5 characters (otherwise POST will be unsuccessful)
@@ -83,7 +94,6 @@ public class PostMessageFragment extends Fragment implements LoaderManager.Loade
         String message = mMessageBody.getText().toString() + NEWLINE + signature;
 
         if (message.length() >= 5) {
-
             String token = SharedPreferenceManager.getString(getContext(), "h");
 
             // Get input from editText elements
@@ -100,50 +110,35 @@ public class PostMessageFragment extends Fragment implements LoaderManager.Loade
             args.putString("type", "newmessage");
             args.putParcelable("values", values);
 
-            getLoaderManager().initLoader(0, args, this).forceLoad();
+            mPostHandler.postMessage(args);
 
         } else {
             errorView.setText(R.string.error_5_chars_or_more);
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Loader callbacks
-    ///////////////////////////////////////////////////////////////////////////
-    @Override
-    public Loader<Object> onCreateLoader(int id, final Bundle args) {
-        final Context context = getContext();
-
-        mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Posting message...");
-        mDialog.show();
-
-        return new AsyncLoader(context, args) {
-
-            @Override
-            public String loadInBackground() {
-                return new WebRequest(context, args).sendRequest();
-            }
-        };
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Object> loader, Object data) {
-        if (data != null) {
-            // Create new intent for MessageListActivity using Topic data
-            Intent intent = new Intent(getContext(), MessageListActivity.class);
-            intent.putExtra("topic", mTopic);
-            intent.putExtra("title", mTopic.getTitle());
-            intent.putExtra("last_page", true);
-            getContext().startActivity(intent);
+    private void dismissDialog() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
         }
-
-        mDialog.dismiss();
     }
 
-    @Override
-    public void onLoaderReset(Loader<Object> loader) {
-        loader.reset();
-    }
+    ///////////////////////////////////////////////////////////////////////////
+    // Input listeners
+    ///////////////////////////////////////////////////////////////////////////
 
+    private View.OnClickListener newMessageHandler = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View view) {
+            switch (view.getId()) {
+                case R.id.post_new_message:
+                    mDialog = new ProgressDialog(getContext());
+                    mDialog.setMessage("Posting message...");
+                    mDialog.show();
+                    makeBundleAndPostMessage();
+                    break;
+            }
+        }
+    };
 }

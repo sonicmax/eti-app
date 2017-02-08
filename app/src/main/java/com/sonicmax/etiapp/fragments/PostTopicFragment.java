@@ -5,8 +5,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,17 +12,23 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.network.WebRequest;
-import com.sonicmax.etiapp.utilities.AsyncLoader;
+import com.sonicmax.etiapp.loaders.PostHandler;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
-public class PostTopicFragment extends Fragment implements LoaderManager.LoaderCallbacks<Object> {
+public class PostTopicFragment extends Fragment implements PostHandler.EventInterface {
 
+    private PostHandler mPostHandler;
     private EditText mTopicTitle;
     private EditText mMessageBody;
     private ProgressDialog mDialog;
 
     public PostTopicFragment() {}
+
+    @Override
+    public void onAttach(Context context) {
+        mPostHandler = new PostHandler(context, this);
+        super.onAttach(context);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -38,21 +42,27 @@ public class PostTopicFragment extends Fragment implements LoaderManager.LoaderC
         return rootView;
     }
 
-    private View.OnClickListener newTopicHandler = new View.OnClickListener() {
+    ///////////////////////////////////////////////////////////////////////////
+    // PostHandler.EventInterface callbacks
+    ///////////////////////////////////////////////////////////////////////////
 
-        @Override
-        public void onClick(View view) {
+    @Override
+    public void onPostComplete() {
+        dismissDialog();
+        // TODO: Redirect user to topic that was just created
+    }
 
-            switch (view.getId()) {
-                case R.id.post_new_topic:
-                    postNewTopic();
-                    break;
-            }
+    @Override
+    public void onPostFail() {
+        dismissDialog();
+        // TODO: Error handling
+    }
 
-        }
-    };
+    ///////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ///////////////////////////////////////////////////////////////////////////
 
-    private void postNewTopic() {
+    private void makeBundleAndPostTopic() {
 
         final String NEWLINE = "\n";
 
@@ -78,46 +88,38 @@ public class PostTopicFragment extends Fragment implements LoaderManager.LoaderC
             args.putString("type", "newtopic");
             args.putParcelable("values", values);
 
-            getLoaderManager().initLoader(0, args, this).forceLoad();
+            mPostHandler.postTopic(args);
         }
 
         else {
             // TODO: Display error message
         }
+    }
 
+    private void dismissDialog() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Loader callbacks
+    // Input listeners
     ///////////////////////////////////////////////////////////////////////////
-    @Override
-    public Loader<Object> onCreateLoader(int id, final Bundle args) {
 
-        final Context context = getContext();
+    private View.OnClickListener newTopicHandler = new View.OnClickListener() {
 
-        mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Posting topic...");
-        mDialog.show();
+        @Override
+        public void onClick(View view) {
 
-        return new AsyncLoader(context, args) {
-
-            @Override
-            public String loadInBackground() {
-                return new WebRequest(context, args).sendRequest();
+            switch (view.getId()) {
+                case R.id.post_new_topic:
+                    mDialog = new ProgressDialog(getContext());
+                    mDialog.setMessage("Posting topic...");
+                    mDialog.show();
+                    makeBundleAndPostTopic();
+                    break;
             }
-        };
-    }
 
-    @Override
-    public void onLoadFinished(Loader<Object> loader, Object data) {
-        // Redirect user to topic that was just created
-        mDialog.dismiss();
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Object> loader) {
-        loader.reset();
-    }
-
-
+        }
+    };
 }
