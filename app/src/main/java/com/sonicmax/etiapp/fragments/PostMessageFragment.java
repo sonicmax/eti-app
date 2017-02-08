@@ -20,6 +20,9 @@ import com.sonicmax.etiapp.loaders.PostHandler;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 public class PostMessageFragment extends Fragment implements PostHandler.EventInterface {
     private EditText mMessageBody;
     private TextView errorView;
@@ -96,11 +99,12 @@ public class PostMessageFragment extends Fragment implements PostHandler.EventIn
         if (message.length() >= 5) {
             String token = SharedPreferenceManager.getString(getContext(), "h");
 
-            // Get input from editText elements
+            String urlEncodedMessage = getUrlEncodedString(message);
+
             ContentValues values = new ContentValues();
             values.put("id", getActivity().getIntent().getStringExtra("id"));
             values.put("title", getActivity().getIntent().getStringExtra("title"));
-            values.put("message", message);
+            values.put("message", urlEncodedMessage);
             values.put("lastpage", getActivity().getIntent().getIntExtra("lastpage", 1));
             values.put("h", token);
             values.put("submit", "Post Message");
@@ -114,6 +118,16 @@ public class PostMessageFragment extends Fragment implements PostHandler.EventIn
 
         } else {
             errorView.setText(R.string.error_5_chars_or_more);
+        }
+    }
+
+
+    private String getUrlEncodedString(String content) {
+        final String UTF_8 = "UTF-8";
+        try {
+            return URLEncoder.encode(content, UTF_8);
+        } catch (UnsupportedEncodingException e) {
+            return null;
         }
     }
 

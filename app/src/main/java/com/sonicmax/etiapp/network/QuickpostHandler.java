@@ -15,6 +15,9 @@ import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 public class QuickpostHandler {
 
     private final FloatingActionButton mQuickpostButton;
@@ -46,11 +49,11 @@ public class QuickpostHandler {
 
         if (message.length() >= 5) {
             String token = SharedPreferenceManager.getString(mContext, "h");
+            String urlEncodedMessage = getUrlEncodedString(message);
 
-            // Get input from editText elements
             ContentValues values = new ContentValues();
             values.put("id", mTopic.getId());
-            values.put("message", message);
+            values.put("message", urlEncodedMessage);
             values.put("h", token);
             values.put("submit", "Post Message");
 
@@ -71,6 +74,15 @@ public class QuickpostHandler {
 
         else {
             onError(mContext.getResources().getString(R.string.error_5_chars_or_more));
+        }
+    }
+
+    private String getUrlEncodedString(String content) {
+        final String UTF_8 = "UTF-8";
+        try {
+            return URLEncoder.encode(content, UTF_8);
+        } catch (UnsupportedEncodingException e) {
+            return null;
         }
     }
 
