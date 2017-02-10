@@ -237,6 +237,11 @@ public class LivelinksSubscriber {
                     case FETCH_MESSAGE:
                         // data will safely cast to List<Message>
                         List<Message> messages = (List<Message>) data;
+
+                        for (Message message : messages) {
+                            message.setAnimationFlag(true);
+                        }
+
                         mEventInterface.onReceiveNewPost(messages, mTopicSize);
                         subscribe();
                         break;

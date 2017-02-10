@@ -50,7 +50,6 @@ public class MessageListAdapter extends SelectableAdapter {
 
     private int mMaxWidth;
     private int mCurrentPage;
-    private int mLastPosition;
     private List<Message> mMessages;
 
     /**
@@ -95,7 +94,6 @@ public class MessageListAdapter extends SelectableAdapter {
         mMessages.clear();
         mMessages = messages;
         notifyDataSetChanged();
-        mLastPosition = messages.size() - 1;
     }
 
     public void addMessages(List<Message> messages) {
@@ -307,10 +305,10 @@ public class MessageListAdapter extends SelectableAdapter {
                 viewHolder.cardView.setCardElevation(2);
             }
 
-            // Animate new posts as they are added to adapter (but not for initial page load)
-            if (position > mLastPosition) {
+            // Animate new posts as they are added to adapter
+            if (message.needsAnimation()) {
                 slideInFromRight(viewHolder.cardView);
-                mLastPosition = position;
+                message.setAnimationFlag(false);
             }
         }
     }

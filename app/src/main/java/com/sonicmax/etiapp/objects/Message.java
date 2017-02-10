@@ -11,6 +11,8 @@ public class Message implements Parcelable {
     private String position;
     private String filterUrl;
 
+    private boolean mNeedsAnimation = false;
+
     public Message(String html, String user, String time, String filter, int position) {
         this.html = html;
         this.username = user;
@@ -43,12 +45,21 @@ public class Message implements Parcelable {
         return html;
     }
 
+    public void setAnimationFlag(boolean value) {
+        mNeedsAnimation = value;
+    }
+
+    public boolean needsAnimation() {
+        return mNeedsAnimation;
+    }
+
     protected Message(Parcel in) {
         html = in.readString();
         username = in.readString();
         time = in.readString();
         position = in.readString();
         filterUrl = in.readString();
+        mNeedsAnimation = in.readInt() != 0;
     }
 
     @Override
@@ -63,6 +74,7 @@ public class Message implements Parcelable {
         dest.writeString(time);
         dest.writeString(position);
         dest.writeString(filterUrl);
+        dest.writeInt(mNeedsAnimation ? 1 : 0);
     }
 
     @SuppressWarnings("unused")
