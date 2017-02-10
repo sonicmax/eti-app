@@ -127,24 +127,20 @@ public class ImageLoader {
     ///////////////////////////////////////////////////////////////////////////
 
     private Bitmap getDownsampledAndResizedBitmap(Bundle args) {
+        ImagePlaceholderSpan placeholder = mPlaceholders[args.getInt("index")];
         String src = args.getString("src");
 
-        int[] decodedBounds = loadBitmapAndDecodeBounds(src);
         int[] finalSize;
-
-        Log.v(LOG_TAG, "original width: " + decodedBounds[0]);
-        Log.v(LOG_TAG, "original height: " + decodedBounds[1]);
+        int actualWidth = placeholder.getActualWidth();
+        int actualHeight = placeholder.getActualHeight();
 
         if (mPlaceholders[args.getInt("index")].isNested()) {
             // Nested images should take up a quarter of the screen
-            finalSize = resizeToFitWidth(decodedBounds, mMaxWidth / 4);
+            finalSize = resizeToFitWidth(actualWidth, actualHeight, mMaxWidth / 4);
         }
         else {
-            finalSize = resizeToFitWidth(decodedBounds, mMaxWidth);
+            finalSize = resizeToFitWidth(actualWidth, actualHeight, mMaxWidth);
         }
-
-        Log.v(LOG_TAG, "final width: " + decodedBounds[0]);
-        Log.v(LOG_TAG, "final height: " + decodedBounds[1]);
 
         Bitmap bitmap = loadDownsampledBitmap(src, finalSize);
 
@@ -195,18 +191,21 @@ public class ImageLoader {
     }
 
 
-    private int[] resizeToFitWidth(int[] originalSize, int maxWidth) {
-        float ratio = (float) originalSize[0] / (float) originalSize[1];
+    private int[] resizeToFitWidth(int width, int height, int maxWidth) {
+        float ratio = (float) width / (float) height;
 
         int[] newSize = new int[2];
 
         newSize[0] = maxWidth;
         newSize[1] = (int) ((float) newSize[0] / ratio);
 
-        if (newSize[0] < originalSize[0]) {
+        if (newSize[0] < width) {
             return newSize;
         }
         else {
+            int[] originalSize = new int[2];
+            originalSize[0] = width;
+            originalSize[1] = height;
             return originalSize;
         }
     }
@@ -344,7 +343,7 @@ public class ImageLoader {
     }
 
     /**
-     * Called after each image has finished loading
+     * Called after each Bitmap has finished loading
      * @param bitmap Loaded image
      * @param placeholder Placeholder to be replaced
      */

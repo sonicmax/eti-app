@@ -184,6 +184,7 @@ public class SupportMessageBuilder extends Builder {
     private SpannableStringBuilder getImagesFrom(Element imgs) {
         final boolean NESTED = true;
         final boolean NOT_NESTED = false;
+        final String SPACE = " ";
         SpannableStringBuilder output = new SpannableStringBuilder();
 
         // Iterate over image anchor tags to get src attribute
@@ -192,20 +193,27 @@ public class SupportMessageBuilder extends Builder {
 
         for (int j = 0; j < anchorLength; j++) {
             Element imgAnchor = anchors.get(j);
+
+            // Find width and height of img-placeholder element
+            Element imgPlaceholder = imgAnchor.child(0);
+            String style = imgPlaceholder.attr("style");
+            String[] entries = style.split(";");
+            int width = Integer.parseInt(entries[0].replace("width:", "").replace("px", ""));
+            int height = Integer.parseInt(entries[1].replace("height:", "").replace("px", ""));
+
             // Apparently the only way we can append ImageSpans is to append a string, and then use setSpan.
-            String stupidEmptyString = " ";
-            output.append(stupidEmptyString);
+            output.append(SPACE);
 
             if (mQuoteDepth == 0) {
-                output.setSpan(new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NOT_NESTED),
-                        output.length() - stupidEmptyString.length(),
+                output.setSpan(new ImagePlaceholderSpan(mSpinner, width, height, imgAnchor.attr("imgsrc"), NOT_NESTED),
+                        output.length() - SPACE.length(),
                         output.length(),
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
 
             else {
-                output.setSpan(new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NESTED),
-                        output.length() - stupidEmptyString.length(),
+                output.setSpan(new ImagePlaceholderSpan(mSpinner,  width, height, imgAnchor.attr("imgsrc"), NESTED),
+                        output.length() - SPACE.length(),
                         output.length(),
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }

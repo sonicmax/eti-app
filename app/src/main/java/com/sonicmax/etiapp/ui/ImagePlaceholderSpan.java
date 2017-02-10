@@ -4,6 +4,9 @@ import android.graphics.drawable.Drawable;
 import android.text.style.ImageSpan;
 
 public class ImagePlaceholderSpan extends ImageSpan {
+    private final int mActualWidth;
+    private final int mActualHeight;
+
     private boolean mIsNested;
 
     /**
@@ -11,9 +14,19 @@ public class ImagePlaceholderSpan extends ImageSpan {
      * @param source Source for actual image
      * @param nested Whether image is nested within a quote
      */
-    public ImagePlaceholderSpan(Drawable d, String source, boolean nested) {
+    public ImagePlaceholderSpan(Drawable d, int width, int height, String source, boolean nested) {
         super(d, source);
+        mActualWidth = width;
+        mActualHeight = height;
         mIsNested = nested;
+    }
+
+    public int getActualWidth() {
+        return mActualWidth;
+    }
+
+    public int getActualHeight() {
+        return mActualHeight;
     }
 
     /**

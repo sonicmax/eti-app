@@ -167,15 +167,23 @@ public class MessageBuilder extends Builder {
 
         for (int j = 0; j < anchorLength; j++) {
             Element imgAnchor = anchors.get(j);
+
+            // Find width and height of img-placeholder element
+            Element imgPlaceholder = imgAnchor.child(0);
+            String style = imgPlaceholder.attr("style");
+            String[] entries = style.split(";");
+            int width = Integer.parseInt(entries[0].replace("width:", "").replace("px", ""));
+            int height = Integer.parseInt(entries[1].replace("height:", "").replace("px", ""));
+
             if (mQuoteDepth == 0) {
                 // Apparently this is the only way to append an ImageSpan
                 output.append(SPACE,
-                        new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NOT_NESTED),
+                        new ImagePlaceholderSpan(mSpinner, width, height, imgAnchor.attr("imgsrc"), NOT_NESTED),
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             else {
                 output.append(SPACE,
-                        new ImagePlaceholderSpan(mSpinner, imgAnchor.attr("imgsrc"), NESTED),
+                        new ImagePlaceholderSpan(mSpinner, width, height, imgAnchor.attr("imgsrc"), NESTED),
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
