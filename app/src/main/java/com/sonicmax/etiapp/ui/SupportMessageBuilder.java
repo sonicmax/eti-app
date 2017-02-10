@@ -141,14 +141,18 @@ public class SupportMessageBuilder extends Builder {
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
+
                         case "imgs":
+                            builder.append(NEWLINE);
                             SpannableStringBuilder imageSpan = getImagesFrom(element);
                             builder.append(imageSpan);
                             builder.setSpan(new SpannableStringBuilder(),
                                     builder.length() - imageSpan.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            builder.append(NEWLINE);
                             break;
+
                         case "spoiler_closed":
                             String spoilerCaption = getSpoilerCaption(element);
                             builder.append(spoilerCaption);

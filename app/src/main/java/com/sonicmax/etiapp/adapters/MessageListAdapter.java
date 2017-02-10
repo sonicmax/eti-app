@@ -257,7 +257,7 @@ public class MessageListAdapter extends SelectableAdapter {
 
                 // Push new ImageLoader to queue
                 mImageLoaderQueue.add(viewHolder.getAdapterPosition(),
-                        new ImageLoader(mContext, mImageLoaderQueue) {
+                        new ImageLoader(mContext, mImageLoaderQueue, mMaxWidth) {
 
                             @Override
                             public boolean onPreLoad(ImagePlaceholderSpan placeholder) {
@@ -274,7 +274,7 @@ public class MessageListAdapter extends SelectableAdapter {
 
                             @Override
                             public void onFinishLoad(Bitmap bitmap, ImagePlaceholderSpan placeholder) {
-                                BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap, placeholder.isNested());
+                                BitmapDrawable bitmapDrawable = getDrawableFromBitmap(bitmap);
                                 ImageSpan img = new ImageSpan(bitmapDrawable, placeholder.getSource());
                                 mImageCache.addBitmapToCache(placeholder.getSource(), bitmap);
 
@@ -330,77 +330,11 @@ public class MessageListAdapter extends SelectableAdapter {
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
 
-    private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap, boolean shouldShrink) {
-        Bitmap resizedBitmap;
-
-        if (shouldShrink) {
-            resizedBitmap = shrinkBitmap(bitmap);
-        }
-        else {
-            resizedBitmap = resizeBitmapToFitScreen(bitmap);
-        }
-
-        BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), resizedBitmap);
-        bitmapDrawable.setBounds(0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
+    private BitmapDrawable getDrawableFromBitmap(Bitmap bitmap) {
+        BitmapDrawable bitmapDrawable = new BitmapDrawable(mContext.getResources(), bitmap);
+        bitmapDrawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
 
         return bitmapDrawable;
-    }
-
-    /**
-     * Basic method for resizing bitmaps to fit message list view. Returns original bitmap
-     * if no adjustments are required.
-     *
-     * In an ideal world, we would also decode the bounds first & downsample large images,
-     * but decoding Bitmap multiple times can cause "SkImageDecoder:: Factory returned null" errors
-     *
-     * @param bitmap Bitmap to be resized
-     * @return Resized Bitmap
-     */
-    private Bitmap resizeBitmapToFitScreen(Bitmap bitmap) {
-        final boolean SHOULD_FILTER = true;
-
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-
-        if (width > mMaxWidth) {
-            // Scale Bitmap to fit screen.
-            float ratio = (float) width / (float) height;
-            int newWidth = mMaxWidth;
-            int newHeight = (int) ((float) mMaxWidth / ratio);
-
-            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, SHOULD_FILTER);
-        }
-
-        // TODO: Maybe we should upscale images that are too small?
-
-        return bitmap;
-    }
-
-    /**
-     * Shrinks bitmap to an arbitrary size (1/4 of maximum allowed width)
-     * Returns original bitmap if resizing is not necessary.
-     * Used to shrink images contained in nested quotes
-     *
-     * @param bitmap Bitmap to be shrunk
-     * @return Shrunk bitmap
-     */
-    private Bitmap shrinkBitmap(Bitmap bitmap) {
-        final boolean SHOULD_FILTER = true;
-
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-
-        // Scale Bitmap to fit 1/4 of screen.
-        float ratio = (float) width / (float) height;
-        int newWidth = mMaxWidth / 4;
-        int newHeight = (int) ((float) newWidth / ratio);
-
-        if (newWidth < width) {
-            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, SHOULD_FILTER);
-        }
-        else {
-            return bitmap;
-        }
     }
 
     /**

@@ -8,13 +8,11 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.text.SpannableStringBuilder;
-import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.sonicmax.etiapp.ui.ImagePlaceholderSpan;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
-import com.sonicmax.etiapp.utilities.ImageLoaderQueue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,30 +24,33 @@ import java.util.Queue;
 
 public class ImageLoader {
     private final String LOG_TAG = ImageLoader.class.getSimpleName();
-    private Context mContext;
-    private LoaderManager mLoaderManager;
-    private int mCurrentLoaderId;
-    private Queue<Bundle> mImageQueue;
+
+    private final int DEFAULT_SAMPLE_SIZE = 2;
+
+    private final Context mContext;
+    private final LoaderManager mLoaderManager;
+    private final Queue<Bundle> mImageQueue;
+    private final ImageLoaderListener mCallbacks;
+    private final BitmapFactory.Options mDefaultOptions;
+
     private Iterator<Bundle> mQueueIterator;
     private ImagePlaceholderSpan[] mPlaceholders;
-    private ImageLoaderListener mCallbacks;
-    private BitmapFactory.Options mBitmapFactoryOptions;
+    private int mCurrentLoaderId;
+    private int mMaxWidth;
 
-
-    public ImageLoader(Context context, ImageLoaderListener loaderQueue) {
-        final int SAMPLE_SIZE = 2;
-        
+    public ImageLoader(Context context, ImageLoaderListener loaderQueue, int maxWidth) {
         mContext = context;
         mLoaderManager = ((FragmentActivity) context).getSupportLoaderManager();
         mImageQueue = new LinkedList<>();
         mCallbacks = loaderQueue;
-        
+        mMaxWidth = (int) (maxWidth * (float) 0.9);
+
         DisplayMetrics metrics = context.getApplicationContext().getResources().getDisplayMetrics();
-        mBitmapFactoryOptions = new BitmapFactory.Options();
-        mBitmapFactoryOptions.inScreenDensity = metrics.densityDpi;
-        mBitmapFactoryOptions.inTargetDensity =  metrics.densityDpi;
-        mBitmapFactoryOptions.inDensity = DisplayMetrics.DENSITY_DEFAULT;
-        mBitmapFactoryOptions.inSampleSize = SAMPLE_SIZE;
+        mDefaultOptions = new BitmapFactory.Options();
+        mDefaultOptions.inScreenDensity = metrics.densityDpi;
+        mDefaultOptions.inTargetDensity =  metrics.densityDpi;
+        mDefaultOptions.inDensity = DisplayMetrics.DENSITY_DEFAULT;
+        mDefaultOptions.inSampleSize = DEFAULT_SAMPLE_SIZE;
     }
 
     /**
@@ -82,6 +83,10 @@ public class ImageLoader {
 
         return this;
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Queue handling methods
+    ///////////////////////////////////////////////////////////////////////////
 
     /**
      * Begins iterating over queue.
@@ -117,6 +122,233 @@ public class ImageLoader {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Image processing methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    private Bitmap getDownsampledAndResizedBitmap(Bundle args) {
+        String src = args.getString("src");
+
+        int[] decodedBounds = loadBitmapAndDecodeBounds(src);
+        int[] finalSize;
+
+        Log.v(LOG_TAG, "original width: " + decodedBounds[0]);
+        Log.v(LOG_TAG, "original height: " + decodedBounds[1]);
+
+        if (mPlaceholders[args.getInt("index")].isNested()) {
+            finalSize = getNestedImageSize(decodedBounds);
+        }
+        else {
+            finalSize = getScaleToFitSize(decodedBounds);
+        }
+
+        Log.v(LOG_TAG, "final width: " + decodedBounds[0]);
+        Log.v(LOG_TAG, "final height: " + decodedBounds[1]);
+
+        Bitmap bitmap = loadDownsampledBitmap(src, finalSize);
+
+        return resizeBitmap(bitmap, finalSize);
+    }
+
+    private int calculateInSampleSize(int width, int height) {
+        // Raw height and width of image
+        int inSampleSize = 1;
+        int reqWidth, reqHeight;
+
+        if (width > mMaxWidth) {
+            // Scale Bitmap to fit screen.
+            float ratio = (float) width / (float) height;
+            reqWidth = mMaxWidth;
+            reqHeight = (int) ((float) mMaxWidth / ratio);
+        }
+
+        else {
+            return DEFAULT_SAMPLE_SIZE;
+        }
+
+        final int halfHeight = height / 2;
+        final int halfWidth = width / 2;
+
+        // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+        // height and width larger than the requested height and width.
+        while ((halfHeight / inSampleSize) >= reqHeight
+                && (halfWidth / inSampleSize) >= reqWidth) {
+
+            inSampleSize *= 2;
+        }
+
+        return inSampleSize;
+    }
+
+    private Bitmap resizeBitmap(Bitmap bitmap, int[] newSize) {
+        final boolean FILTER = true;
+        final boolean NO_FILTER = false;
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        if (width > newSize[0] || height > newSize[1]) {
+            return Bitmap.createScaledBitmap(bitmap, newSize[0], newSize[1], NO_FILTER);
+        }
+
+        return bitmap;
+    }
+
+    private int[] getScaleToFitSize(int[] originalSize) {
+        float ratio = (float) originalSize[0] / (float) originalSize[1];
+
+        int[] newSize = new int[2];
+
+        newSize[0] = mMaxWidth;
+        newSize[1] = (int) ((float) newSize[0] / ratio);
+
+        if (newSize[0] < originalSize[0]) {
+            return newSize;
+        }
+        else {
+            return originalSize;
+        }
+    }
+
+    private int[] getNestedImageSize(int[] originalSize) {
+        float ratio = (float) originalSize[0] / (float) originalSize[1];
+
+        int[] newSize = new int[2];
+
+        newSize[0] = mMaxWidth / 4;
+        newSize[1] = (int) ((float) newSize[0] / ratio);
+
+        if (newSize[0] < originalSize[0]) {
+            return newSize;
+        }
+        else {
+            return originalSize;
+        }
+    }
+
+    /**
+     * Decodes Bitmap bounds from src and returns int array containing width and height.
+     * @param src Src of image to load
+     * @return [width, height]
+     */
+    private int[] loadBitmapAndDecodeBounds(String src) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inScreenDensity = mDefaultOptions.inScreenDensity;
+        options.inTargetDensity =  mDefaultOptions.inTargetDensity;
+        options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
+        options.inJustDecodeBounds = true;
+
+        HttpURLConnection connection = null;
+        InputStream input = null;
+
+        try {
+            URL url = new URL(src);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.connect();
+            input = connection.getInputStream();
+
+            BitmapFactory.decodeStream(input, null, options);
+
+            int[] size = new int[2];
+            size[0] = options.outWidth;
+            size[1] = options.outHeight;
+
+            return size;
+
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Error while loading image", e);
+            return null;
+
+        } finally {
+            cleanUpAfterLoad(connection, input);
+        }
+
+    }
+
+    private void cleanUpAfterLoad(HttpURLConnection connection, InputStream input) {
+        if (connection != null) {
+            connection.disconnect();
+        }
+        if (input != null) {
+            try {
+                input.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error closing input stream", e);
+            }
+        }
+    }
+
+    /**
+     * Uses decoded bounds to determine optimal inSampleSize, loads image using HttpUrlConnection,
+     * and returns decoded Bitmap.
+     * @param src src of image to load
+     * @param finalSize [width, height]
+     * @return Bitmap
+     */
+
+    private Bitmap loadDownsampledBitmap(String src, int[] finalSize) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inScreenDensity = mDefaultOptions.inScreenDensity;
+        options.inTargetDensity =  mDefaultOptions.inTargetDensity;
+        options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
+        options.inSampleSize = calculateInSampleSize(finalSize[0], finalSize[1]);
+
+        HttpURLConnection connection = null;
+        InputStream input = null;
+
+        try {
+            URL url = new URL(src);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.connect();
+            input = connection.getInputStream();
+
+            return BitmapFactory.decodeStream(input, null, options);
+
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Error while loading image", e);
+            return null;
+
+        } finally {
+            cleanUpAfterLoad(connection, input);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Loader callbacks
+    ///////////////////////////////////////////////////////////////////////////
+
+    private LoaderManager.LoaderCallbacks<Object> callbacks = new LoaderManager.LoaderCallbacks<Object>() {
+
+        @Override
+        public Loader<Object> onCreateLoader(int id, final Bundle args) {
+
+            return new AsyncLoader(mContext, args) {
+
+                @Override
+                public Bitmap loadInBackground() {
+                    return getDownsampledAndResizedBitmap(args);
+                }
+            };
+        }
+
+        @Override
+        public void onLoadFinished(Loader<Object> loader, Object data) {
+            int index = ((AsyncLoader) loader).getArgs().getInt("index");
+            onFinishLoad((Bitmap) data, mPlaceholders[index]);
+            mLoaderManager.destroyLoader(loader.getId());
+            getNextFromQueue();
+        }
+
+        @Override
+        public void onLoaderReset(Loader<Object> loader) {
+            loader.reset();
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Communication with other classes
+    ///////////////////////////////////////////////////////////////////////////
+
     /**
      * Called before loader is initialised/restarted
      * @param placeholder Placeholder image
@@ -139,62 +371,4 @@ public class ImageLoader {
     public interface ImageLoaderListener {
         void onQueueComplete();
     }
-
-    /**
-     * Callbacks for AsyncLoader
-     */
-    private LoaderManager.LoaderCallbacks<Object> callbacks = new LoaderManager.LoaderCallbacks<Object>() {
-
-        @Override
-        public Loader<Object> onCreateLoader(int id, final Bundle args) {
-
-            return new AsyncLoader(mContext, args) {
-
-                @Override
-                public Bitmap loadInBackground() {
-                    HttpURLConnection connection = null;
-                    InputStream input = null;
-
-                    try {
-                        URL url = new URL(args.getString("src"));
-                        connection = (HttpURLConnection) url.openConnection();
-                        connection.connect();
-                        input = connection.getInputStream();
-
-                        return BitmapFactory.decodeStream(input, null, mBitmapFactoryOptions);
-
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Error while loading image", e);
-                        return null;
-
-                    } finally {
-                        // Do some cleanup
-                        if (connection != null) {
-                            connection.disconnect();
-                        }
-                        if (input != null) {
-                            try {
-                                input.close();
-                            } catch (IOException e) {
-                                Log.e(LOG_TAG, "Error closing input stream", e);
-                            }
-                        }
-                    }
-                }
-            };
-        }
-
-        @Override
-        public void onLoadFinished(Loader<Object> loader, Object data) {
-            int index = ((AsyncLoader) loader).getArgs().getInt("index");
-            onFinishLoad((Bitmap) data, mPlaceholders[index]);
-            mLoaderManager.destroyLoader(loader.getId());
-            getNextFromQueue();
-        }
-
-        @Override
-        public void onLoaderReset(Loader<Object> loader) {
-            loader.reset();
-        }
-    };
 }

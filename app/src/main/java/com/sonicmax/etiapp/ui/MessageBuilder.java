@@ -127,6 +127,7 @@ public class MessageBuilder extends Builder {
                                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "imgs":
+                            builder.append(NEWLINE);
                             builder.append(getImagesFrom(element));
                             builder.append(NEWLINE);
                             break;
