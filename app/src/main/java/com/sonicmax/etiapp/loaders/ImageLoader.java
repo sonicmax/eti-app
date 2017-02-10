@@ -1,4 +1,4 @@
-package com.sonicmax.etiapp.network;
+package com.sonicmax.etiapp.loaders;
 
 import android.content.Context;
 import android.graphics.Bitmap;

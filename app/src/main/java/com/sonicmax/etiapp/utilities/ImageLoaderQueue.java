@@ -1,8 +1,6 @@
 package com.sonicmax.etiapp.utilities;
 
-import android.util.Log;
-
-import com.sonicmax.etiapp.network.ImageLoader;
+import com.sonicmax.etiapp.loaders.ImageLoader;
 
 import java.util.LinkedList;
 

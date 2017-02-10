@@ -20,10 +20,9 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.network.ImageLoader;
+import com.sonicmax.etiapp.loaders.ImageLoader;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.ui.Builder;
 import com.sonicmax.etiapp.ui.ImagePlaceholderSpan;
