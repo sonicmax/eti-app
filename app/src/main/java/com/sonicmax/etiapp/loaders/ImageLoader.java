@@ -183,13 +183,12 @@ public class ImageLoader {
 
     private Bitmap resizeBitmap(Bitmap bitmap, int[] newSize) {
         final boolean FILTER = true;
-        final boolean NO_FILTER = false;
 
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
 
         if (width > newSize[0] || height > newSize[1]) {
-            return Bitmap.createScaledBitmap(bitmap, newSize[0], newSize[1], NO_FILTER);
+            return Bitmap.createScaledBitmap(bitmap, newSize[0], newSize[1], FILTER);
         }
 
         return bitmap;
