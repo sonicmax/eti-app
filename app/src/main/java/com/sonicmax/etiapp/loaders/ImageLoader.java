@@ -136,10 +136,11 @@ public class ImageLoader {
         Log.v(LOG_TAG, "original height: " + decodedBounds[1]);
 
         if (mPlaceholders[args.getInt("index")].isNested()) {
-            finalSize = getNestedImageSize(decodedBounds);
+            // Nested images should take up a quarter of the screen
+            finalSize = resizeToFitWidth(decodedBounds, mMaxWidth / 4);
         }
         else {
-            finalSize = getScaleToFitSize(decodedBounds);
+            finalSize = resizeToFitWidth(decodedBounds, mMaxWidth);
         }
 
         Log.v(LOG_TAG, "final width: " + decodedBounds[0]);
@@ -194,28 +195,13 @@ public class ImageLoader {
         return bitmap;
     }
 
-    private int[] getScaleToFitSize(int[] originalSize) {
+
+    private int[] resizeToFitWidth(int[] originalSize, int maxWidth) {
         float ratio = (float) originalSize[0] / (float) originalSize[1];
 
         int[] newSize = new int[2];
 
-        newSize[0] = mMaxWidth;
-        newSize[1] = (int) ((float) newSize[0] / ratio);
-
-        if (newSize[0] < originalSize[0]) {
-            return newSize;
-        }
-        else {
-            return originalSize;
-        }
-    }
-
-    private int[] getNestedImageSize(int[] originalSize) {
-        float ratio = (float) originalSize[0] / (float) originalSize[1];
-
-        int[] newSize = new int[2];
-
-        newSize[0] = mMaxWidth / 4;
+        newSize[0] = maxWidth;
         newSize[1] = (int) ((float) newSize[0] / ratio);
 
         if (newSize[0] < originalSize[0]) {
