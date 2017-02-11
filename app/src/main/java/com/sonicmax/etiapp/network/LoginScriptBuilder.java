@@ -8,6 +8,10 @@ import android.util.Log;
 
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -36,26 +40,17 @@ public class LoginScriptBuilder extends AsyncTaskLoader<Object> {
                 .appendPath("scripts")
                 .appendPath("login.php")
                 .appendQueryParameter("username", username)
-                .appendQueryParameter("ip", wifiIpAddress(mContext));
+                .appendQueryParameter("ip", getIp());
 
         return builder.build().toString();
     }
 
-    private String wifiIpAddress(Context context) {
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
-
-        // Convert little-endian to big-endian if needed
-        if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
-            ipAddress = Integer.reverseBytes(ipAddress);
-        }
-
-        byte[] ipByteArray = BigInteger.valueOf(ipAddress).toByteArray();
-
+    private String getIp() {
         try {
-            return InetAddress.getByAddress(ipByteArray).getHostAddress();
-        } catch (UnknownHostException ex) {
-            Log.e("wifiIpAddress", "Unable to get host address.");
+            Document doc = Jsoup.connect("http://www.checkip.org").get();
+            return doc.getElementById("yourip").select("h1").first().select("span").text();
+
+        } catch(IOException error) {
             return null;
         }
     }

@@ -79,7 +79,7 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
     private String getDialogMessage(int id) {
         switch (id) {
             case LOGIN:
-                return "Logging in";
+                return "Logging in...";
             case LOGOUT:
                 return "Logging out...";
             case STATUS_CHECK:
