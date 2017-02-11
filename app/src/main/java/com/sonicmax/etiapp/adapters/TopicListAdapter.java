@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -32,6 +33,7 @@ public class TopicListAdapter extends BaseAdapter {
     private final int HEADER_GREY;
 
     private final Context mContext;
+    private final EventInterface mEventInterface;
     private final SimpleDateFormat mDateFormat;
 
     private ListView mListView;
@@ -43,8 +45,9 @@ public class TopicListAdapter extends BaseAdapter {
     private int CURRENT_HOUR_OF_DAY;
     private int CURRENT_MINUTE;
 
-    public TopicListAdapter(Context context) {
+    public TopicListAdapter(Context context, EventInterface eventInterface) {
         this.mContext = context;
+        this.mEventInterface = eventInterface;
 
         // Prepare SimpleDateFormat to parse ETI timestamp (will always be in this format)
         mDateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US);
@@ -54,10 +57,35 @@ public class TopicListAdapter extends BaseAdapter {
         HEADER_GREY = ContextCompat.getColor(context, R.color.header_grey);
     }
 
+    public interface EventInterface {
+        void onRequestNextPage();
+    }
+
+    public void setListView(ListView view) {
+        mListView = view;
+    }
+
     public void updateTopics(List<Topic> topics) {
         mTopics.clear();
         mTopics = topics;
         notifyDataSetChanged();
+
+        if (mListView != null) {
+            View footer = mListView.findViewById(R.id.next_page_button);
+
+            if (footer == null && topics.size() == 50) {
+                LayoutInflater inflater = LayoutInflater.from(mContext);
+                Button nextPageButton = (Button) inflater.inflate(R.layout.next_page_button, null);
+                nextPageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        mEventInterface.onRequestNextPage();
+                    }
+                });
+
+                mListView.addFooterView(nextPageButton);
+            }
+        }
     }
 
     public void getCurrentTime() {
@@ -104,9 +132,6 @@ public class TopicListAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-
-        mListView = (ListView) parent;
-
         TextView userView, titleView, countView, tagView, timestampView;
 
         if (convertView == null) {
@@ -158,7 +183,7 @@ public class TopicListAdapter extends BaseAdapter {
         Date date;
 
         try {
-            date = mDateFormat.parse(timestamp);
+                date = mDateFormat.parse(timestamp);
         } catch (ParseException e) {
             Log.e(LOG_TAG, "Error parsing date for getView method", e);
             return null;
