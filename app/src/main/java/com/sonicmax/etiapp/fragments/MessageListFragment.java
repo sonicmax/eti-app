@@ -72,6 +72,7 @@ public class MessageListFragment extends Fragment implements
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
 
+    private MessageList mMessageList;
     private String mTitle;
     private int mCurrentPage;
     private int mLastPage;
@@ -85,7 +86,6 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
-        // this = MessageListAdapter.ClickListener
         mMessageListAdapter = new MessageListAdapter(context, this);
         super.onAttach(context);
     }
@@ -105,11 +105,23 @@ public class MessageListFragment extends Fragment implements
         }
 
         else {
+            mMessageList = savedInstanceState.getParcelable("messagelist");
             mTopic = savedInstanceState.getParcelable("topic");
-            mCurrentPage = savedInstanceState.getInt("page");
-            mMessages = savedInstanceState.getParcelableArrayList("messages");
+
+            mMessages = mMessageList.getMessages();
+            mPrevPageUrl = mMessageList.getPrevPageUrl();
+            mNextPageUrl = mMessageList.getNextPageUrl();
+            mCurrentPage = mMessageList.getPageNumber();
 
             mMessageListAdapter.replaceAllMessages(mMessages);
+            mMessageListAdapter.setCurrentPage(mCurrentPage);
+
+            if (mNextPageUrl != null) {
+                mMessageListAdapter.setNextPageFlag(true);
+            }
+            else {
+                mMessageListAdapter.setNextPageFlag(false);
+            }
         }
 
         super.onCreate(savedInstanceState);
@@ -181,13 +193,13 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         // Save list of boards so we can quickly restore fragment
-        if (mMessages != null) {
-            ArrayList<Message> messageArray = new ArrayList<>(mMessages);
-            outState.putParcelableArrayList("messages", messageArray);
+        if (mMessageList != null) {
+            outState.putParcelable("messagelist", mMessageList);
         }
 
+        if (mTopic != null) {
         outState.putParcelable("topic", mTopic);
-        outState.putInt("page", mCurrentPage);
+        }
 
         super.onSaveInstanceState(outState);
     }
@@ -271,6 +283,7 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onLoadMessageList(MessageList messageList) {
+        mMessageList = messageList;
         mMessages = messageList.getMessages();
         mCurrentPage = messageList.getPageNumber();
         mPrevPageUrl = messageList.getPrevPageUrl();
@@ -278,7 +291,7 @@ public class MessageListFragment extends Fragment implements
         mLastPage = messageList.getLastPage();
 
         if (mNextPageUrl != null) {
-            mMessageListAdapter.setNextPageFlag();
+            mMessageListAdapter.setNextPageFlag(true);
         }
 
         mMessageListAdapter.replaceAllMessages(mMessages);
@@ -357,10 +370,13 @@ public class MessageListFragment extends Fragment implements
         mNextPageUrl = messageList.getNextPageUrl();
 
         if (mNextPageUrl != null) {
-            mMessageListAdapter.setNextPageFlag();
+            mMessageList.setNextPageUrl(mNextPageUrl);
+            mMessageListAdapter.setNextPageFlag(true);
         }
 
         List<Message> newMessages = messageList.getMessages();
+        mMessageList.addNewMessages(newMessages);
+
         int sizeOfNewMessages = newMessages.size();
         // We have to set position manually because count from moremessages.php will be incorrect
         for (int i = 0; i < sizeOfNewMessages; i++) {

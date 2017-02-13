@@ -11,11 +11,12 @@ import java.util.List;
  */
 
 public class MessageList implements Parcelable {
-    private final List<Message> mMessages;
     private final int mPageNumber;
     private final int mLastPage;
     private final String mPrevPageUrl;
-    private final String mNextPageUrl;
+
+    private List<Message> mMessages;
+    private String mNextPageUrl;
 
     public MessageList (List<Message> messages, int pageNumber, int lastPage, String prevPageUrl, String nextPageUrl) {
         mMessages = messages;
@@ -35,6 +36,14 @@ public class MessageList implements Parcelable {
 
     public int getLastPage() {
         return mLastPage;
+    }
+
+    public void setNextPageUrl(String url) {
+        mNextPageUrl = url;
+    }
+
+    public void addNewMessages(List<Message> messages) {
+        mMessages.addAll(messages);
     }
 
     public String getPrevPageUrl() {
