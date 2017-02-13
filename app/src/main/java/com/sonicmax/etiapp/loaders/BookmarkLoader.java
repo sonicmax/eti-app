@@ -1,8 +1,6 @@
 package com.sonicmax.etiapp.loaders;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Loader;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;

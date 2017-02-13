@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp.activities;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -25,8 +24,6 @@ import java.util.List;
 public class TopicListActivity extends AppCompatActivity implements AccountManager.EventInterface {
 
     private final String LOG_TAG = TopicListActivity.class.getSimpleName();
-    @SuppressWarnings("unused")
-    private ProgressDialog mDialog;
     private ListView mDrawerList;
     private DrawerLayout mDrawerLayout;
     private ArrayAdapter<String> mDrawerAdapter;
@@ -121,7 +118,7 @@ public class TopicListActivity extends AppCompatActivity implements AccountManag
                     return true;
 
                 case R.id.action_logout:
-                    new AccountManager(this, mDialog, this).requestLogout();
+                    new AccountManager(this, this).requestLogout();
                     break;
 
                 case R.id.action_refresh:

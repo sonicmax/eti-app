@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp.activities;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,10 +11,7 @@ import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
 public class MessageListActivity extends AppCompatActivity implements AccountManager.EventInterface {
-
     private final String LOG_TAG = MessageListActivity.class.getSimpleName();
-    @SuppressWarnings("unused")
-    private ProgressDialog mDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +40,7 @@ public class MessageListActivity extends AppCompatActivity implements AccountMan
                 return true;
 
             case R.id.action_logout:
-                new AccountManager(this, mDialog, this).requestLogout();
+                new AccountManager(this, this).requestLogout();
                 break;
 
             case R.id.action_refresh:

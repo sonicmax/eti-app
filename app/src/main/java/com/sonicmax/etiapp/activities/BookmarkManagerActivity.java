@@ -41,7 +41,7 @@ public class BookmarkManagerActivity extends AppCompatActivity implements Accoun
         }
 
         else if (id == R.id.action_logout) {
-            new AccountManager(this, mDialog, null).requestLogout();
+            new AccountManager(this, null).requestLogout();
             return true;
         }
 

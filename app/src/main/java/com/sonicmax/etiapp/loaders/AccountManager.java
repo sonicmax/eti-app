@@ -33,17 +33,19 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
     private final int STATUS_CHECK = 3;
 
     private Context mContext;
-    private ProgressDialog mDialog;
     private EventInterface mEventInterface;
     private LoaderManager mLoaderManager;
 
     private boolean mReloadBookmarks = false;
 
-    public AccountManager(Context context, ProgressDialog dialog, EventInterface eventInterface) {
+    public AccountManager(Context context, EventInterface eventInterface) {
         mContext = context;
-        mDialog = dialog;
         mEventInterface = eventInterface;
         mLoaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
+    }
+
+    public interface EventInterface {
+        void onLoadComplete(Intent intent);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -55,10 +57,6 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
     }
 
     public void requestLogout() {
-        mDialog = new ProgressDialog(mContext);
-        mDialog.setMessage("Logging out...");
-        mDialog.show();
-
         Bundle args = new Bundle();
         args.putString("method", "GET");
         args.putString("type", "logout");
@@ -70,28 +68,6 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
         // Make sure that user is still logged in
         // (ie. hasn't logged in using a different IP address)
        mLoaderManager.initLoader(SCRIPT_BUILD, null, this).forceLoad();
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Helper methods
-    ///////////////////////////////////////////////////////////////////////////
-
-    private String getDialogMessage(int id) {
-        switch (id) {
-            case LOGIN:
-                return "Logging in...";
-            case LOGOUT:
-                return "Logging out...";
-            case STATUS_CHECK:
-                return "Checking login status...";
-
-            default:
-                return "Undefined message for AccountManager id " + id + " lolz.";
-        }
-    }
-
-    public interface EventInterface {
-        void onLoadComplete(Intent intent);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -108,9 +84,6 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
             case STATUS_CHECK:
             case LOGIN:
             case LOGOUT:
-                mDialog = new ProgressDialog(mContext);
-                mDialog.setMessage(getDialogMessage(id));
-                mDialog.show();
 
                 return new AsyncLoader(mContext, args) {
                     @Override
@@ -129,10 +102,6 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
         public void onLoadFinished(Loader<Object> loader, Object data) {
             Intent intent = null;
             String response = (String) data;
-
-            if (mDialog != null) {
-                mDialog.dismiss();
-            }
 
             switch (loader.getId()) {
                 case LOGOUT:
@@ -161,11 +130,9 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
 
                     if (response == null || response.trim().equals("0")) {
                         // Can't do anything else - wait for user to login manually
-                        mDialog.dismiss();
-
-                    } else {
+                    }
+                    else {
                         // Use stored cookies to get board list and start activity
-                        mDialog.dismiss();
                         intent = new Intent(mContext, BookmarkManagerActivity.class);
                         intent.putExtra("title", "ETI");
                     }
@@ -174,7 +141,6 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
 
                 case LOGIN:
                     SharedPreferenceManager.putBoolean(mContext, "is_logged_in", true);
-                    mDialog.dismiss();
 
                     // Check whether we have already saved list of bookmarks.
                     // Bookmark lists are serialized as "bookmark_thing0", "bookmark_thing1", (etc)

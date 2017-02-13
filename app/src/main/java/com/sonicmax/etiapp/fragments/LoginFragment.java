@@ -17,11 +17,7 @@ import com.sonicmax.etiapp.loaders.AccountManager;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 public class LoginFragment extends Fragment implements AccountManager.EventInterface {
-
     private final String LOG_TAG = LoginFragment.class.getSimpleName();
-    private final int SCRIPT_BUILD = 0;
-    private final int STATUS_CHECK = 1;
-    private final int LOGIN = 2;
 
     private EditText mUsername;
     private EditText mPassword;
@@ -35,7 +31,7 @@ public class LoginFragment extends Fragment implements AccountManager.EventInter
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mAccountManager = new AccountManager(getContext(), mDialog, this);
+        mAccountManager = new AccountManager(getContext(), this);
 
         // Check whether "is_logged_in" flag has been set, so we can use stored cookies
         if (SharedPreferenceManager.getBoolean(getContext(), "is_logged_in")) {
@@ -69,16 +65,19 @@ public class LoginFragment extends Fragment implements AccountManager.EventInter
     @Override
     public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-
+        dismissDialog();
         super.onDetach();
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
+
+    private void dismissDialog() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+    }
 
     private View.OnClickListener loginHandler = new View.OnClickListener() {
         @Override
@@ -93,6 +92,10 @@ public class LoginFragment extends Fragment implements AccountManager.EventInter
 
     private void makeLoginRequest() {
         Context context = getContext();
+
+        mDialog = new ProgressDialog(context);
+        mDialog.setMessage("Logging in...");
+        mDialog.show();
 
         ContentValues values = new ContentValues(2);
         String username = mUsername.getText().toString();
@@ -114,6 +117,7 @@ public class LoginFragment extends Fragment implements AccountManager.EventInter
 
     @Override
     public void onLoadComplete(Intent intent) {
+        dismissDialog();
         getContext().startActivity(intent);
         getActivity().overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }

@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp.activities;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,9 +10,6 @@ import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
 public class PostMessageActivity extends AppCompatActivity implements AccountManager.EventInterface {
-
-    private ProgressDialog mDialog;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,7 +38,7 @@ public class PostMessageActivity extends AppCompatActivity implements AccountMan
             return true;
         }
         else if (id == R.id.action_logout) {
-            new AccountManager(this, mDialog, this).requestLogout();
+            new AccountManager(this, this).requestLogout();
         }
 
         return super.onOptionsItemSelected(item);
