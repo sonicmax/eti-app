@@ -99,7 +99,9 @@ public class MessageListAdapter extends SelectableAdapter {
     public void addMessages(List<Message> messages) {
         mMessages.addAll(messages);
         // Account for 0-indexing in item range
-        notifyItemRangeChanged(mMessages.size() - 1, mMessages.size() + messages.size() - 2);
+        int start = mMessages.size() - 1;
+        int end = (mMessages.size() - 1) + (messages.size() - 1);
+        notifyItemRangeChanged(start, end);
     }
 
     public void clearMessages() {
@@ -111,15 +113,20 @@ public class MessageListAdapter extends SelectableAdapter {
         return mMessages.get(position);
     }
 
+    public int getMessageCount() {
+        return mMessages.size();
+    }
+
     @Override
     public int getItemCount() {
+        final int MAX_POSTS_PER_PAGE = 50;
         int size = mMessages.size();
-        if (size < 50) {
-            return size;
+        if (size == MAX_POSTS_PER_PAGE && mHasNextPage) {
+            // Include next_page_button with mMessages
+            return size + 1;
         }
         else {
-            // Account for next page button
-            return size + 1;
+            return size;
         }
     }
 
