@@ -1,7 +1,6 @@
 package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
@@ -74,7 +73,6 @@ public class UserInfoScraper {
         Element userbar = mDocument.getElementsByClass("userbar").get(0);
         Element profileAnchor = userbar.getElementsByTag("a").get(0);
         String userId = profileAnchor.attr("href").replaceAll("\\D+", "");
-        Log.v("fuck", "id: " + userId);
         SharedPreferenceManager.putString(mContext, "user_id", userId);
     }
 
@@ -83,15 +81,12 @@ public class UserInfoScraper {
         Element pmSpan = userbar.getElementById("userbar_pms");
 
         int count;
-        Log.v("fuck", pmSpan.attr("style"));
         if (pmSpan.attr("style").equals("display:none")) {
             count = 0;
         }
         else {
             count = Integer.parseInt(pmSpan.text().replaceAll("\\D+", ""));
         }
-
-        Log.v("fuck", "count: " + count);
 
         SharedPreferenceManager.putInt(mContext, "inbox_count", count);
     }
