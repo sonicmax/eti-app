@@ -28,7 +28,9 @@ public class UserInfoScraper {
 
     public void scrapeUserInfo() {
         scrapeUserId();
-        scrapePmCount();
+        if (SharedPreferenceManager.getInt(mContext, "inbox_count") == -1) {
+            SharedPreferenceManager.putInt(mContext, "inbox_count", 0);
+        }
     }
 
     public void setInput(String html) {

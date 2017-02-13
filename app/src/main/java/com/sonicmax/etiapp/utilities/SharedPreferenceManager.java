@@ -46,8 +46,8 @@ public class SharedPreferenceManager {
     public static int getInt(Context context, String key) {
         SharedPreferences prefs = context.getSharedPreferences(
                 "com.sonicmax.etiapp", Context.MODE_PRIVATE);
-        // Return 0 if int is not present
-        return prefs.getInt(key, 0);
+        // Return -1 if int is not present
+        return prefs.getInt(key, -1);
     }
 
     /**

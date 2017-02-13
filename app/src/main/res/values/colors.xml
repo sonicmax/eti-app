@@ -9,5 +9,5 @@
     <color name="bg_grey">#303030</color>
     <color name="header_grey">#424242</color>
     <color name="fg_grey">#505050</color>
-    <color name="black">#000000</color>
+    <color name="snackbar_action">#0099cc</color>
 </resources>

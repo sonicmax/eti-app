@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
@@ -193,7 +194,7 @@ public class MessageListFragment extends Fragment implements
     public void onSaveInstanceState(Bundle outState) {
         // Save list of boards so we can quickly restore fragment
         if (mMessageList != null) {
-            outState.putParcelable("messagelist", mMessageList);
+        outState.putParcelable("messagelist", mMessageList);
         }
 
         if (mTopic != null) {
@@ -291,9 +292,11 @@ public class MessageListFragment extends Fragment implements
 
         if (isLastPage && mLivelinksSubscriber == null) {
             final int totalPosts = getTotalPosts();
+            String userId = SharedPreferenceManager.getString(getContext(), "user_id");
+            int inboxCount = SharedPreferenceManager.getInt(getContext(), "inbox_count");
 
             mLivelinksSubscriber = new LivelinksSubscriber(getContext(), this, mTopic.getId(),
-                    DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT);
+                    userId, totalPosts, inboxCount);
         }
 
         else if (!isLastPage && mLivelinksSubscriber != null) {
@@ -383,9 +386,30 @@ public class MessageListFragment extends Fragment implements
     }
 
     @Override
-    public void onReceivePrivateMessage(int messageCount) {
-        Snackbar.make(mRootView, messageCount + R.string.unread_messages, Snackbar.LENGTH_INDEFINITE)
-                .show();
+    public void onReceivePrivateMessage(int oldCount, int newCount) {
+        // Update PM count in shared preferences and notify user.
+        SharedPreferenceManager.putInt(getContext(), "inbox_count", newCount);
+        int difference = newCount - oldCount;
+        String message;
+        if (difference > 1) {
+            message = difference + getResources().getString(R.string.new_messages);
+        }
+        else {
+            message = difference + getResources().getString(R.string.new_message);
+        }
+
+        final Snackbar pmSnackbar = Snackbar.make(mRootView, message, Snackbar.LENGTH_LONG);
+
+        pmSnackbar.setAction(R.string.read, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                pmSnackbar.dismiss();
+            }
+        });
+
+        pmSnackbar.setActionTextColor(ContextCompat.getColor(getContext(), R.color.snackbar_action));
+
+        pmSnackbar.show();
     }
 
     ///////////////////////////////////////////////////////////////////////////

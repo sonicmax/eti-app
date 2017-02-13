@@ -81,7 +81,7 @@ public class LivelinksSubscriber {
 
     public interface EventInterface {
         void onReceiveNewPost(MessageList messageList, int position);
-        void onReceivePrivateMessage(int unreadMessages);
+        void onReceivePrivateMessage(int oldCount, int newCount);
     }
 
     public BigInteger getTopicPayload() {
@@ -106,7 +106,7 @@ public class LivelinksSubscriber {
 
         try {
             payload.put(topic.toString(), mTopicSize);
-            payload.put(inbox.toString(), 0);
+            payload.put(inbox.toString(), mInboxSize);
             Log.v(LOG_TAG, "Payload: " + payload.toString());
 
         } catch (JSONException e) {
@@ -117,18 +117,12 @@ public class LivelinksSubscriber {
     }
 
     public JSONObject parseLivelinksResponse(String response) {
-        /* Response is key-value pair formatted like this:
-
-                }{"144115188085085408":42}
-
-                    Key is either topic payload or inbox payload
-                    Value is either index of new post, or number of unread PMs
-         */
-
-        String trimmedResponse = response.replace("}{", "{");
+        if (response.indexOf("}") == 0) {
+            response = response.replace("}{", "{");
+        }
 
         try {
-            return new JSONObject(trimmedResponse);
+            return new JSONObject(response);
         } catch (JSONException e) {
             Log.e(LOG_TAG, "Error parsing response from server: " + response, e);
             return null;
@@ -136,10 +130,11 @@ public class LivelinksSubscriber {
     }
 
     private void handleLivelinksResponse(String response) {
-        int newTopicSize = -1;
-        int newInboxSize = -1;
+        int newTopicSize = 0;
+        int newInboxSize = 0;
 
         JSONObject parsedResponse = parseLivelinksResponse(response);
+        Log.v(LOG_TAG, "Response: " + parsedResponse.toString());
 
         if (parsedResponse.length() == 0) {
             // Empty response means that request timed out.
@@ -149,13 +144,14 @@ public class LivelinksSubscriber {
         else {
             try {
                 newTopicSize = parsedResponse.getInt(getTopicPayload().toString());
+            } catch (JSONException noNewPosts) {
+                // Do nothing
+            }
 
-                if (newTopicSize == -1) {
-                    newInboxSize = parsedResponse.getInt(getInboxPayload().toString());
-                }
-
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, "Error in livelinks: ", e);
+            try {
+                newInboxSize = parsedResponse.getInt(getInboxPayload().toString());
+            } catch (JSONException noNewPms) {
+                // Do nothing
             }
 
             if (newTopicSize > mTopicSize) {
@@ -185,7 +181,9 @@ public class LivelinksSubscriber {
             }
 
             if (newInboxSize > mInboxSize) {
-                mEventInterface.onReceivePrivateMessage(newInboxSize);
+                mEventInterface.onReceivePrivateMessage(mInboxSize, newInboxSize);
+                mInboxSize = newInboxSize;
+                subscribe();
             }
         }
     }
@@ -211,6 +209,7 @@ public class LivelinksSubscriber {
                         @Override
                         public MessageList loadInBackground() {
                             String response = new WebRequest(mContext, args).sendRequest();
+
                             // Can't parse HTML unless we remove these characters
                             String escapedResponse = response.replace("\\/", "/")
                                     .replace("\\\"", "\"")
@@ -228,14 +227,19 @@ public class LivelinksSubscriber {
 
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
-            if (data != null) {
-                switch (loader.getId()) {
-                    case LIVELINKS:
+            switch (loader.getId()) {
+                case LIVELINKS:
+                    if (data != null) {
                         String response = (String) data;
                         handleLivelinksResponse(response);
-                        break;
+                    }
+                    else {
+                        subscribe();
+                    }
+                    break;
 
-                    case FETCH_MESSAGE:
+                case FETCH_MESSAGE:
+                    if (data != null) {
                         // data will safely cast to MessageList
                         MessageList messageList = (MessageList) data;
                         List<Message> messages = messageList.getMessages();
@@ -245,9 +249,10 @@ public class LivelinksSubscriber {
                         }
 
                         mEventInterface.onReceiveNewPost(messageList, mTopicSize);
-                        subscribe();
-                        break;
-                }
+                    }
+
+                    subscribe();
+                    break;
             }
         }
 
