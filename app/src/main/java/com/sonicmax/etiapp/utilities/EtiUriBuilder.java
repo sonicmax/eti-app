@@ -51,6 +51,7 @@ public class EtiUriBuilder {
                         .appendQueryParameter("filter", mValues.get("filter").toString());
                 break;
 
+            case "history":
             case "bookmarks":
                 builder.authority("boards.endoftheinter.net")
                         .appendPath("history.php");

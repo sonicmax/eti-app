@@ -7,24 +7,24 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-import com.sonicmax.etiapp.objects.Board;
+import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class BoardListAdapter extends BaseAdapter {
+public class BookmarkAdapter extends BaseAdapter {
 
-    private List<Board> boards = new ArrayList<>();
+    private List<Bookmark> boards = new ArrayList<>();
 
     private final Context context;
 
-    public BoardListAdapter(Context context) {
+    public BookmarkAdapter(Context context) {
         this.context = context;
     }
 
-    public void updateBoards(List<Board> boards) {
+    public void updateBoards(List<Bookmark> boards) {
         this.boards = boards;
         notifyDataSetChanged();
     }
@@ -40,7 +40,7 @@ public class BoardListAdapter extends BaseAdapter {
     }
 
     @Override
-    public Board getItem(int position) {
+    public Bookmark getItem(int position) {
         return boards.get(position);
     }
 
@@ -76,7 +76,7 @@ public class BoardListAdapter extends BaseAdapter {
 
         }
 
-        Board board = getItem(position);
+        Bookmark board = getItem(position);
         nameView.setText(board.getName());
 
         return convertView;

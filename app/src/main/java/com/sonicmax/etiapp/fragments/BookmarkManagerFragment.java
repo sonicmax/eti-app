@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,23 +13,20 @@ import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.activities.TopicListActivity;
-import com.sonicmax.etiapp.adapters.BoardListAdapter;
-import com.sonicmax.etiapp.loaders.BookmarkLoader;
-import com.sonicmax.etiapp.network.WebRequest;
-import com.sonicmax.etiapp.objects.Board;
-import com.sonicmax.etiapp.scrapers.BoardListScraper;
-import com.sonicmax.etiapp.utilities.AsyncLoader;
+import com.sonicmax.etiapp.adapters.BookmarkAdapter;
+import com.sonicmax.etiapp.loaders.UserInfoLoader;
+import com.sonicmax.etiapp.objects.Bookmark;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class BookmarkManagerFragment extends Fragment
-        implements BookmarkLoader.EventInterface {
+        implements UserInfoLoader.EventInterface {
 
-    private BoardListAdapter mBoardListAdapter;
+    private BookmarkAdapter mBookmarkAdapter;
     private ProgressDialog mDialog;
-    private BookmarkLoader mBookmarkLoader;
-    private List<Board> mBookmarks;
+    private UserInfoLoader mBookmarkLoader;
+    private List<Bookmark> mBookmarks;
 
     public BookmarkManagerFragment() {}
 
@@ -41,15 +36,13 @@ public class BookmarkManagerFragment extends Fragment
 
     @Override
     public void onAttach(Context context) {
-        mBoardListAdapter = new BoardListAdapter(context);
-        mBookmarkLoader = new BookmarkLoader(context, this);
+        mBookmarkAdapter = new BookmarkAdapter(context);
+        mBookmarkLoader = new UserInfoLoader(context, this);
         super.onAttach(context);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        final int LOAD_BOARDS = 0;
-
         if (savedInstanceState == null
                 || savedInstanceState.getParcelableArrayList("bookmarks") == null) {
 
@@ -57,13 +50,13 @@ public class BookmarkManagerFragment extends Fragment
             mDialog.setMessage("Getting bookmarks...");
             mDialog.show();
 
-            mBookmarkLoader.loadBookmarks();
+            mBookmarkLoader.loadUserInfo();
         }
 
         else {
             // Use bookmarks from savedInstanceState to populate adapter.
             mBookmarks = savedInstanceState.getParcelableArrayList("bookmarks");
-            mBoardListAdapter.updateBoards(mBookmarks);
+            mBookmarkAdapter.updateBoards(mBookmarks);
         }
 
         super.onCreate(savedInstanceState);
@@ -76,7 +69,7 @@ public class BookmarkManagerFragment extends Fragment
         View rootView = inflater.inflate(R.layout.fragment_bookmarks, container, false);
 
         ListView boardList = (ListView) rootView.findViewById(R.id.listview_boards);
-        boardList.setAdapter(mBoardListAdapter);
+        boardList.setAdapter(mBookmarkAdapter);
         boardList.setOnItemClickListener(boardClickHandler);
 
         return rootView;
@@ -86,7 +79,7 @@ public class BookmarkManagerFragment extends Fragment
     public void onSaveInstanceState(Bundle outState) {
         // Save list of boards so we can quickly restore fragment
         if (mBookmarks != null) {
-            ArrayList<Board> bookmarkArray = new ArrayList<>(mBookmarks);
+            ArrayList<Bookmark> bookmarkArray = new ArrayList<>(mBookmarks);
             outState.putParcelableArrayList("bookmarks", bookmarkArray);
         }
 
@@ -115,10 +108,10 @@ public class BookmarkManagerFragment extends Fragment
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
-    public void onLoadBookmarks(List<Board> bookmarks) {
+    public void onLoadBookmarks(List<Bookmark> bookmarks) {
         dismissDialog();
         mBookmarks = bookmarks;
-        mBoardListAdapter.updateBoards(bookmarks);
+        mBookmarkAdapter.updateBoards(bookmarks);
     }
 
     @Override
@@ -134,7 +127,7 @@ public class BookmarkManagerFragment extends Fragment
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            final Board target = mBoardListAdapter.getItem(position);
+            final Bookmark target = mBookmarkAdapter.getItem(position);
             Context context = getContext();
             Intent intent = new Intent(context, TopicListActivity.class);
             intent.putExtra("url", target.getUrl());

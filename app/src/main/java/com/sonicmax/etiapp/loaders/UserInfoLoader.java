@@ -6,45 +6,45 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 
 import com.sonicmax.etiapp.network.WebRequest;
-import com.sonicmax.etiapp.objects.Board;
-import com.sonicmax.etiapp.scrapers.BoardListScraper;
+import com.sonicmax.etiapp.objects.Bookmark;
+import com.sonicmax.etiapp.scrapers.UserInfoScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
 import java.util.List;
 
 /**
- * Scrapes list of user-created bookmarks from ETI.
+ * Scrapes user info from ETI. Uses history.php as it's the most reliable source
  */
-public class BookmarkLoader implements LoaderManager.LoaderCallbacks<Object> {
-    private final int LOAD_BOOKMARKS = 0;
+public class UserInfoLoader implements LoaderManager.LoaderCallbacks<Object> {
+    private final int LOAD_USER_INFO = 0;
 
     private Context mContext;
     private EventInterface mEventInterface;
     private LoaderManager mLoaderManager;
 
 
-    public BookmarkLoader (Context context, BookmarkLoader.EventInterface eventInterface) {
+    public UserInfoLoader(Context context, UserInfoLoader.EventInterface eventInterface) {
         mContext = context;
         mEventInterface = eventInterface;
         mLoaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
     }
 
     public interface EventInterface {
-        void onLoadBookmarks(List<Board> bookmarks);
+        void onLoadBookmarks(List<Bookmark> bookmarks);
         void onLoadFail();
     }
 
-    public void loadBookmarks() {
+    public void loadUserInfo() {
         // Prepare args for loader and scrape bookmarks from history.php
         // (using history.php because it will work even if tag server is broken)
         Bundle args = new Bundle();
         args.putString("method", "GET");
-        args.putString("type", "bookmarks");
+        args.putString("type", "history");
 
-        if (mLoaderManager.getLoader(LOAD_BOOKMARKS) == null) {
-            mLoaderManager.initLoader(LOAD_BOOKMARKS, args, this).forceLoad();
+        if (mLoaderManager.getLoader(LOAD_USER_INFO) == null) {
+            mLoaderManager.initLoader(LOAD_USER_INFO, args, this).forceLoad();
         } else {
-            mLoaderManager.restartLoader(LOAD_BOOKMARKS, args, this).forceLoad();
+            mLoaderManager.restartLoader(LOAD_USER_INFO, args, this).forceLoad();
         }
     }
 
@@ -57,18 +57,20 @@ public class BookmarkLoader implements LoaderManager.LoaderCallbacks<Object> {
         return new AsyncLoader(mContext, args) {
 
             @Override
-            public List<Board> loadInBackground() {
+            public List<Bookmark> loadInBackground() {
                 String html = new WebRequest(mContext, args).sendRequest();
-                return new BoardListScraper(mContext).scrapeBoards(html);
+                UserInfoScraper scraper = new UserInfoScraper(mContext);
+                scraper.setInput(html);
+                scraper.scrapeUserInfo();
+                return scraper.scrapeBookmarks();
             }
         };
     }
 
     public void onLoadFinished(android.support.v4.content.Loader<Object> loader, Object data) {
-
         if (data != null) {
-            // We can be sure that data will safely cast to List<Board>.
-            List<Board> bookmarks = (List<Board>) data;
+            // We can be sure that data will safely cast to List<Bookmark>.
+            List<Bookmark> bookmarks = (List<Bookmark>) data;
             mEventInterface.onLoadBookmarks(bookmarks);
         }
 

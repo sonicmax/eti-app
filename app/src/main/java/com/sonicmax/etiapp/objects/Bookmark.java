@@ -3,9 +3,8 @@ package com.sonicmax.etiapp.objects;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class Board implements Parcelable {
-
-    private final String LOG_TAG = Board.class.getSimpleName();
+public class Bookmark implements Parcelable {
+    private final String LOG_TAG = Bookmark.class.getSimpleName();
     private String name;
     private String url;
 
@@ -13,7 +12,7 @@ public class Board implements Parcelable {
      * @param name Name of board to be displayed - typically uses text() of anchor tag
      * @param url URL of board.
      */
-    public Board(String name, String url) {
+    public Bookmark(String name, String url) {
         this.name = name;
         this.url = url;
     }
@@ -26,7 +25,7 @@ public class Board implements Parcelable {
         return url;
     }
 
-    protected Board(Parcel in) {
+    protected Bookmark(Parcel in) {
         name = in.readString();
         url = in.readString();
     }
@@ -43,15 +42,15 @@ public class Board implements Parcelable {
     }
 
     @SuppressWarnings("unused")
-    public static final Parcelable.Creator<Board> CREATOR = new Parcelable.Creator<Board>() {
+    public static final Parcelable.Creator<Bookmark> CREATOR = new Parcelable.Creator<Bookmark>() {
         @Override
-        public Board createFromParcel(Parcel in) {
-            return new Board(in);
+        public Bookmark createFromParcel(Parcel in) {
+            return new Bookmark(in);
         }
 
         @Override
-        public Board[] newArray(int size) {
-            return new Board[size];
+        public Bookmark[] newArray(int size) {
+            return new Bookmark[size];
         }
     };
 }
