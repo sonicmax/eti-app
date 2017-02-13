@@ -2,10 +2,8 @@ package com.sonicmax.etiapp.scrapers;
 
 import android.content.Context;
 import android.net.Uri;
-import android.net.UrlQuerySanitizer;
 
 import com.sonicmax.etiapp.objects.Message;
-import com.sonicmax.etiapp.fragments.MessageListFragment;
 import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
@@ -38,7 +36,9 @@ public class MessageListScraper {
     public MessageList scrapeMessages(String html, boolean isFiltered) {
         final String DIVIDER = " | ";
         final String TRIMMED_DIVIDER = ")";
-        final String MONEY_BAG = "$ $";
+        final String ETI_MONEY_BAG = "$ $";
+        final String MONEY_BAG_EMOJI = "\uD83D\uDCB0";
+        final String SPACE = " ";
 
         Document document = Jsoup.parse(html);
 
@@ -73,9 +73,11 @@ public class MessageListScraper {
             Element messageTop = container.getElementsByClass("message-top").get(0);
             Element userElement = messageTop.child(1);
             int timestampIndex = 5;
+            boolean needsMoneyBags = false;
 
             // We need to check different node for username/timestamp if user bought money bags from ETI Shop
-            if (userElement.text().equals(MONEY_BAG)) {
+            if (userElement.text().equals(ETI_MONEY_BAG)) {
+                needsMoneyBags = true;
                 userElement = messageTop.child(2);
                 timestampIndex += 4;
             }
@@ -88,6 +90,10 @@ public class MessageListScraper {
             if (userElement.tagName().equals("a")) {
                 username = userElement.text();
                 timeStamp = ((TextNode) children.get(timestampIndex)).text().replace(DIVIDER, "");
+
+                if (needsMoneyBags) {
+                    username = MONEY_BAG_EMOJI + SPACE + username + SPACE + MONEY_BAG_EMOJI;
+                }
 
                 // If user has changed their name recently, the TextNode at timestampIndex refers to
                 // the divider following the "Formerly known as" section.
