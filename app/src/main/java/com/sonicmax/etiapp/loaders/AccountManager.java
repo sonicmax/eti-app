@@ -115,15 +115,10 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
                     args.putString("type", "url");
                     args.putString("url", response);
 
-                    Toaster.makeToast(mContext, "IP: " + response);
-
                     mLoaderManager.initLoader(STATUS_CHECK, args, this).forceLoad();
                     break;
 
                 case STATUS_CHECK:
-                    // FOR DEBUG ONLY
-                    Toaster.makeToast(mContext, "Status check response = " + response);
-
                     // Possible responses:
                     // "0"              Not logged in
                     // "1:username"     Logged in
