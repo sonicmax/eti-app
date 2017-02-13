@@ -75,7 +75,6 @@ public class MessageListFragment extends Fragment implements
     private MessageList mMessageList;
     private String mTitle;
     private int mCurrentPage;
-    private int mLastPage;
     private String mPrevPageUrl;
     private String mNextPageUrl;
 
@@ -222,22 +221,14 @@ public class MessageListFragment extends Fragment implements
         mLayoutManager.scrollToPosition(position);
     }
 
-    private int getTotalPosts(int lastPage) {
-
-            // Account for posts on previous pages & add current adapter count
+    private int getTotalPosts() {
         if (mCurrentPage > 1) {
-            int itemCount = mMessageListAdapter.getItemCount();
-            if (itemCount > 50) {
-                // Adapter is displaying "Continued on page..." button, which should
-                // not be included in the item count for this purpose
-                itemCount = 50;
-            }
-
-            return ((lastPage - 1) * 50) + itemCount;
+            // Account for posts on previous pages & add current adapter count
+            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getMessageCount();
         }
-
         else {
-            return mMessageListAdapter.getItemCount();
+
+            return mMessageListAdapter.getMessageCount();
         }
     }
 
@@ -288,7 +279,6 @@ public class MessageListFragment extends Fragment implements
         mCurrentPage = messageList.getPageNumber();
         mPrevPageUrl = messageList.getPrevPageUrl();
         mNextPageUrl = messageList.getNextPageUrl();
-        mLastPage = messageList.getLastPage();
 
         if (mNextPageUrl != null) {
             mMessageListAdapter.setNextPageFlag(true);
@@ -297,12 +287,10 @@ public class MessageListFragment extends Fragment implements
         mMessageListAdapter.replaceAllMessages(mMessages);
         mMessageListAdapter.setCurrentPage(mCurrentPage);
 
-        boolean isLastPage = mCurrentPage == mLastPage;
+        boolean isLastPage = mCurrentPage == mTopic.getLastPage(0);
 
         if (isLastPage && mLivelinksSubscriber == null) {
-            // Calculate total number of posts in topic to avoid bug where posts would be duplicated
-            // due to inaccurate total from topic list
-            final int totalPosts = getTotalPosts(mLastPage);
+            final int totalPosts = getTotalPosts();
 
             mLivelinksSubscriber = new LivelinksSubscriber(getContext(), this, mTopic.getId(),
                     DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT);
@@ -362,9 +350,8 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onReceiveNewPost(MessageList messageList, int position) {
-        // Calculate total number of posts in topic to avoid bug where posts would be duplicated
-        // due to inaccurate total from topic list
-        final int totalPosts = getTotalPosts(mLastPage);
+        final int POSTS_PER_PAGE = 50;
+        final int totalPosts = getTotalPosts();
 
         // Update mNextPageUrl, in case new page was created
         mNextPageUrl = messageList.getNextPageUrl();
@@ -375,7 +362,6 @@ public class MessageListFragment extends Fragment implements
         }
 
         List<Message> newMessages = messageList.getMessages();
-        mMessageList.addNewMessages(newMessages);
 
         int sizeOfNewMessages = newMessages.size();
         // We have to set position manually because count from moremessages.php will be incorrect
