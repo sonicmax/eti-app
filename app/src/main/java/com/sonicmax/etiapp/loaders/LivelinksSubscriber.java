@@ -10,6 +10,7 @@ import android.util.Log;
 
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Message;
+import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
@@ -79,7 +80,7 @@ public class LivelinksSubscriber {
     }
 
     public interface EventInterface {
-        void onReceiveNewPost(List<Message> messages, int position);
+        void onReceiveNewPost(MessageList messageList, int position);
         void onReceivePrivateMessage(int unreadMessages);
     }
 
@@ -208,7 +209,7 @@ public class LivelinksSubscriber {
                     return new AsyncLoader(mContext, args) {
 
                         @Override
-                        public List<Message> loadInBackground() {
+                        public MessageList loadInBackground() {
                             String response = new WebRequest(mContext, args).sendRequest();
                             // Can't parse HTML unless we remove these characters
                             String escapedResponse = response.replace("\\/", "/")
@@ -235,14 +236,15 @@ public class LivelinksSubscriber {
                         break;
 
                     case FETCH_MESSAGE:
-                        // data will safely cast to List<Message>
-                        List<Message> messages = (List<Message>) data;
+                        // data will safely cast to MessageList
+                        MessageList messageList = (MessageList) data;
+                        List<Message> messages = messageList.getMessages();
 
                         for (Message message : messages) {
                             message.setAnimationFlag(true);
                         }
 
-                        mEventInterface.onReceiveNewPost(messages, mTopicSize);
+                        mEventInterface.onReceiveNewPost(messageList, mTopicSize);
                         subscribe();
                         break;
                 }

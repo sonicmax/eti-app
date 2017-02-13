@@ -6,6 +6,7 @@ import android.net.UrlQuerySanitizer;
 
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.fragments.MessageListFragment;
+import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import org.jsoup.Jsoup;
@@ -22,13 +23,19 @@ public class MessageListScraper {
 
     private Context mContext;
     private String mUrl;
+    private String mPrevPageUrl;
+    private String mNextPageUrl;
 
     public MessageListScraper(Context context, String url) {
         this.mContext = context;
         this.mUrl = url;
     }
 
-    public List<Message> scrapeMessages(String html, boolean isFiltered) {
+    public void setUrl(String url) {
+        mUrl = url;
+    }
+
+    public MessageList scrapeMessages(String html, boolean isFiltered) {
         final String DIVIDER = " | ";
         final String TRIMMED_DIVIDER = ")";
         final String MONEY_BAG = "$ $";
@@ -46,12 +53,16 @@ public class MessageListScraper {
 
         // Get current page number
         int currentPage = getCurrentPage(mUrl);
+        int lastPage = 1;
 
         // Check anchors of infobar to get prev/next page URLs (not found in moremessages.php)
         Elements infobarClass = document.getElementsByClass("infobar");
         if (infobarClass.size() > 0) {
             Element infobar = infobarClass.get(0);
             getPageUrls(infobar);
+
+            Element pageInfobar = infobarClass.get(1);
+            lastPage = getLastPage(pageInfobar);
         }
 
         // Scrape posts
@@ -116,9 +127,7 @@ public class MessageListScraper {
             messages.add(message);
         }
 
-        MessageListFragment.currentPage = currentPage;
-
-        return messages;
+        return new MessageList(messages, currentPage, lastPage, mPrevPageUrl, mNextPageUrl);
     }
 
     private int getCurrentPage(String url) {
@@ -139,19 +148,32 @@ public class MessageListScraper {
 
         if (secondAnchor.text().equals("Previous Page")) {
             // Could be anywhere from pages 3-101
-            MessageListFragment.prevPageUrl = HTTPS + secondAnchor.attr("href");
-            MessageListFragment.nextPageUrl = HTTPS + infobar.getElementsByTag("a").get(2).attr("href");
+            mPrevPageUrl = HTTPS + secondAnchor.attr("href");
+            mNextPageUrl = HTTPS + infobar.getElementsByTag("a").get(2).attr("href");
 
         }
         else if (secondAnchor.text().equals("Next Page")) {
             // Page 2
-            MessageListFragment.prevPageUrl = HTTPS + infobar.getElementsByTag("a").get(0).attr("href");
-            MessageListFragment.nextPageUrl = HTTPS + secondAnchor.attr("href");
+            mPrevPageUrl = HTTPS + infobar.getElementsByTag("a").get(0).attr("href");
+            mNextPageUrl = HTTPS + secondAnchor.attr("href");
         }
         else {
             // Page 1
-            MessageListFragment.prevPageUrl = null;
-            MessageListFragment.nextPageUrl = HTTPS + infobar.getElementsByTag("a").get(0).attr("href");
+            mPrevPageUrl = null;
+            mNextPageUrl = HTTPS + infobar.getElementsByTag("a").get(0).attr("href");
+        }
+    }
+
+    private int getLastPage(Element infobar) {
+        Elements anchors = infobar.getElementsByTag("a");
+        int size = anchors.size();
+        if (size > 0) {
+            Element lastPageAnchor = anchors.get(size - 1);
+            return Integer.parseInt(lastPageAnchor.html());
+        }
+        else {
+            // Topic is on first page
+            return 1;
         }
     }
 

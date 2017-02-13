@@ -34,6 +34,7 @@ import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.MessageListLoader;
 import com.sonicmax.etiapp.loaders.LivelinksSubscriber;
 import com.sonicmax.etiapp.objects.Message;
+import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.network.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
@@ -72,10 +73,10 @@ public class MessageListFragment extends Fragment implements
     private LivelinksSubscriber mLivelinksSubscriber;
 
     private String mTitle;
-
-    public static String prevPageUrl;
-    public static String nextPageUrl;
-    public static int currentPage;
+    private int mCurrentPage;
+    private int mLastPage;
+    private String mPrevPageUrl;
+    private String mNextPageUrl;
 
     public MessageListFragment() {}
 
@@ -105,7 +106,7 @@ public class MessageListFragment extends Fragment implements
 
         else {
             mTopic = savedInstanceState.getParcelable("topic");
-            currentPage = savedInstanceState.getInt("page");
+            mCurrentPage = savedInstanceState.getInt("page");
             mMessages = savedInstanceState.getParcelableArrayList("messages");
 
             mMessageListAdapter.replaceAllMessages(mMessages);
@@ -186,7 +187,7 @@ public class MessageListFragment extends Fragment implements
         }
 
         outState.putParcelable("topic", mTopic);
-        outState.putInt("page", currentPage);
+        outState.putInt("page", mCurrentPage);
 
         super.onSaveInstanceState(outState);
     }
@@ -209,11 +210,20 @@ public class MessageListFragment extends Fragment implements
         mLayoutManager.scrollToPosition(position);
     }
 
-    private int getTotalPosts() {
-        if (currentPage > 1) {
+    private int getTotalPosts(int lastPage) {
+
             // Account for posts on previous pages & add current adapter count
-            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getItemCount();
+        if (mCurrentPage > 1) {
+            int itemCount = mMessageListAdapter.getItemCount();
+            if (itemCount > 50) {
+                // Adapter is displaying "Continued on page..." button, which should
+                // not be included in the item count for this purpose
+                itemCount = 50;
+            }
+
+            return ((lastPage - 1) * 50) + itemCount;
         }
+
         else {
             return mMessageListAdapter.getItemCount();
         }
@@ -241,7 +251,7 @@ public class MessageListFragment extends Fragment implements
         mDialog.setMessage("Loading messages...");
         mDialog.show();
 
-        currentPage = getActivity().getIntent().getIntExtra("page", 1);
+        mCurrentPage = getActivity().getIntent().getIntExtra("page", 1);
         mMessageListLoader.load(args, id);
     }
 
@@ -260,17 +270,26 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
-    public void onLoadMessageList(List<Message> messages) {
-        mMessages = messages;
-        mMessageListAdapter.replaceAllMessages(mMessages);
-        mMessageListAdapter.setCurrentPage(currentPage);
+    public void onLoadMessageList(MessageList messageList) {
+        mMessages = messageList.getMessages();
+        mCurrentPage = messageList.getPageNumber();
+        mPrevPageUrl = messageList.getPrevPageUrl();
+        mNextPageUrl = messageList.getNextPageUrl();
+        mLastPage = messageList.getLastPage();
 
-        boolean isLastPage = currentPage == mTopic.getLastPage(0);
+        if (mNextPageUrl != null) {
+            mMessageListAdapter.setNextPageFlag();
+        }
+
+        mMessageListAdapter.replaceAllMessages(mMessages);
+        mMessageListAdapter.setCurrentPage(mCurrentPage);
+
+        boolean isLastPage = mCurrentPage == mLastPage;
 
         if (isLastPage && mLivelinksSubscriber == null) {
             // Calculate total number of posts in topic to avoid bug where posts would be duplicated
             // due to inaccurate total from topic list
-            final int totalPosts = getTotalPosts();
+            final int totalPosts = getTotalPosts(mLastPage);
 
             mLivelinksSubscriber = new LivelinksSubscriber(getContext(), this, mTopic.getId(),
                     DEBUG_USER_ID, totalPosts, DEBUG_INBOX_COUNT);
@@ -316,10 +335,10 @@ public class MessageListFragment extends Fragment implements
     public void onRequestNextPage() {
         final int FIRST_POST = 0;
 
-        if (nextPageUrl != null) {
+        if (mNextPageUrl != null) {
             mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
-            Toaster.makeToast(getContext(), "Page " + currentPage);
+            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
+            Toaster.makeToast(getContext(), "Page " + mCurrentPage);
             scrollToPosition(FIRST_POST);
         }
     }
@@ -329,11 +348,19 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
-    public void onReceiveNewPost(List<Message> newMessages, int position) {
+    public void onReceiveNewPost(MessageList messageList, int position) {
         // Calculate total number of posts in topic to avoid bug where posts would be duplicated
         // due to inaccurate total from topic list
-        final int totalPosts = getTotalPosts();
+        final int totalPosts = getTotalPosts(mLastPage);
 
+        // Update mNextPageUrl, in case new page was created
+        mNextPageUrl = messageList.getNextPageUrl();
+
+        if (mNextPageUrl != null) {
+            mMessageListAdapter.setNextPageFlag();
+        }
+
+        List<Message> newMessages = messageList.getMessages();
         int sizeOfNewMessages = newMessages.size();
         // We have to set position manually because count from moremessages.php will be incorrect
         for (int i = 0; i < sizeOfNewMessages; i++) {
@@ -531,17 +558,17 @@ public class MessageListFragment extends Fragment implements
 
         @Override
         public void onSwipeLeft() {
-            if (nextPageUrl != null) {
-                loadMessageList(buildArgsForLoader(nextPageUrl, false), LOAD_MESSAGE);
-                Toaster.makeToast(getContext(), "Page " + currentPage);
+            if (mNextPageUrl != null) {
+                loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
+                Toaster.makeToast(getContext(), "Page " + mCurrentPage);
             }
         }
 
         @Override
         public void onSwipeRight() {
-            if (prevPageUrl != null) {
-                loadMessageList(buildArgsForLoader(prevPageUrl, false), LOAD_MESSAGE);
-                Toaster.makeToast(getContext(), "Page " + currentPage);
+            if (mPrevPageUrl != null) {
+                loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
+                Toaster.makeToast(getContext(), "Page " + mCurrentPage);
             }
         }
     };

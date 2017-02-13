@@ -50,6 +50,7 @@ public class MessageListAdapter extends SelectableAdapter {
     private int mMaxWidth;
     private int mCurrentPage;
     private List<Message> mMessages;
+    private boolean mHasNextPage = false;
 
     /**
      * Adapter to display Message objects in a RecyclerView.
@@ -147,6 +148,10 @@ public class MessageListAdapter extends SelectableAdapter {
         mCurrentPage = page;
     }
 
+    public void setNextPageFlag() {
+        mHasNextPage = true;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Methods which modify UI elements
     ///////////////////////////////////////////////////////////////////////////
@@ -232,7 +237,7 @@ public class MessageListAdapter extends SelectableAdapter {
 
     @Override
     public void onBindViewHolder(final MessageViewHolder viewHolder, final int position) {
-        if (position == mMessages.size()) {
+        if (mHasNextPage && position == mMessages.size()) {
             Resources resources = mContext.getResources();
             String nextPageText = resources.getString(R.string.continued_next_page) + " " + (mCurrentPage + 1);
             viewHolder.nextPageButton.setText(nextPageText);

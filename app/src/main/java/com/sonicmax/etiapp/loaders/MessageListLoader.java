@@ -8,6 +8,7 @@ import android.support.v4.content.Loader;
 
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Message;
+import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
@@ -22,17 +23,12 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     private EventInterface mEventInterface;
     private LoaderManager mLoaderManager;
     private MessageListScraper mScraper;
-    private String mUrl;
 
     public MessageListLoader (Context context, MessageListLoader.EventInterface eventInterface, String url) {
         mContext = context;
         mEventInterface = eventInterface;
         mLoaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
         mScraper = new MessageListScraper(context, url);
-    }
-
-    public void setUrl(String url) {
-        mUrl = url;
     }
 
     public void load(Bundle args, int id) {
@@ -45,7 +41,7 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     }
 
     public interface EventInterface {
-        void onLoadMessageList(List<Message> messages);
+        void onLoadMessageList(MessageList messageList);
     }
 
 
@@ -57,9 +53,10 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
 
         return new AsyncLoader(mContext, args) {
             @Override
-            public List<Message> loadInBackground() {
+            public MessageList loadInBackground() {
 
                 String html = new WebRequest(mContext, args).sendRequest();
+                mScraper.setUrl(args.getString("url"));
                 return mScraper.scrapeMessages(html, args.getBoolean("filter"));
             }
         };
@@ -68,9 +65,9 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     @Override
     public void onLoadFinished(Loader<Object> loader, Object data) {
         if (data != null) {
-            // We can be sure that data will safely cast to List<Message>.
-            List<Message> messages = (List<Message>) data;
-            mEventInterface.onLoadMessageList(messages);
+            // We can be sure that data will safely cast to MessageList.
+            MessageList messageList = (MessageList) data;
+            mEventInterface.onLoadMessageList(messageList);
         }
 
         else {
