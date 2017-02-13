@@ -148,8 +148,8 @@ public class MessageListAdapter extends SelectableAdapter {
         mCurrentPage = page;
     }
 
-    public void setNextPageFlag() {
-        mHasNextPage = true;
+    public void setNextPageFlag(boolean value) {
+        mHasNextPage = value;
     }
 
     ///////////////////////////////////////////////////////////////////////////
