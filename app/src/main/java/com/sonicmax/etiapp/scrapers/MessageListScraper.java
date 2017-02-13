@@ -31,6 +31,8 @@ public class MessageListScraper {
     public List<Message> scrapeMessages(String html, boolean isFiltered) {
         final String DIVIDER = " | ";
         final String TRIMMED_DIVIDER = ")";
+        final String MONEY_BAG = "$ $";
+
         Document document = Jsoup.parse(html);
 
         // Get hidden token and signature from quickpost elements, found in all non-archived topics
@@ -59,6 +61,13 @@ public class MessageListScraper {
             Element container = containers.get(i);
             Element messageTop = container.getElementsByClass("message-top").get(0);
             Element userElement = messageTop.child(1);
+            int timestampIndex = 5;
+
+            // We need to check different node for username/timestamp if user bought money bags from ETI Shop
+            if (userElement.text().equals(MONEY_BAG)) {
+                userElement = messageTop.child(2);
+                timestampIndex += 4;
+            }
 
             // Get username and timestamp. These will be in different places depending on whether
             // we are in an anonymous topic or not
@@ -67,13 +76,13 @@ public class MessageListScraper {
 
             if (userElement.tagName().equals("a")) {
                 username = userElement.text();
-                timeStamp = ((TextNode) children.get(5)).text().replace(DIVIDER, "");
+                timeStamp = ((TextNode) children.get(timestampIndex)).text().replace(DIVIDER, "");
 
-                // If user has changed their name recently, the TextNode at index 5 refers to
+                // If user has changed their name recently, the TextNode at timestampIndex refers to
                 // the divider following the "Formerly known as" section.
                 // See: https://github.com/sonicmax/eti-app/issues/18
                 if (timeStamp.equals(TRIMMED_DIVIDER)) {
-                    timeStamp = ((TextNode) children.get(7)).text().replace(DIVIDER, "");
+                    timeStamp = ((TextNode) children.get(timestampIndex + 2)).text().replace(DIVIDER, "");
                 }
             }
 
