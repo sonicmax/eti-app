@@ -1,5 +1,6 @@
 package com.sonicmax.etiapp.activities;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -34,7 +35,8 @@ public class LoginActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            return true;
+            Intent intent = new Intent(this, SettingsActivity.class);
+            this.startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);

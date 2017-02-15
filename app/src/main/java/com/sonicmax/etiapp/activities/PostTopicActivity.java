@@ -22,7 +22,6 @@ public class PostTopicActivity extends AppCompatActivity implements AccountManag
         setContentView(R.layout.activity_new_topic);
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -38,7 +37,8 @@ public class PostTopicActivity extends AppCompatActivity implements AccountManag
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            return true;
+            Intent intent = new Intent(this, SettingsActivity.class);
+            this.startActivity(intent);
         }
         else if (id == R.id.action_logout) {
             new AccountManager(this, this).requestLogout();

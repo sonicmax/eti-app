@@ -12,7 +12,7 @@
 
     <string name="title_activity_main">Topic List</string>
     <string name="title_activity_message_list">Message List</string>
-    <string name="title_activity_board_list">Board List</string>
+    <string name="title_activity_board_list">Bookmarks</string>
 
     <string name="post_topic">Post Topic</string>
     <string name="post_message">Post Message</string>
@@ -39,4 +39,18 @@
     <string name="bookmarks">Bookmarks</string>
     <string name="drawer_open">Open bookmarks</string>
     <string name="drawer_close">Close bookmarks</string>
+
+    <string name="preferences_general">General</string>
+    <string name="preferences_topics">Topics</string>
+
+    <string name="preferences_reload_bookmarks">Reload bookmarks</string>
+    <string name="preferences_clear_cache">Clear cache</string>
+
+    <string name="preferences_ignorator_enable">Enable ignorator</string>
+    <string name="preferences_ignorator_summary">Hides topics created by users defined below</string>
+
+    <string name="preferences_ignorator_list">Users to ignore:</string>
+    <string name="preferences_ignorator_default"> </string>
+    <string name="preferences_ignorator_message">Enter comma-separated list of usernames to ignore:</string>
+
 </resources>

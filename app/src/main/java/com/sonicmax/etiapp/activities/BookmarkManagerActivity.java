@@ -37,6 +37,8 @@ public class BookmarkManagerActivity extends AppCompatActivity implements Accoun
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 

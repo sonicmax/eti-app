@@ -35,7 +35,8 @@ public class PostMessageActivity extends AppCompatActivity implements AccountMan
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            return true;
+            Intent intent = new Intent(this, SettingsActivity.class);
+            this.startActivity(intent);
         }
         else if (id == R.id.action_logout) {
             new AccountManager(this, this).requestLogout();

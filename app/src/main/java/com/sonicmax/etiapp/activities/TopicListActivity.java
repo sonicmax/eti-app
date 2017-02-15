@@ -115,7 +115,9 @@ public class TopicListActivity extends AppCompatActivity implements AccountManag
         else {
             switch (id) {
                 case R.id.action_settings:
-                    return true;
+                    Intent intent = new Intent(this, SettingsActivity.class);
+                    this.startActivity(intent);
+                    break;
 
                 case R.id.action_logout:
                     new AccountManager(this, this).requestLogout();
