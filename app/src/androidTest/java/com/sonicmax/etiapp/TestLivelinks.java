@@ -13,17 +13,21 @@ import java.math.BigInteger;
 public class TestLivelinks extends AndroidTestCase {
     // Use your own topic/user ID for following variables. Get payload values by checking livelinks
     // request payload for given topic/user ID in your browser.
-    public final String TOPIC_ID = "9229536";
-    public final String TOPIC_URL = "https://boards.endoftheinter.net/showmessages.php?topic=9299399";
-    public final String USER_ID = "5599";
-    public final long PAYLOAD_TOPIC_KEY = 144115188085085408L;
-    public final long PAYLOAD_INBOX_KEY = 72057594037933535L;
+    private final String TOPIC_ID = "9229536";
+    private final String THREAD_ID = "2116125";
+    private final String TOPIC_URL = "https://boards.endoftheinter.net/showmessages.php?topic=9299399";
+    private final String USER_ID = "5599";
+
+    private final long PAYLOAD_TOPIC_KEY = 144115188085085408L;
+    private final long PAYLOAD_THREAD_KEY = 360287970191755805L;
+    private final long PAYLOAD_INBOX_KEY = 72057594037933535L;
+
     private final LivelinksSubscriber mLivelinks;
 
     private int topicLength = 0;
 
     public TestLivelinks() {
-        this.mLivelinks = new LivelinksSubscriber(getContext(), TOPIC_ID, USER_ID, 1, 0);
+        this.mLivelinks = new LivelinksSubscriber(TOPIC_ID, USER_ID, 1, 0);
     }
 
     /**
@@ -58,6 +62,22 @@ public class TestLivelinks extends AndroidTestCase {
 
             Log.d(LOG_TAG, "Expected: " + BigInteger.valueOf(PAYLOAD_INBOX_KEY).toString(2)
                     + "\n Generated: " + inboxPayload.toString(2));
+
+            throw new AssertionError();
+
+        }
+    }
+
+    public void testThreadPayloadGeneration() {
+        final String LOG_TAG = "testThreadPayloadGeneration";
+        LivelinksSubscriber subscriber = new LivelinksSubscriber(THREAD_ID, USER_ID, 1, 0);
+
+        BigInteger topicPayload = subscriber.getThreadPayload();
+
+        if (BuildConfig.DEBUG && !(topicPayload.equals(BigInteger.valueOf(PAYLOAD_THREAD_KEY)))) {
+
+            Log.d(LOG_TAG, "Expected: " + BigInteger.valueOf(PAYLOAD_TOPIC_KEY).toString(2)
+                    + "\nGenerate: " + topicPayload.toString(2));
 
             throw new AssertionError();
 
