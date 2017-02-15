@@ -292,7 +292,8 @@ public class LivelinksSubscriber {
                             // Can't parse HTML unless we remove these characters
                             String escapedResponse = response.replace("\\/", "/")
                                     .replace("\\\"", "\"")
-                                    .replace("\\n", "");
+                                    .replace("\\n", "")
+                                    .replace("\\\\/", "\\/");
 
                             return mScraper.scrapeMessages(escapedResponse, false);
                         }
