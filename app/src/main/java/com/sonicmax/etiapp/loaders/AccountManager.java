@@ -128,8 +128,11 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
                     }
                     else {
                         // Use stored cookies to get board list and start activity
-                        intent = new Intent(mContext, BookmarkManagerActivity.class);
-                        intent.putExtra("title", "ETI");
+                        String firstBookmarkName = SharedPreferenceManager.getString(mContext, "bookmark_names0");
+                        String firstBookmarkUrl = SharedPreferenceManager.getString(mContext, "bookmark_urls0");
+                        intent = new Intent(mContext, TopicListActivity.class);
+                        intent.putExtra("boardname", firstBookmarkName);
+                        intent.putExtra("url", firstBookmarkUrl);
                     }
 
                     break;
