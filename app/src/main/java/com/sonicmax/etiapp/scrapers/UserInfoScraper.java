@@ -28,9 +28,7 @@ public class UserInfoScraper {
 
     public void scrapeUserInfo() {
         scrapeUserId();
-        if (SharedPreferenceManager.getInt(mContext, "inbox_count") == -1) {
-            SharedPreferenceManager.putInt(mContext, "inbox_count", 0);
-        }
+        scrapePmCount();
     }
 
     public void setInput(String html) {
@@ -71,26 +69,31 @@ public class UserInfoScraper {
         return boards;
     }
 
-    public void scrapeUserId() {
-        Element userbar = mDocument.getElementsByClass("userbar").get(0);
+    private void scrapeUserId() {
+        Elements userbarClass = mDocument.getElementsByClass("userbar");
+        if (userbarClass.size() > 0) {
+            Element userbar = userbarClass.get(0);
         Element profileAnchor = userbar.getElementsByTag("a").get(0);
         String userId = profileAnchor.attr("href").replaceAll("\\D+", "");
         SharedPreferenceManager.putString(mContext, "user_id", userId);
     }
+    }
 
-    public void scrapePmCount() {
-        Element userbar = mDocument.getElementsByClass("userbar").get(0);
+    private void scrapePmCount() {
+        Elements userbarClass = mDocument.getElementsByClass("userbar");
+        if (userbarClass.size() > 0) {
+            Element userbar = userbarClass.get(0);
         Element pmSpan = userbar.getElementById("userbar_pms");
 
         int count;
         if (pmSpan.attr("style").equals("display:none")) {
             count = 0;
-        }
-        else {
+            } else {
             count = Integer.parseInt(pmSpan.text().replaceAll("\\D+", ""));
         }
 
         SharedPreferenceManager.putInt(mContext, "inbox_count", count);
+    }
     }
 
 }
