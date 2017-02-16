@@ -92,6 +92,7 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
                         } else {
                             mInternalServerError = false;
                             return new TopicListScraper(getContext()).scrapeTopics(html);
+                            return new TopicListScraper(getContext(), args.getString("url")).scrapeTopics(html);
                         }
                     }
                 };
