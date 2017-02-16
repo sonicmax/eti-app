@@ -256,36 +256,43 @@ public class SupportMessageBuilder extends Builder {
         // Kludgy fix to make sure that QuoteBackgroundSpan is aligned with top of CustomQuoteSpan
         output.append(NEWLINE);
 
+        String username;
+
         if (!quote.attr("msgid").equals("")) {
             // Check message-top element for username
-            Element messageTop = quote.getElementsByClass("message-top").get(0);
-            Element userAnchor = messageTop.getElementsByTag("a").get(0);
-            String username;
-            if (!userAnchor.text().equals(QUOTE_ARROW)) {
-                // Get username from anchor tag
-                username = userAnchor.text();
+            Elements messageTops = quote.getElementsByClass("message-top");
+            if (messageTops.size() > 0) {
+                Element messageTop = messageTops.get(0);
+                Element userAnchor = messageTop.getElementsByTag("a").get(0);
+
+                if (!userAnchor.text().equals(QUOTE_ARROW)) {
+                    // Get username from anchor tag
+                    username = userAnchor.text();
+                } else {
+                    // Get human number from text of message-top
+                    Pattern p = Pattern.compile("(Human #)\\d+");
+                    Matcher m = p.matcher(messageTop.text());
+
+                    if (m.find()) {
+                        username = m.group(0);
+                    } else {
+                        username = "Human";
+                    }
+                }
+
+                output.append(username);
+                output.setSpan(
+                        new QuoteBackgroundSpan(LIGHT_GREY, mQuoteDepth),
+                        output.length() - username.length(),
+                        output.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                output.append(NEWLINE);
             }
+
             else {
-                // Get human number from text of message-top
-                Pattern p = Pattern.compile("(Human #)\\d+");
-                Matcher m = p.matcher(messageTop.text());
-
-                if (m.find()) {
-                    username = m.group(0);
-                }
-                else {
-                    username = "Human";
-                }
+                // Inside PM thread - don't append username header to quote.
             }
-
-            output.append(username);
-            output.setSpan(
-                    new QuoteBackgroundSpan(LIGHT_GREY, mQuoteDepth),
-                    output.length() - username.length(),
-                    output.length(),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            output.append(NEWLINE);
         }
 
         // Use quote depth to determine which alpha value to use for background colour.
