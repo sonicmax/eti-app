@@ -105,8 +105,14 @@ public class Topic implements Parcelable {
     public String getId() {
 
         Uri uri = Uri.parse(mUrl);
-        return uri.getQueryParameter("topic");
-
+        String topic = uri.getQueryParameter("topic");
+        if (topic != null) {
+            return topic;
+        }
+        else {
+            // Inbox thread - return thread parameter instead
+            return uri.getQueryParameter("thread");
+        }
     }
 
     protected Topic(Parcel in) {
