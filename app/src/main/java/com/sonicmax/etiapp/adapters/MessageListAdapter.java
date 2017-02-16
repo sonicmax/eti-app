@@ -13,12 +13,14 @@ import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
@@ -31,6 +33,7 @@ import com.sonicmax.etiapp.ui.SupportMessageBuilder;
 import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 import com.sonicmax.etiapp.utilities.ImageCache;
 import com.sonicmax.etiapp.utilities.ImageLoaderQueue;
+import com.squareup.picasso.Picasso;
 
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +53,11 @@ public class MessageListAdapter extends SelectableAdapter {
     private int mMaxWidth;
     private int mCurrentPage;
     private List<Message> mMessages;
+
+    // For inbox threads:
+    private boolean mIsInboxThread = false;
+    private String mSelf;
+
     private boolean mHasNextPage = false;
 
     /**
@@ -159,6 +167,15 @@ public class MessageListAdapter extends SelectableAdapter {
         mHasNextPage = value;
     }
 
+    public void setInboxThreadFlag(boolean value) {
+        mIsInboxThread = value;
+    }
+
+    public void setSelf(String name) {
+        mSelf = name;
+    }
+
+
     ///////////////////////////////////////////////////////////////////////////
     // Methods which modify UI elements
     ///////////////////////////////////////////////////////////////////////////
@@ -171,6 +188,7 @@ public class MessageListAdapter extends SelectableAdapter {
         private TextView postNumberView;
         private TextView messageView;
         private Button nextPageButton;
+        private ImageView avatarView;
 
         public MessageViewHolder(View view) {
             super(view);
@@ -185,6 +203,10 @@ public class MessageListAdapter extends SelectableAdapter {
                 timeView = (TextView) view.findViewById(R.id.list_item_time);
                 postNumberView = (TextView) view.findViewById(R.id.list_item_count);
                 messageView = (TextView) view.findViewById(R.id.list_item_message_body);
+
+                if (mIsInboxThread) {
+                    avatarView = (ImageView) view.findViewById(R.id.list_item_avatar);
+                }
 
                 // Set MaxCardElevation to 6 so we can increase it dynamically when selecting cards
                 cardView.setMaxCardElevation(6);
@@ -216,30 +238,40 @@ public class MessageListAdapter extends SelectableAdapter {
     }
 
     /**
-     * If adapter contains 50 posts, we want to display next_page_button as the 51st item
+     * Returns layout ID for given item position.
+     * PM inbox threads use a different layout to message lists.
+     *
+     * @param position Position of message in adapter
+     * @return Layout ID
      */
+
     @Override
     public int getItemViewType(int position) {
-        return (position == 50) ? R.layout.next_page_button : R.layout.list_item_message;
+        if (position == 50) {
+            return R.layout.next_page_button;
+        }
+
+        else {
+            if (mIsInboxThread) {
+                if (mMessages.get(position).getUser().equals(mSelf)) {
+                    return R.layout.list_pm_thread_self;
+                }
+                else {
+                    return R.layout.list_pm_thread_partner;
+                }
+            }
+
+            else {
+                return R.layout.list_item_message;
+            }
+        }
     }
 
     @Override
     public MessageViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
-        View itemView;
-
-        if (viewType == R.layout.list_item_message) {
-            itemView = LayoutInflater.
-                    from(viewGroup.getContext()).
-                    inflate(R.layout.list_item_message, viewGroup, false);
-        }
-
-        else {
-            itemView = LayoutInflater.
-                    from(viewGroup.getContext()).
-                    inflate(R.layout.next_page_button, viewGroup, false);
-        }
-
-        return new MessageViewHolder(itemView);
+        return new MessageViewHolder(LayoutInflater.
+                from(viewGroup.getContext()).
+                inflate(viewType, viewGroup, false));
     }
 
     @Override
@@ -259,6 +291,12 @@ public class MessageListAdapter extends SelectableAdapter {
 
         else {
             Message message = getItem(position);
+
+            if (viewHolder.messageView == null) {
+                // Something went wrong
+                Log.v("MessageListAdapter", "ViewHolder not populated at position " + position);
+                return;
+            }
 
             final SpannableStringBuilder messageSpan = mMessageBuilder.buildMessage(message.getHtml());
             viewHolder.messageView.setText(messageSpan);
@@ -306,6 +344,10 @@ public class MessageListAdapter extends SelectableAdapter {
             viewHolder.timeView.setText(mTimestampBuilder.getFuzzyTimestamp(message.getTimestamp()));
             viewHolder.postNumberView.setText(message.getPosition());
 
+            if (mIsInboxThread) {
+                displayAvatar(message, viewHolder.avatarView);
+            }
+
             if (isSelected(position)) {
                 // Increase card elevation in accordance with design guidelines
                 viewHolder.cardView.setCardBackgroundColor(FG_GREY);
@@ -318,7 +360,18 @@ public class MessageListAdapter extends SelectableAdapter {
 
             // Animate new posts as they are added to adapter
             if (message.needsAnimation()) {
-                slideInFromRight(viewHolder.cardView);
+                if (mIsInboxThread) {
+                    if (message.getUser().equals(mSelf)) {
+                        slideInFromRight(viewHolder.cardView);
+                    }
+                    else {
+                        slideInFromLeft(viewHolder.cardView);
+                    }
+                }
+                else {
+                    slideInFromRight(viewHolder.cardView);
+                }
+
                 message.setAnimationFlag(false);
             }
         }
@@ -348,16 +401,32 @@ public class MessageListAdapter extends SelectableAdapter {
         return bitmapDrawable;
     }
 
-    /**
-     * Slides given view in from right of screen.
-     * Used to animate new livelink posts as they are added to adapter
-     *
-     * @param view View to be animated
-     */
+    private void displayAvatar(Message message, ImageView avatarView) {
+        if (message.getAvatarUrl() != null) {
+            Picasso.with(mContext)
+                    .load(message.getAvatarUrl())
+                    .resize(100, 100)
+                    .centerInside()
+                    .into(avatarView);
+        }
+
+        else {
+            // User has no avatar
+            Picasso.with(mContext)
+                    .load(R.drawable.unknown_avatar)
+                    .resize(100, 100)
+                    .centerInside()
+                    .into(avatarView);
+        }
+    }
+
     private void slideInFromRight(View view) {
         Animation animation = AnimationUtils.loadAnimation(mContext, R.anim.slide_in_from_right);
         view.startAnimation(animation);
     }
 
-
+    private void slideInFromLeft(View view) {
+        Animation animation = AnimationUtils.loadAnimation(mContext, R.anim.slide_in_from_left);
+        view.startAnimation(animation);
+    }
 }

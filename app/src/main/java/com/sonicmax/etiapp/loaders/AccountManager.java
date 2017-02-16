@@ -12,6 +12,7 @@ import android.util.Log;
 import com.sonicmax.etiapp.activities.BookmarkManagerActivity;
 import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.network.LoginScriptBuilder;
+import com.sonicmax.etiapp.network.NetworkStatusChecker;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.activities.LoginActivity;
@@ -45,6 +46,7 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
     }
 
     public interface EventInterface {
+        void onRequiresLogin();
         void onLoadComplete(Intent intent);
     }
 
@@ -124,7 +126,7 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
                     // "1:username"     Logged in
 
                     if (response == null || response.trim().equals("0")) {
-                        // Can't do anything else - wait for user to login manually
+                        mEventInterface.onRequiresLogin();
                     }
                     else {
                         // Use stored cookies to get board list and start activity

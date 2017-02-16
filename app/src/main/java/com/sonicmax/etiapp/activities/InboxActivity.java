@@ -24,7 +24,7 @@ import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TopicListActivity extends AppCompatActivity
+public class InboxActivity extends AppCompatActivity
         implements AccountManager.EventInterface {
 
     private final String LOG_TAG = TopicListActivity.class.getSimpleName();
@@ -32,19 +32,17 @@ public class TopicListActivity extends AppCompatActivity
     public DrawerLayout mDrawerLayout;
     private ArrayAdapter<String> mDrawerAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
-    private Button mInboxButton;
     private List<Bookmark> mBookmarks;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_topic_list);
+        setContentView(R.layout.activity_inbox);
 
         mDrawerList = (ListView)findViewById(R.id.drawer_list);
         mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
-        mInboxButton = (Button)findViewById(R.id.inbox_button);
 
-        populateInboxButton();
         populateDrawerAdapter();
         initDrawer();
 
@@ -53,22 +51,6 @@ public class TopicListActivity extends AppCompatActivity
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
         }
-    }
-
-    private void populateInboxButton() {
-        mInboxButton.setText(getInboxString());
-        mInboxButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Bookmark inbox = new Bookmark("Inbox", "https://endoftheinter.net/inbox.php");
-                Intent intent = new Intent(TopicListActivity.this, InboxActivity.class);
-                intent.putExtra("url", inbox.getUrl());
-                intent.putExtra("boardname", inbox.getName());
-                TopicListActivity.this.startActivity(intent);
-                TopicListActivity.this.overridePendingTransition(R.anim.slide_in_from_right,
-                        R.anim.slide_out_to_left);
-            }
-        });
     }
 
     private String getInboxString() {

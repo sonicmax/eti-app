@@ -3,9 +3,9 @@ package com.sonicmax.etiapp.fragments;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +14,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.activities.MessageListActivity;
+import com.sonicmax.etiapp.activities.InboxThreadActivity;
 import com.sonicmax.etiapp.adapters.TopicListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.TopicListLoader;
@@ -22,11 +22,16 @@ import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
 import com.sonicmax.etiapp.utilities.Toaster;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class TopicListFragment extends Fragment
+/**
+ * Same functionality as TopicListFragment, but with some minor differences
+ * (eg. different click handlers)
+ */
+
+public class InboxFragment extends Fragment
         implements TopicListLoader.EventInterface, TopicListAdapter.EventInterface {
+    public InboxFragment() {}
 
     public TopicListAdapter mTopicListAdapter;
     private String mUrl;
@@ -42,20 +47,16 @@ public class TopicListFragment extends Fragment
     private String mPrevPageUrl;
     private String mNextPageUrl;
 
-    public TopicListFragment() {}
-
     ///////////////////////////////////////////////////////////////////////////
     // Fragment methods
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
     public void onAttach(Context context) {
-        // Create adapter to display list of topics
+        // Create adapter to display list of inbox threads
         mTopicListAdapter = new TopicListAdapter(context, this);
         mTopicListLoader = new TopicListLoader(context, this);
 
-        // Topic list will always start at page 1. mFirstRun is set to false after starting loader,
-        // in case user changes pages (handled with swipe event)
         if (mFirstRun) {
             mPageNumber = 1;
         }
@@ -66,6 +67,7 @@ public class TopicListFragment extends Fragment
     @Override
     public void onCreate(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
+            // Get url of chosen topic list form intent and pass it to loader
             mUrl = getActivity().getIntent().getStringExtra("url");
             loadTopicList(null, mUrl);
         }
@@ -82,6 +84,7 @@ public class TopicListFragment extends Fragment
 
                 mTopicListAdapter.updateTopics(mTopics);
             }
+
             else {
                 mUrl = getActivity().getIntent().getStringExtra("url");
                 loadTopicList(null, mUrl);
@@ -95,20 +98,20 @@ public class TopicListFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View rootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_inbox, container, false);
 
         mBoardName = (TextView) rootView.findViewById(R.id.board_name_text);
         String name = getActivity().getIntent().getStringExtra("boardname");
         mBoardName.setText(name);
 
         FloatingActionButton newTopicButton = (FloatingActionButton) rootView.findViewById(R.id.new_topic);
-        newTopicButton.setOnClickListener(newTopicHandler);
+        newTopicButton.setOnClickListener(inboxThreadCreator);
 
         ListView topicList = (ListView) rootView.findViewById(R.id.listview_topics);
         topicList.setAdapter(mTopicListAdapter);
         mTopicListAdapter.setListView(topicList);
-        topicList.setOnItemClickListener(topicClickHandler);
-        topicList.setOnTouchListener(topicSwipeHandler);
+        topicList.setOnItemClickListener(inboxClickHandler);
+        topicList.setOnTouchListener(inboxSwipeHandler);
 
         return rootView;
     }
@@ -132,9 +135,7 @@ public class TopicListFragment extends Fragment
     @Override
     public void onDetach() {
         // Make sure that we don't leak progress dialog when exiting activity
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
+        dismissDialog();
 
         super.onDetach();
     }
@@ -209,7 +210,7 @@ public class TopicListFragment extends Fragment
     // User input listeners
     ///////////////////////////////////////////////////////////////////////////
 
-    OnSwipeListener topicSwipeHandler = new OnSwipeListener(getContext()) {
+    OnSwipeListener inboxSwipeHandler = new OnSwipeListener(getContext()) {
 
         @Override
         public void onSwipeLeft() {
@@ -230,13 +231,13 @@ public class TopicListFragment extends Fragment
         }
     };
 
-    public AdapterView.OnItemClickListener topicClickHandler = new AdapterView.OnItemClickListener() {
+    private AdapterView.OnItemClickListener inboxClickHandler = new AdapterView.OnItemClickListener() {
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             Topic topic = mTopicListAdapter.getItem(position);
             Context context = getContext();
-            Intent intent = new Intent(context, MessageListActivity.class);
+            Intent intent = new Intent(context, InboxThreadActivity.class);
             intent.putExtra("topic", topic);
             intent.putExtra("title", topic.getTitle());
             context.startActivity(intent);
@@ -246,18 +247,10 @@ public class TopicListFragment extends Fragment
 
     };
 
-    private View.OnClickListener newTopicHandler = new View.OnClickListener() {
-
+    private View.OnClickListener inboxThreadCreator = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            switch (view.getId()) {
-                case R.id.new_topic:
-                    mDialog = new ProgressDialog(getContext());
-                    mDialog.setMessage("Loading...");
-                    mDialog.show();
-                    mTopicListLoader.openPostTopicActivity();
-                    break;
-            }
+
         }
     };
 }

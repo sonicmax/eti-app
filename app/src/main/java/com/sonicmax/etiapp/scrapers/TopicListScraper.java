@@ -40,7 +40,7 @@ public class TopicListScraper {
         }
 
         return new TopicList(getTopics(tableRows), getPageNumber(), mUrl, mPrevPageUrl, mNextPageUrl);
-        }
+    }
 
     private ArrayList<Topic> getTopics(Elements tableRows) {
         ArrayList<Topic> topics = new ArrayList<>();

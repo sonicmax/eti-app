@@ -1,17 +1,17 @@
 package com.sonicmax.etiapp.activities;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.sonicmax.etiapp.fragments.MessageListFragment;
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.fragments.InboxThreadFragment;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
-public class MessageListActivity extends AppCompatActivity implements AccountManager.EventInterface {
-    private final String LOG_TAG = MessageListActivity.class.getSimpleName();
+public class InboxThreadActivity extends AppCompatActivity
+        implements AccountManager.EventInterface {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,7 +19,7 @@ public class MessageListActivity extends AppCompatActivity implements AccountMan
         if (getSupportActionBar() != null) {
             getSupportActionBar().setElevation(4);
         }
-        setContentView(R.layout.activity_message_list);
+        setContentView(R.layout.activity_inbox_thread);
     }
 
     @Override
@@ -31,8 +31,8 @@ public class MessageListActivity extends AppCompatActivity implements AccountMan
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        MessageListFragment fragment = (MessageListFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.message_list_container);
+        InboxThreadFragment fragment = (InboxThreadFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.inbox_thread_container);
 
         int id = item.getItemId();
         switch (id) {

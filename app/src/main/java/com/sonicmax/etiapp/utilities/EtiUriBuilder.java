@@ -37,6 +37,12 @@ public class EtiUriBuilder {
                         .appendQueryParameter("topic", mValues.get("id").toString());
                 break;
 
+            case "newpm":
+                builder.authority("boards.endoftheinter.net")
+                        .appendPath("postmsg.php")
+                        .appendQueryParameter("pm", mValues.get("pm").toString());
+                break;
+
             case "livelinks":
                 builder.authority("evt0.endoftheinter.net")
                         .appendPath("subscribe");
@@ -56,6 +62,13 @@ public class EtiUriBuilder {
                 builder.appendQueryParameter("old", mValues.get("old").toString())
                         .appendQueryParameter("new", mValues.get("new").toString())
                         .appendQueryParameter("filter", mValues.get("filter").toString());
+                break;
+
+            case "async-update-bookmark":
+                builder.authority("endoftheinter.net")
+                        .appendPath("async-update-bookmark.php")
+                        .appendQueryParameter("pm", mValues.get("pm").toString())
+                        .appendQueryParameter("count", mValues.get("count").toString());
                 break;
 
             case "history":

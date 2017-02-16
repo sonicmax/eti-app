@@ -55,6 +55,11 @@ public class BookmarkManagerActivity extends AppCompatActivity implements Accoun
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
+    public void onRequiresLogin() {
+
+    }
+
+    @Override
     public void onLoadComplete(Intent intent) {
         startActivity(intent);
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);

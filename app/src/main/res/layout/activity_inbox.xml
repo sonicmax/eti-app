@@ -8,9 +8,9 @@
     <fragment
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
-        android:id="@+id/topic_list_container"
-        android:name="com.sonicmax.etiapp.fragments.TopicListFragment"
-        tools:layout="@layout/fragment_topic_list"
+        android:id="@+id/inbox_container"
+        android:name="com.sonicmax.etiapp.fragments.InboxFragment"
+        tools:layout="@layout/fragment_inbox"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
@@ -21,19 +21,21 @@
         android:layout_gravity="start"
         android:background="@color/bg_grey">
 
-        <Button xmlns:android="http://schemas.android.com/apk/res/android"
+        <TextView
+            android:id="@+id/drawer_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:elevation="2dp"
+            android:text="@string/bookmarks"
             android:gravity="center"
-            android:id="@+id/inbox_button">
-        </Button>
+            android:layout_marginBottom="10dp"
+            android:background="@color/fg_grey"
+            android:textColor="@color/secondary_text" />
 
         <ListView
             android:id="@+id/drawer_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/inbox_button" />
+            android:layout_below="@+id/drawer_title" />
 
     </RelativeLayout>
 

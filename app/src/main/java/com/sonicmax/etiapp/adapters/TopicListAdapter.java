@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.sonicmax.etiapp.activities.InboxThreadActivity;
 import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.objects.Topic;
@@ -183,10 +184,10 @@ public class TopicListAdapter extends BaseAdapter {
         Date date;
 
         try {
-                date = mDateFormat.parse(timestamp);
+            date = mDateFormat.parse(timestamp);
         } catch (ParseException e) {
             Log.e(LOG_TAG, "Error parsing date for getView method", e);
-            return null;
+            return "";
         }
 
         GregorianCalendar postCalendar = new GregorianCalendar();
@@ -258,8 +259,16 @@ public class TopicListAdapter extends BaseAdapter {
             // Get Topic object from adapter
             final int position = mListView.getPositionForView((View) view.getParent());
             Topic target = mTopics.get(position);
+
+            Intent intent;
+            if (target.getUrl().contains("inboxthread.php")) {
+                intent = new Intent(mContext, InboxThreadActivity.class);
+            }
+            else {
+                intent = new Intent(mContext, MessageListActivity.class);
+            }
+
             // Create new intent for MessageListActivity using Topic data
-            Intent intent = new Intent(mContext, MessageListActivity.class);
             intent.putExtra("topic", target);
             intent.putExtra("title", target.getTitle());
             intent.putExtra("last_page", true);

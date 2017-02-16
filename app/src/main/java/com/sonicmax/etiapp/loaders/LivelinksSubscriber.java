@@ -25,6 +25,8 @@ public class LivelinksSubscriber {
     private final int LIVELINKS_TOPICLIST = 1;
     private final int LIVELINKS_PM_THREAD = 2;
     private final int FETCH_MESSAGE = 3;
+    private final int UPDATE_BOOKMARK_COUNT = 4;
+
     private final int SHIFT_CONSTANT = 48;
 
     private final int mTopicId;
@@ -274,6 +276,7 @@ public class LivelinksSubscriber {
             switch (id) {
                 case LIVELINKS_PM_THREAD:
                 case LIVELINKS_TOPICLIST:
+                case UPDATE_BOOKMARK_COUNT:
                     return new AsyncLoader(mContext, args) {
 
                         @Override
@@ -333,6 +336,10 @@ public class LivelinksSubscriber {
                     }
 
                     subscribe();
+                    break;
+
+                case UPDATE_BOOKMARK_COUNT:
+                    mEventInterface.onUpdateBookmarkCount();
                     break;
             }
         }

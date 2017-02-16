@@ -10,6 +10,7 @@ import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
+import com.sonicmax.etiapp.scrapers.UserInfoScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
 import java.util.List;
@@ -54,7 +55,6 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
         return new AsyncLoader(mContext, args) {
             @Override
             public MessageList loadInBackground() {
-
                 String html = new WebRequest(mContext, args).sendRequest();
                 mScraper.setUrl(args.getString("url"));
                 return mScraper.scrapeMessages(html, args.getBoolean("filter"));

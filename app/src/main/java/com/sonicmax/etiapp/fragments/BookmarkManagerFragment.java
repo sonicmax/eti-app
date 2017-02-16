@@ -16,6 +16,7 @@ import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.adapters.BookmarkAdapter;
 import com.sonicmax.etiapp.loaders.UserInfoLoader;
 import com.sonicmax.etiapp.objects.Bookmark;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +104,12 @@ public class BookmarkManagerFragment extends Fragment
         }
     }
 
+    private Bookmark getInboxBookmark() {
+        int count = SharedPreferenceManager.getInt(getContext(), "inbox_count");
+        String inboxWithCount = "Inbox " + "(" + count + ")";
+        return new Bookmark(inboxWithCount, "https://endoftheinter.net/inbox.php");
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // EventInterface callbacks
     ///////////////////////////////////////////////////////////////////////////
@@ -111,6 +118,7 @@ public class BookmarkManagerFragment extends Fragment
     public void onLoadBookmarks(List<Bookmark> bookmarks) {
         dismissDialog();
         mBookmarks = bookmarks;
+        mBookmarks.add(0, getInboxBookmark());
         mBookmarkAdapter.updateBoards(bookmarks);
     }
 

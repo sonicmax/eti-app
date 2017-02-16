@@ -73,27 +73,27 @@ public class UserInfoScraper {
         Elements userbarClass = mDocument.getElementsByClass("userbar");
         if (userbarClass.size() > 0) {
             Element userbar = userbarClass.get(0);
-        Element profileAnchor = userbar.getElementsByTag("a").get(0);
-        String userId = profileAnchor.attr("href").replaceAll("\\D+", "");
-        SharedPreferenceManager.putString(mContext, "user_id", userId);
-    }
+            Element profileAnchor = userbar.getElementsByTag("a").get(0);
+            String userId = profileAnchor.attr("href").replaceAll("\\D+", "");
+            SharedPreferenceManager.putString(mContext, "user_id", userId);
+        }
     }
 
     private void scrapePmCount() {
         Elements userbarClass = mDocument.getElementsByClass("userbar");
         if (userbarClass.size() > 0) {
             Element userbar = userbarClass.get(0);
-        Element pmSpan = userbar.getElementById("userbar_pms");
+            Element pmSpan = userbar.getElementById("userbar_pms");
 
-        int count;
-        if (pmSpan.attr("style").equals("display:none")) {
-            count = 0;
+            int count;
+            if (pmSpan.attr("style").equals("display:none")) {
+                count = 0;
             } else {
-            count = Integer.parseInt(pmSpan.text().replaceAll("\\D+", ""));
-        }
+                count = Integer.parseInt(pmSpan.text().replaceAll("\\D+", ""));
+            }
 
-        SharedPreferenceManager.putInt(mContext, "inbox_count", count);
-    }
+            SharedPreferenceManager.putInt(mContext, "inbox_count", count);
+        }
     }
 
 }

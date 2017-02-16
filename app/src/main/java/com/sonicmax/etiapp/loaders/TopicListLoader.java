@@ -10,8 +10,10 @@ import android.support.v4.content.Loader;
 import com.sonicmax.etiapp.activities.PostTopicActivity;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Topic;
+import com.sonicmax.etiapp.objects.TopicList;
 import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 import com.sonicmax.etiapp.scrapers.TopicListScraper;
+import com.sonicmax.etiapp.scrapers.UserInfoScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
 import java.util.List;
@@ -64,7 +66,7 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
     }
 
     public interface EventInterface {
-        void onLoadTopicList(List<Topic> topics);
+        void onLoadTopicList(TopicList topicList);
         void onInternalServerError();
         void onCreateTopic(Intent intent);
     }
@@ -82,7 +84,7 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
                 return new AsyncLoader(mContext, args) {
 
                     @Override
-                    public List<Topic> loadInBackground() {
+                    public TopicList loadInBackground() {
                         String html = new WebRequest(mContext, args).sendRequest();
 
                         if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
@@ -91,7 +93,11 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
 
                         } else {
                             mInternalServerError = false;
-                            return new TopicListScraper(getContext()).scrapeTopics(html);
+
+                            UserInfoScraper userInfoScraper = new UserInfoScraper(mContext);
+                            userInfoScraper.setInput(html);
+                            userInfoScraper.scrapeUserInfo();
+
                             return new TopicListScraper(getContext(), args.getString("url")).scrapeTopics(html);
                         }
                     }
@@ -117,8 +123,8 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
             switch (loader.getId()) {
                 case LOAD_TOPIC_LIST:
                     // We can be sure that data will safely cast to List<Topic>.
-                    List<Topic> topics = (List<Topic>) data;
-                    mEventInterface.onLoadTopicList(topics);
+                    TopicList topicList = (TopicList) data;
+                    mEventInterface.onLoadTopicList(topicList);
                     break;
 
                 case POST_TOPIC:

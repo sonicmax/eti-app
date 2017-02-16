@@ -30,6 +30,15 @@ public class FormDataBuilder {
                             + "&submit=" + submit;
                     break;
 
+                case "newpm":
+                    topic = mValues.get("pm").toString();
+                    message = mValues.get("message").toString();
+                    h = mValues.get("h").toString();
+                    submit = "Post Message";
+                    formData = "pm=" + topic + "&message=" + message + "&h=" + h
+                            + "&submit=" + submit;
+                    break;
+
                 case "newtopic":
                     String title = mValues.get("title").toString();
                     String tag = mValues.get("tag").toString();

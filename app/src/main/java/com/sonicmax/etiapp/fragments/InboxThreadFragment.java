@@ -3,7 +3,6 @@ package com.sonicmax.etiapp.fragments;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -33,21 +32,25 @@ import com.sonicmax.etiapp.activities.InboxActivity;
 import com.sonicmax.etiapp.activities.PostMessageActivity;
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
-import com.sonicmax.etiapp.loaders.MessageListLoader;
 import com.sonicmax.etiapp.loaders.LivelinksSubscriber;
+import com.sonicmax.etiapp.loaders.MessageListLoader;
+import com.sonicmax.etiapp.loaders.QuickpostHandler;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.objects.Topic;
-import com.sonicmax.etiapp.loaders.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
-import com.sonicmax.etiapp.utilities.Toaster;
+import com.sonicmax.etiapp.utilities.Snacker;
 
 import java.util.List;
 
-public class MessageListFragment extends Fragment implements
+/**
+ * Displays content from PM inbox threads.
+ */
+
+public class InboxThreadFragment extends Fragment implements
         MessageListLoader.EventInterface, MessageListAdapter.EventInterface,
         LivelinksSubscriber.EventInterface, View.OnClickListener {
 
@@ -76,14 +79,18 @@ public class MessageListFragment extends Fragment implements
     private String mPrevPageUrl;
     private String mNextPageUrl;
 
-    public MessageListFragment() {}
+    public InboxThreadFragment() {}
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Fragment methods
-    ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
         mMessageListAdapter = new MessageListAdapter(context, this);
+
+        // Set some values required for MessageListAdapter to work correctly with inbox threads.
+        // TODO: Allow users to choose between regular message list UI and chat UI
+        mMessageListAdapter.setInboxThreadFlag(true);
+        String self = SharedPreferenceManager.getString(context, "username");
+        mMessageListAdapter.setSelf(self);
+
         super.onAttach(context);
     }
 
@@ -128,7 +135,7 @@ public class MessageListFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        mRootView = inflater.inflate(R.layout.fragment_message_list, container, false);
+        mRootView = inflater.inflate(R.layout.fragment_inbox_thread, container, false);
         mQuickpostButton = (FloatingActionButton) mRootView.findViewById(R.id.new_message);
 
         // Keep reference to container incase we need to inflate quickpost view
@@ -154,8 +161,11 @@ public class MessageListFragment extends Fragment implements
         messageList.post(new Runnable() {
             @Override
             public void run() {
-                // Find width of message list and set maximum image width
-                mMessageListAdapter.setMaxImageWidth(messageList.getWidth());
+                // Find width of messageList and set maximum image width.
+                // For inbox threads, we want to reduce image size to make sure they
+                // fit inside the chat UI.
+                // TODO: Expand images on click
+                mMessageListAdapter.setMaxImageWidth(messageList.getWidth() / 2);
             }
         });
 
@@ -290,7 +300,11 @@ public class MessageListFragment extends Fragment implements
             int inboxCount = SharedPreferenceManager.getInt(getContext(), "inbox_count");
 
             mLivelinksSubscriber = new LivelinksSubscriber(getContext(), this, mTopic.getId(), userId, totalPosts, inboxCount);
+            mLivelinksSubscriber.setPmThreadFlag(true);
             mLivelinksSubscriber.subscribe();
+
+            // Update unread post count for this thread
+            mLivelinksSubscriber.updateBookmarkCount();
         }
 
         else if (!isLastPage && mLivelinksSubscriber != null) {
@@ -336,7 +350,7 @@ public class MessageListFragment extends Fragment implements
         if (mNextPageUrl != null) {
             mMessageListAdapter.clearMessages();
             loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-            Toaster.makeToast(getContext(), "Page " + mCurrentPage);
+            Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
             scrollToPosition(FIRST_POST);
         }
     }
@@ -347,7 +361,6 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onReceiveNewPost(MessageList messageList, int position) {
-        final int POSTS_PER_PAGE = 50;
         final int totalPosts = getTotalPosts();
 
         // Update mNextPageUrl, in case new page was created
@@ -384,7 +397,7 @@ public class MessageListFragment extends Fragment implements
         // Update PM count in shared preferences and notify user.
         SharedPreferenceManager.putInt(getContext(), "inbox_count", newCount);
         int difference = newCount - oldCount;
-        String message = getSnackBarMessage(difference);
+        String message = getPmSnackBarMessage(difference);
         showPmSnackBar(message);
     }
 
@@ -416,7 +429,7 @@ public class MessageListFragment extends Fragment implements
         pmSnackbar.show();
     }
 
-    private String getSnackBarMessage(int difference) {
+    private String getPmSnackBarMessage(int difference) {
         if (difference > 1) {
             return difference + " " + getResources().getString(R.string.new_messages);
         }
@@ -508,7 +521,7 @@ public class MessageListFragment extends Fragment implements
                 true);
 
         // Show quickpost window 25px from top of screen (aligned with bottom of status bar)
-        popup.showAtLocation(getActivity().findViewById(R.id.message_list_container),
+        popup.showAtLocation(getActivity().findViewById(R.id.inbox_thread_container),
                 Gravity.TOP, 0, 25);
 
         // Set up quickpostHandler to handle UI changes and manage loading
@@ -516,28 +529,21 @@ public class MessageListFragment extends Fragment implements
 
             @Override
             public void onPreload() {
-                mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Posting message...");
-                mDialog.show();
+                displayDialog("Posting message...");
             }
 
             @Override
             public void onSuccess(String message) {
-                if (mDialog != null && mDialog.isShowing()) {
-                    mDialog.hide();
-                }
+                dismissDialog();
 
                 if (message != null) {
-                    Snackbar.make(mRootView, message, Snackbar.LENGTH_SHORT).show();
+                    Snacker.showSnackBar(mRootView, message);
                 }
             }
 
             @Override
             public void onError(String errorMessage) {
-                if (mDialog != null && mDialog.isShowing()) {
-                    mDialog.hide();
-                }
-
+                dismissDialog();
                 Snackbar.make(mRootView, errorMessage, Snackbar.LENGTH_SHORT).show();
             }
         };
@@ -599,7 +605,7 @@ public class MessageListFragment extends Fragment implements
         public void onSwipeLeft() {
             if (mNextPageUrl != null) {
                 loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-                Toaster.makeToast(getContext(), "Page " + mCurrentPage);
+                Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
             }
         }
 
@@ -607,7 +613,7 @@ public class MessageListFragment extends Fragment implements
         public void onSwipeRight() {
             if (mPrevPageUrl != null) {
                 loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
-                Toaster.makeToast(getContext(), "Page " + mCurrentPage);
+                Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
             }
         }
     };
