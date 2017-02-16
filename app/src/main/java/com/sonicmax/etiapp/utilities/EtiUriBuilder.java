@@ -44,9 +44,16 @@ public class EtiUriBuilder {
 
             case "moremessages":
                 builder.authority("boards.endoftheinter.net")
-                        .appendPath("moremessages.php")
-                        .appendQueryParameter("topic", mValues.get("topic").toString())
-                        .appendQueryParameter("old", mValues.get("old").toString())
+                        .appendPath("moremessages.php");
+
+                if (mValues.get("topic") != null) {
+                    builder.appendQueryParameter("topic", mValues.get("topic").toString());
+                }
+                else if (mValues.get("pm") != null) {
+                    builder.appendQueryParameter("pm", mValues.get("pm").toString());
+                }
+
+                builder.appendQueryParameter("old", mValues.get("old").toString())
                         .appendQueryParameter("new", mValues.get("new").toString())
                         .appendQueryParameter("filter", mValues.get("filter").toString());
                 break;
