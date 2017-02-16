@@ -18,6 +18,7 @@ import com.sonicmax.etiapp.activities.InboxThreadActivity;
 import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.objects.Topic;
+import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -28,30 +29,24 @@ import java.util.List;
 import java.util.Locale;
 
 public class TopicListAdapter extends BaseAdapter {
-
     private final String LOG_TAG = TopicListAdapter.class.getSimpleName();
+
     private final int BG_GREY;
     private final int HEADER_GREY;
-
     private final Context mContext;
     private final EventInterface mEventInterface;
-    private final SimpleDateFormat mDateFormat;
+    private final FuzzyTimestampBuilder mTimestampBuilder;
 
     private ListView mListView;
     private List<Topic> mTopics = Collections.emptyList();
-
-    private int CURRENT_YEAR;
-    private int CURRENT_MONTH;
-    private int CURRENT_DAY_OF_MONTH;
-    private int CURRENT_HOUR_OF_DAY;
-    private int CURRENT_MINUTE;
+    private boolean mHasNextPage = false;
 
     public TopicListAdapter(Context context, EventInterface eventInterface) {
+        final String ETI_DATE_FORMAT = "MM/dd/yyyy HH:mm";
+
         this.mContext = context;
         this.mEventInterface = eventInterface;
-
-        // Prepare SimpleDateFormat to parse ETI timestamp (will always be in this format)
-        mDateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US);
+        mTimestampBuilder = new FuzzyTimestampBuilder(ETI_DATE_FORMAT);
 
         // Resolve colours from resources for use in getView() method
         BG_GREY = ContextCompat.getColor(context, R.color.bg_grey);
@@ -66,37 +61,32 @@ public class TopicListAdapter extends BaseAdapter {
         mListView = view;
     }
 
+    public void setHasNextPage(boolean hasNextPage) {
+        mHasNextPage = hasNextPage;
+    }
+
     public void updateTopics(List<Topic> topics) {
         mTopics.clear();
         mTopics = topics;
         notifyDataSetChanged();
 
-        if (mListView != null) {
-            View footer = mListView.findViewById(R.id.next_page_button);
+        if (mHasNextPage) {
+            LayoutInflater inflater = LayoutInflater.from(mContext);
+            Button nextPageButton = (Button) inflater.inflate(R.layout.next_page_button, null);
+            nextPageButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    mEventInterface.onRequestNextPage();
+                }
+            });
 
-            if (footer == null && topics.size() == 50) {
-                LayoutInflater inflater = LayoutInflater.from(mContext);
-                Button nextPageButton = (Button) inflater.inflate(R.layout.next_page_button, null);
-                nextPageButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        mEventInterface.onRequestNextPage();
-                    }
-                });
-
-                mListView.addFooterView(nextPageButton);
-            }
+            mListView.addFooterView(nextPageButton);
         }
     }
 
     public void getCurrentTime() {
         // Get current date/time so we can create fuzzy timestamps (eg "1 minute ago")
-        GregorianCalendar calendar = new GregorianCalendar();
-        CURRENT_YEAR = calendar.get(GregorianCalendar.YEAR);
-        CURRENT_MONTH = calendar.get(GregorianCalendar.MONTH);
-        CURRENT_DAY_OF_MONTH = calendar.get(GregorianCalendar.DAY_OF_MONTH);
-        CURRENT_HOUR_OF_DAY = calendar.get(GregorianCalendar.HOUR_OF_DAY);
-        CURRENT_MINUTE = calendar.get(GregorianCalendar.MINUTE);
+        mTimestampBuilder.setCurrentTime();
     }
 
     @Override
@@ -162,7 +152,7 @@ public class TopicListAdapter extends BaseAdapter {
         titleView.setText(topic.getTitle());
         countView.setText(topic.etiFormatSize());
         tagView.setText(topic.getTags());
-        timestampView.setText(getFuzzyTimestamp(topic.getTimestamp()));
+        timestampView.setText(mTimestampBuilder.getFuzzyTimestamp(topic.getTimestamp()));
 
         // Make sure that clicks on tagView are dispatched to TagSpan listener
         tagView.setMovementMethod(LinkMovementMethod.getInstance());
@@ -178,77 +168,6 @@ public class TopicListAdapter extends BaseAdapter {
         }
 
         return convertView;
-    }
-
-    private String getFuzzyTimestamp(String timestamp) {
-        Date date;
-
-        try {
-            date = mDateFormat.parse(timestamp);
-        } catch (ParseException e) {
-            Log.e(LOG_TAG, "Error parsing date for getView method", e);
-            return "";
-        }
-
-        GregorianCalendar postCalendar = new GregorianCalendar();
-        postCalendar.setTime(date);
-
-        return getDifference(postCalendar);
-    }
-
-    private String getDifference(GregorianCalendar postCalendar) {
-
-        int postYear = postCalendar.get(GregorianCalendar.YEAR);
-
-        if (CURRENT_YEAR > postYear) {
-            if (CURRENT_YEAR - postYear > 1) {
-                return (CURRENT_YEAR - postYear) + " years ago";
-            } else {
-                return "1 year ago";
-            }
-        }
-
-        int postMonth = postCalendar.get(GregorianCalendar.MONTH);
-
-        if (CURRENT_MONTH > postMonth) {
-            if (CURRENT_MONTH - postMonth > 1) {
-                return (CURRENT_MONTH - postMonth) + " months ago";
-            } else {
-                return "1 month ago";
-            }
-        }
-
-        int postDay = postCalendar.get(GregorianCalendar.DAY_OF_MONTH);
-
-        if (CURRENT_DAY_OF_MONTH > postDay) {
-            if (CURRENT_DAY_OF_MONTH - postDay > 1) {
-                return (CURRENT_DAY_OF_MONTH - postDay) + " days ago";
-            } else {
-                return "1 day ago";
-            }
-        }
-
-        int postHour = postCalendar.get(GregorianCalendar.HOUR_OF_DAY);
-
-        if (CURRENT_HOUR_OF_DAY > postHour) {
-            if (CURRENT_HOUR_OF_DAY - postHour > 1) {
-                return (CURRENT_HOUR_OF_DAY - postHour) + " hours ago";
-            } else {
-                return "1 hour ago";
-            }
-        }
-
-        int postMinute = postCalendar.get(GregorianCalendar.MINUTE);
-
-        if (CURRENT_MINUTE > postMinute) {
-            if (CURRENT_MINUTE - postMinute > 1) {
-                return (CURRENT_MINUTE - postMinute) + " minutes ago";
-            } else {
-                return "1 minute ago";
-            }
-        }
-
-        return "Just now";
     }
 
     private View.OnClickListener lastPageHandler = new View.OnClickListener() {

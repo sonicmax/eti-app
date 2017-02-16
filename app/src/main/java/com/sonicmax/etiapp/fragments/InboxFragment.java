@@ -82,6 +82,13 @@ public class InboxFragment extends Fragment
                 mPrevPageUrl = mTopicList.getPrevPageUrl();
                 mNextPageUrl = mTopicList.getNextPageUrl();
 
+                if (mNextPageUrl != null) {
+                    mTopicListAdapter.setHasNextPage(true);
+                }
+                else {
+                    mTopicListAdapter.setHasNextPage(false);
+                }
+
                 mTopicListAdapter.updateTopics(mTopics);
             }
 
@@ -161,7 +168,13 @@ public class InboxFragment extends Fragment
         mNextPageUrl = topicList.getNextPageUrl();
         mPageNumber = topicList.getPageNumber();
 
-        mTopicListAdapter.getCurrentTime();
+        if (mNextPageUrl != null) {
+            mTopicListAdapter.setHasNextPage(true);
+        }
+        else {
+            mTopicListAdapter.setHasNextPage(false);
+        }
+
         mTopicListAdapter.updateTopics(mTopics);
     }
 

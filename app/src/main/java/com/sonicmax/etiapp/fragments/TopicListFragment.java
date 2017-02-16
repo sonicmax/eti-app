@@ -20,6 +20,7 @@ import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.TopicListLoader;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
+import com.sonicmax.etiapp.utilities.Snacker;
 import com.sonicmax.etiapp.utilities.Toaster;
 
 import java.util.ArrayList;
@@ -28,16 +29,17 @@ import java.util.List;
 public class TopicListFragment extends Fragment
         implements TopicListLoader.EventInterface, TopicListAdapter.EventInterface {
 
-    public TopicListAdapter mTopicListAdapter;
+    private TopicListAdapter mTopicListAdapter;
     private String mUrl;
     private ProgressDialog mDialog;
     private TopicList mTopicList;
     private List<Topic> mTopics;
     private TopicListLoader mTopicListLoader;
-    public TextView mBoardName;
+    private TextView mBoardName;
+    private ListView mListView;
+    private View mRootView;
 
     private int mPageNumber;
-    private boolean mFirstRun = true;
 
     private String mPrevPageUrl;
     private String mNextPageUrl;
@@ -56,7 +58,7 @@ public class TopicListFragment extends Fragment
 
         // Topic list will always start at page 1. mFirstRun is set to false after starting loader,
         // in case user changes pages (handled with swipe event)
-        if (mFirstRun) {
+        if (mPageNumber == 0) {
             mPageNumber = 1;
         }
 
@@ -80,6 +82,13 @@ public class TopicListFragment extends Fragment
                 mPrevPageUrl = mTopicList.getPrevPageUrl();
                 mNextPageUrl = mTopicList.getNextPageUrl();
 
+                if (mNextPageUrl != null) {
+                    mTopicListAdapter.setHasNextPage(true);
+                }
+                else {
+                    mTopicListAdapter.setHasNextPage(false);
+                }
+
                 mTopicListAdapter.updateTopics(mTopics);
             }
             else {
@@ -95,22 +104,22 @@ public class TopicListFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View rootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
+        mRootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
 
-        mBoardName = (TextView) rootView.findViewById(R.id.board_name_text);
+        mBoardName = (TextView) mRootView.findViewById(R.id.board_name_text);
         String name = getActivity().getIntent().getStringExtra("boardname");
         mBoardName.setText(name);
 
-        FloatingActionButton newTopicButton = (FloatingActionButton) rootView.findViewById(R.id.new_topic);
+        FloatingActionButton newTopicButton = (FloatingActionButton) mRootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(newTopicHandler);
 
-        ListView topicList = (ListView) rootView.findViewById(R.id.listview_topics);
-        topicList.setAdapter(mTopicListAdapter);
-        mTopicListAdapter.setListView(topicList);
-        topicList.setOnItemClickListener(topicClickHandler);
-        topicList.setOnTouchListener(topicSwipeHandler);
+        mListView = (ListView) mRootView.findViewById(R.id.listview_topics);
+        mListView.setAdapter(mTopicListAdapter);
+        mTopicListAdapter.setListView(mListView);
+        mListView.setOnItemClickListener(topicClickHandler);
+        mListView.setOnTouchListener(topicSwipeHandler);
 
-        return rootView;
+        return mRootView;
     }
 
     @Override
@@ -145,11 +154,7 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onRequestNextPage() {
-        if (mNextPageUrl != null) {
-            loadTopicList(null, mNextPageUrl);
-            mPageNumber++;
-            Toaster.makeToast(getContext(), "Page " + mPageNumber);
-        }
+        loadNextPage();
     }
 
     @Override
@@ -158,10 +163,20 @@ public class TopicListFragment extends Fragment
         mTopics = topicList.getTopics();
         mPrevPageUrl = topicList.getPrevPageUrl();
         mNextPageUrl = topicList.getNextPageUrl();
-        mPageNumber = topicList.getPageNumber();
+
+        if (mNextPageUrl != null) {
+            mTopicListAdapter.setHasNextPage(true);
+        }
+        else {
+            mTopicListAdapter.setHasNextPage(false);
+        }
 
         mTopicListAdapter.getCurrentTime();
         mTopicListAdapter.updateTopics(mTopics);
+
+        if (mPageNumber > 1) {
+            Snacker.showSnackBar(mRootView, "Page " + mPageNumber);
+        }
     }
 
     @Override
@@ -182,21 +197,46 @@ public class TopicListFragment extends Fragment
     ///////////////////////////////////////////////////////////////////////////
 
     public void loadTopicList(String name, String url) {
-        mFirstRun = false;
-
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage("Loading topics...");
-        mDialog.show();
-
+        showDialog("Loading...");
         if (name != null) {
             mBoardName.setText(name);
         }
-
         mTopicListLoader.load(url);
     }
 
     public void refreshTopicList() {
         loadTopicList(null, mUrl);
+    }
+
+    private void loadNextPage() {
+        final int FIRST_TOPIC = 0;
+
+        if (mNextPageUrl != null) {
+            loadTopicList(null, mNextPageUrl);
+            mPageNumber++;
+            scrollToPosition(FIRST_TOPIC);
+        }
+    }
+
+    private void loadFirstPage() {
+        final int FIRST_POST = 0;
+
+        if (mPrevPageUrl != null) {
+            loadTopicList(null, mPrevPageUrl);
+            mPageNumber = 1;
+            scrollToPosition(FIRST_POST);
+        }
+    }
+
+    private void scrollToPosition(final int position) {
+        mListView.setSelection(position);
+        // mListView.setSelectionAfterHeaderView();
+    }
+
+    public void showDialog(String message) {
+        mDialog = new ProgressDialog(getContext());
+        mDialog.setMessage(message);
+        mDialog.show();
     }
 
     private void dismissDialog() {
@@ -213,20 +253,12 @@ public class TopicListFragment extends Fragment
 
         @Override
         public void onSwipeLeft() {
-            if (mNextPageUrl != null) {
-                loadTopicList(null, mNextPageUrl);
-                mPageNumber++;
-                Toaster.makeToast(getContext(), "Page " + mPageNumber);
-            }
+            loadNextPage();
         }
 
         @Override
         public void onSwipeRight() {
-            if (mPrevPageUrl != null) {
-                loadTopicList(null, mPrevPageUrl);
-                mPageNumber = 1;
-                Toaster.makeToast(getContext(), "Page " + mPageNumber);
-            }
+            loadFirstPage();
         }
     };
 
@@ -252,9 +284,6 @@ public class TopicListFragment extends Fragment
         public void onClick(View view) {
             switch (view.getId()) {
                 case R.id.new_topic:
-                    mDialog = new ProgressDialog(getContext());
-                    mDialog.setMessage("Loading...");
-                    mDialog.show();
                     mTopicListLoader.openPostTopicActivity();
                     break;
             }

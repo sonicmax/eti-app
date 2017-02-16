@@ -200,14 +200,26 @@ public class TopicListScraper {
         }
     }
 
+    /**
+     * Returns value of page parameter from URL.
+     * Note that this only works for PM inbox - we have to manually keep track of pages
+     * in the topic list.
+     *
+     * @return Page number
+     */
     private int getPageNumber() {
-        try {
-            Uri uri = Uri.parse(mUrl);
-            return Integer.parseInt(uri.getQueryParameter("page"));
+        if (mUrl.contains("/topics/")) {
+            return 0;
+        }
+        else {
+            try {
+                Uri uri = Uri.parse(mUrl);
+                return Integer.parseInt(uri.getQueryParameter("page"));
 
-        } catch (NumberFormatException e) {
-            // (Displays first page if parameter is missing)
-            return 1;
+            } catch (NumberFormatException e) {
+                // (Displays first page if parameter is missing)
+                return 1;
+            }
         }
     }
 }
