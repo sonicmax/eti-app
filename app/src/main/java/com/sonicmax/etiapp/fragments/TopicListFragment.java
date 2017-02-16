@@ -82,13 +82,9 @@ public class TopicListFragment extends Fragment
                 mPrevPageUrl = mTopicList.getPrevPageUrl();
                 mNextPageUrl = mTopicList.getNextPageUrl();
 
-                if (mNextPageUrl != null) {
-                    mTopicListAdapter.setHasNextPage(true);
-                }
-                else {
-                    mTopicListAdapter.setHasNextPage(false);
-                }
-
+                mTopicListAdapter.setCurrentPage(mPageNumber);
+                mTopicListAdapter.getCurrentTime();
+                mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
                 mTopicListAdapter.updateTopics(mTopics);
             }
             else {
@@ -164,17 +160,13 @@ public class TopicListFragment extends Fragment
         mPrevPageUrl = topicList.getPrevPageUrl();
         mNextPageUrl = topicList.getNextPageUrl();
 
-        if (mNextPageUrl != null) {
-            mTopicListAdapter.setHasNextPage(true);
-        }
-        else {
-            mTopicListAdapter.setHasNextPage(false);
-        }
-
+        mTopicListAdapter.setCurrentPage(mPageNumber);
         mTopicListAdapter.getCurrentTime();
+        mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
         mTopicListAdapter.updateTopics(mTopics);
 
         if (mPageNumber > 1) {
+            scrollToFirstTopic();
             Snacker.showSnackBar(mRootView, "Page " + mPageNumber);
         }
     }
@@ -209,27 +201,22 @@ public class TopicListFragment extends Fragment
     }
 
     private void loadNextPage() {
-        final int FIRST_TOPIC = 0;
-
         if (mNextPageUrl != null) {
             loadTopicList(null, mNextPageUrl);
             mPageNumber++;
-            scrollToPosition(FIRST_TOPIC);
         }
     }
 
     private void loadFirstPage() {
-        final int FIRST_POST = 0;
-
         if (mPrevPageUrl != null) {
             loadTopicList(null, mPrevPageUrl);
             mPageNumber = 1;
-            scrollToPosition(FIRST_POST);
         }
     }
 
-    private void scrollToPosition(final int position) {
-        mListView.setSelection(position);
+    private void scrollToFirstTopic() {
+        final int FIRST_TOPIC = 0;
+        mListView.setSelection(FIRST_TOPIC);
         // mListView.setSelectionAfterHeaderView();
     }
 

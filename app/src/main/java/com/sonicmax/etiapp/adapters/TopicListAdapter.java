@@ -2,6 +2,7 @@ package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
 import android.text.method.LinkMovementMethod;
@@ -30,6 +31,7 @@ import java.util.Locale;
 
 public class TopicListAdapter extends BaseAdapter {
     private final String LOG_TAG = TopicListAdapter.class.getSimpleName();
+    private final int TOPICS_PER_PAGE = 50;
 
     private final int BG_GREY;
     private final int HEADER_GREY;
@@ -39,6 +41,7 @@ public class TopicListAdapter extends BaseAdapter {
 
     private ListView mListView;
     private List<Topic> mTopics = Collections.emptyList();
+    private int mCurrentPage;
     private boolean mHasNextPage = false;
 
     public TopicListAdapter(Context context, EventInterface eventInterface) {
@@ -61,6 +64,10 @@ public class TopicListAdapter extends BaseAdapter {
         mListView = view;
     }
 
+    public void setCurrentPage(int page) {
+        mCurrentPage = page;
+    }
+
     public void setHasNextPage(boolean hasNextPage) {
         mHasNextPage = hasNextPage;
     }
@@ -69,19 +76,6 @@ public class TopicListAdapter extends BaseAdapter {
         mTopics.clear();
         mTopics = topics;
         notifyDataSetChanged();
-
-        if (mHasNextPage) {
-            LayoutInflater inflater = LayoutInflater.from(mContext);
-            Button nextPageButton = (Button) inflater.inflate(R.layout.next_page_button, null);
-            nextPageButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    mEventInterface.onRequestNextPage();
-                }
-            });
-
-            mListView.addFooterView(nextPageButton);
-        }
     }
 
     public void getCurrentTime() {
@@ -104,15 +98,14 @@ public class TopicListAdapter extends BaseAdapter {
         return position;
     }
 
-    private static class ViewHolder {
-        public final TextView userView;
-        public final TextView titleView;
-        public final TextView totalView;
-        public final TextView tagView;
-        public final TextView timestampView;
+    private class ViewHolder {
+        final TextView userView;
+        final TextView titleView;
+        final TextView totalView;
+        final TextView tagView;
+        final TextView timestampView;
 
-        public ViewHolder(TextView username, TextView title, TextView total, TextView tags,
-                          TextView timestamp) {
+        ViewHolder(TextView username, TextView title, TextView total, TextView tags, TextView timestamp) {
             this.userView = username;
             this.titleView = title;
             this.totalView = total;
@@ -121,53 +114,65 @@ public class TopicListAdapter extends BaseAdapter {
         }
     }
 
+    private View getNextPageButton(ViewGroup parent) {
+        Button nextPageButton = (Button) LayoutInflater.from(mContext).inflate(R.layout.next_page_button, parent, false);
+        Resources resources = mContext.getResources();
+        String nextPageText = resources.getString(R.string.continued_next_page) + " " + (mCurrentPage + 1);
+        nextPageButton.setText(nextPageText);
+
+        nextPageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mEventInterface.onRequestNextPage();
+            }
+        });
+
+        return nextPageButton;
+    }
+
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        TextView userView, titleView, countView, tagView, timestampView;
-
-        if (convertView == null) {
-
-            convertView = LayoutInflater.from(mContext)
-                    .inflate(R.layout.list_item_topic, parent, false);
-            titleView = (TextView) convertView.findViewById(R.id.list_item_topic_title);
-            userView = (TextView) convertView.findViewById(R.id.list_item_username);
-            countView = (TextView) convertView.findViewById(R.id.list_item_total);
-            tagView = (TextView) convertView.findViewById(R.id.list_item_tags);
-            timestampView = (TextView) convertView.findViewById(R.id.list_item_time);
-            convertView.setTag(new ViewHolder(userView, titleView, countView, tagView, timestampView));
-
-        } else {
-
-            ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-            userView = viewHolder.userView;
-            titleView = viewHolder.titleView;
-            countView = viewHolder.totalView;
-            tagView = viewHolder.tagView;
-            timestampView = viewHolder.timestampView;
+    public View getView(int position, View view, ViewGroup parent) {
+        if (view == null) {
+            view = LayoutInflater.from(mContext).inflate(R.layout.list_item_topic, parent, false);
+            setViewHolder(view);
         }
 
+        populateTopicView(view, (ViewHolder) view.getTag(), position);
+
+        return view;
+    }
+
+    private void setViewHolder(View view) {
+        TextView titleView = (TextView) view.findViewById(R.id.list_item_topic_title);
+        TextView userView = (TextView) view.findViewById(R.id.list_item_username);
+        TextView totalView = (TextView) view.findViewById(R.id.list_item_total);
+        TextView tagView = (TextView) view.findViewById(R.id.list_item_tags);
+        TextView timestampView = (TextView) view.findViewById(R.id.list_item_time);
+        view.setTag(new ViewHolder(userView, titleView, totalView, tagView, timestampView));
+    }
+
+    private void populateTopicView(View convertView, ViewHolder viewHolder, int position) {
         Topic topic = getItem(position);
 
-        userView.setText(topic.getUser());
-        titleView.setText(topic.getTitle());
-        countView.setText(topic.etiFormatSize());
-        tagView.setText(topic.getTags());
-        timestampView.setText(mTimestampBuilder.getFuzzyTimestamp(topic.getTimestamp()));
+        if (viewHolder != null) {
+            viewHolder.userView.setText(topic.getUser());
+            viewHolder.titleView.setText(topic.getTitle());
+            viewHolder.totalView.setText(topic.etiFormatSize());
+            viewHolder.tagView.setText(topic.getTags());
+            viewHolder.timestampView.setText(mTimestampBuilder.getFuzzyTimestamp(topic.getTimestamp()));
 
-        // Make sure that clicks on tagView are dispatched to TagSpan listener
-        tagView.setMovementMethod(LinkMovementMethod.getInstance());
-        countView.setOnClickListener(lastPageHandler);
+            // Make sure that clicks on tagView are dispatched to TagSpan listener
+            viewHolder.tagView.setMovementMethod(LinkMovementMethod.getInstance());
+            viewHolder.totalView.setOnClickListener(lastPageHandler);
 
-        // Highlight topic if pinned
-        if (topic.getTags().toString().matches(".*\\bPinned\\b.*")) {
-            ((CardView) convertView).setCardBackgroundColor(HEADER_GREY);
+            // Highlight topic if pinned
+            if (topic.getTags().toString().matches(".*\\bPinned\\b.*")) {
+                ((CardView) convertView).setCardBackgroundColor(HEADER_GREY);
+            } else {
+                // We have to manually set the default colour because the adapter will reuse views
+                ((CardView) convertView).setCardBackgroundColor(BG_GREY);
+            }
         }
-        else {
-            // We have to manually set the default colour because the adapter will reuse views
-            ((CardView) convertView).setCardBackgroundColor(BG_GREY);
-        }
-
-        return convertView;
     }
 
     private View.OnClickListener lastPageHandler = new View.OnClickListener() {

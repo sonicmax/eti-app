@@ -20,7 +20,7 @@ import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.TopicListLoader;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
-import com.sonicmax.etiapp.utilities.Toaster;
+import com.sonicmax.etiapp.utilities.Snacker;
 
 import java.util.List;
 
@@ -31,21 +31,22 @@ import java.util.List;
 
 public class InboxFragment extends Fragment
         implements TopicListLoader.EventInterface, TopicListAdapter.EventInterface {
-    public InboxFragment() {}
 
-    public TopicListAdapter mTopicListAdapter;
+    private TopicListAdapter mTopicListAdapter;
     private String mUrl;
     private ProgressDialog mDialog;
     private TopicList mTopicList;
     private List<Topic> mTopics;
     private TopicListLoader mTopicListLoader;
-    public TextView mBoardName;
+    private TextView mBoardName;
+    private View mRootView;
+    private ListView mListView;
 
     private int mPageNumber;
-    private boolean mFirstRun = true;
-
     private String mPrevPageUrl;
     private String mNextPageUrl;
+
+    public InboxFragment() {}
 
     ///////////////////////////////////////////////////////////////////////////
     // Fragment methods
@@ -57,7 +58,7 @@ public class InboxFragment extends Fragment
         mTopicListAdapter = new TopicListAdapter(context, this);
         mTopicListLoader = new TopicListLoader(context, this);
 
-        if (mFirstRun) {
+        if (mPageNumber == 0) {
             mPageNumber = 1;
         }
 
@@ -82,13 +83,9 @@ public class InboxFragment extends Fragment
                 mPrevPageUrl = mTopicList.getPrevPageUrl();
                 mNextPageUrl = mTopicList.getNextPageUrl();
 
-                if (mNextPageUrl != null) {
-                    mTopicListAdapter.setHasNextPage(true);
-                }
-                else {
-                    mTopicListAdapter.setHasNextPage(false);
-                }
-
+                mTopicListAdapter.setCurrentPage(mPageNumber);
+                mTopicListAdapter.getCurrentTime();
+                mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
                 mTopicListAdapter.updateTopics(mTopics);
             }
 
@@ -105,22 +102,22 @@ public class InboxFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View rootView = inflater.inflate(R.layout.fragment_inbox, container, false);
+        mRootView = inflater.inflate(R.layout.fragment_inbox, container, false);
 
-        mBoardName = (TextView) rootView.findViewById(R.id.board_name_text);
+        mBoardName = (TextView) mRootView.findViewById(R.id.board_name_text);
         String name = getActivity().getIntent().getStringExtra("boardname");
         mBoardName.setText(name);
 
-        FloatingActionButton newTopicButton = (FloatingActionButton) rootView.findViewById(R.id.new_topic);
+        FloatingActionButton newTopicButton = (FloatingActionButton) mRootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(inboxThreadCreator);
 
-        ListView topicList = (ListView) rootView.findViewById(R.id.listview_topics);
-        topicList.setAdapter(mTopicListAdapter);
-        mTopicListAdapter.setListView(topicList);
-        topicList.setOnItemClickListener(inboxClickHandler);
-        topicList.setOnTouchListener(inboxSwipeHandler);
+        mListView = (ListView) mRootView.findViewById(R.id.listview_topics);
+        mListView.setAdapter(mTopicListAdapter);
+        mTopicListAdapter.setListView(mListView);
+        mListView.setOnItemClickListener(inboxClickHandler);
+        mListView.setOnTouchListener(inboxSwipeHandler);
 
-        return rootView;
+        return mRootView;
     }
 
     @Override
@@ -131,7 +128,6 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        // Save list of topics so we can quickly restore fragment
         if (mTopicList != null) {
             outState.putParcelable("topiclist", mTopicList);
         }
@@ -153,11 +149,7 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onRequestNextPage() {
-        if (mNextPageUrl != null) {
-            loadTopicList(null, mNextPageUrl);
-            mPageNumber++;
-            Toaster.makeToast(getContext(), "Page " + mPageNumber);
-        }
+        loadNextPage();
     }
 
     @Override
@@ -168,14 +160,15 @@ public class InboxFragment extends Fragment
         mNextPageUrl = topicList.getNextPageUrl();
         mPageNumber = topicList.getPageNumber();
 
-        if (mNextPageUrl != null) {
-            mTopicListAdapter.setHasNextPage(true);
-        }
-        else {
-            mTopicListAdapter.setHasNextPage(false);
-        }
-
+        mTopicListAdapter.setCurrentPage(mPageNumber);
+        mTopicListAdapter.getCurrentTime();
+        mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
         mTopicListAdapter.updateTopics(mTopics);
+
+        if (mPageNumber > 1) {
+            scrollToFirstTopic();
+            Snacker.showSnackBar(mRootView, "Page " + mPageNumber);
+        }
     }
 
     @Override
@@ -196,11 +189,7 @@ public class InboxFragment extends Fragment
     ///////////////////////////////////////////////////////////////////////////
 
     public void loadTopicList(String name, String url) {
-        mFirstRun = false;
-
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage("Loading topics...");
-        mDialog.show();
+        showDialog("Loading...");
 
         if (name != null) {
             mBoardName.setText(name);
@@ -213,10 +202,33 @@ public class InboxFragment extends Fragment
         loadTopicList(null, mUrl);
     }
 
+    private void loadNextPage() {
+        if (mNextPageUrl != null) {
+            loadTopicList(null, mNextPageUrl);
+        }
+    }
+
+    private void loadPrevPage() {
+        if (mPrevPageUrl != null) {
+            loadTopicList(null, mPrevPageUrl);
+        }
+    }
+
+    private void showDialog(String message) {
+        mDialog = new ProgressDialog(getContext());
+        mDialog.setMessage(message);
+        mDialog.show();
+    }
+
     private void dismissDialog() {
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
         }
+    }
+
+    private void scrollToFirstTopic() {
+        final int FIRST_TOPIC = 0;
+        mListView.setSelection(FIRST_TOPIC);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -227,20 +239,12 @@ public class InboxFragment extends Fragment
 
         @Override
         public void onSwipeLeft() {
-            if (mNextPageUrl != null) {
-                loadTopicList(null, mNextPageUrl);
-                mPageNumber++;
-                Toaster.makeToast(getContext(), "Page " + mPageNumber);
-            }
+            loadNextPage();
         }
 
         @Override
         public void onSwipeRight() {
-            if (mPrevPageUrl != null) {
-                loadTopicList(null, mPrevPageUrl);
-                mPageNumber = 1;
-                Toaster.makeToast(getContext(), "Page " + mPageNumber);
-            }
+            loadPrevPage();
         }
     };
 

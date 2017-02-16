@@ -40,6 +40,8 @@ import java.util.List;
 
 public class MessageListAdapter extends SelectableAdapter {
     private final String LOG_TAG = MessageListAdapter.class.getSimpleName();
+    private final int MESSAGE_LIMIT = 50;
+
     private final int BG_GREY;
     private final int FG_GREY;
     private final Context mContext;
@@ -127,9 +129,9 @@ public class MessageListAdapter extends SelectableAdapter {
 
     @Override
     public int getItemCount() {
-        final int MAX_POSTS_PER_PAGE = 50;
         int size = mMessages.size();
-        if (size == MAX_POSTS_PER_PAGE && mHasNextPage) {
+
+        if (mHasNextPage && size == MESSAGE_LIMIT) {
             // Include next_page_button with mMessages
             return size + 1;
         }
@@ -190,7 +192,7 @@ public class MessageListAdapter extends SelectableAdapter {
         private Button nextPageButton;
         private ImageView avatarView;
 
-        public MessageViewHolder(View view) {
+        MessageViewHolder(View view) {
             super(view);
 
             if (view.getId() == R.id.next_page_button) {
@@ -276,9 +278,10 @@ public class MessageListAdapter extends SelectableAdapter {
 
     @Override
     public void onBindViewHolder(final MessageViewHolder viewHolder, final int position) {
-        if (mHasNextPage && position == mMessages.size()) {
+        if (mHasNextPage && position == MESSAGE_LIMIT) {
             Resources resources = mContext.getResources();
             String nextPageText = resources.getString(R.string.continued_next_page) + " " + (mCurrentPage + 1);
+
             viewHolder.nextPageButton.setText(nextPageText);
 
             viewHolder.nextPageButton.setOnClickListener(new View.OnClickListener() {

@@ -111,15 +111,9 @@ public class MessageListFragment extends Fragment implements
             mNextPageUrl = mMessageList.getNextPageUrl();
             mCurrentPage = mMessageList.getPageNumber();
 
-            mMessageListAdapter.replaceAllMessages(mMessages);
             mMessageListAdapter.setCurrentPage(mCurrentPage);
-
-            if (mNextPageUrl != null) {
-                mMessageListAdapter.setNextPageFlag(true);
-            }
-            else {
-                mMessageListAdapter.setNextPageFlag(false);
-            }
+            mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
+            mMessageListAdapter.replaceAllMessages(mMessages);
         }
 
         super.onCreate(savedInstanceState);
@@ -198,11 +192,7 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onDetach() {
-        // Make sure that we don't leak progress dialog when exiting activity
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-
+        dismissDialog();
         super.onDetach();
     }
 
@@ -265,22 +255,16 @@ public class MessageListFragment extends Fragment implements
     }
 
     private void loadNextPage() {
-        final int FIRST_POST = 0;
-
         if (mNextPageUrl != null) {
             mMessageListAdapter.clearMessages();
             loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-            scrollToPosition(FIRST_POST);
         }
     }
 
     private void loadPrevPage() {
-        final int FIRST_POST = 0;
-
         if (mPrevPageUrl != null) {
             mMessageListAdapter.clearMessages();
             loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
-            scrollToPosition(FIRST_POST);
         }
     }
 
@@ -296,12 +280,10 @@ public class MessageListFragment extends Fragment implements
         mPrevPageUrl = messageList.getPrevPageUrl();
         mNextPageUrl = messageList.getNextPageUrl();
 
-        if (mNextPageUrl != null) {
-            mMessageListAdapter.setNextPageFlag(true);
-        }
 
-        mMessageListAdapter.replaceAllMessages(mMessages);
+        mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
         mMessageListAdapter.setCurrentPage(mCurrentPage);
+        mMessageListAdapter.replaceAllMessages(mMessages);
 
         boolean isLastPage = mCurrentPage == mTopic.getLastPage(0);
 
@@ -323,6 +305,8 @@ public class MessageListFragment extends Fragment implements
         dismissDialog();
 
         if (mCurrentPage > 1) {
+            final int FIRST_POST = 0;
+            scrollToPosition(FIRST_POST);
             Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
         }
     }
@@ -365,7 +349,6 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onReceiveNewPost(MessageList messageList, int position) {
-        final int POSTS_PER_PAGE = 50;
         final int totalPosts = getTotalPosts();
 
         // Update mNextPageUrl, in case new page was created
