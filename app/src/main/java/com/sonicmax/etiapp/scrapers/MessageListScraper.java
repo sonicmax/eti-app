@@ -205,7 +205,7 @@ public class MessageListScraper {
         if (mUrl.contains("inboxthread.php")) {
             prefix = "https://endoftheinter.net";
         } else {
-            prefix = "https:/";
+            prefix = "https:";
         }
 
         Element secondAnchor = infobar.getElementsByTag("a").get(1);
