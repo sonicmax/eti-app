@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.preference.PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <android.support.v7.preference.PreferenceCategory
+        android:title="@string/preferences_general">
+
+        <Preference
+            android:key="reload_bookmarks"
+            android:title="@string/preferences_reload_bookmarks"> </Preference>
+
+        <Preference
+            android:key="clear_cache"
+            android:title="@string/preferences_clear_cache"> </Preference>
+
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory
+        android:title="@string/preferences_topics">
+
+        <android.support.v7.preference.CheckBoxPreference
+            android:key="@string/pref_ignorator_enable"
+            android:defaultValue="false"
+            android:summary="@string/preferences_ignorator_summary"
+            android:title="@string/preferences_ignorator_enable"/>
+
+        <android.support.v7.preference.EditTextPreference
+            android:defaultValue="@string/preferences_ignorator_default"
+            android:dialogMessage="@string/preferences_ignorator_message"
+            android:inputType="text"
+            android:key="@string/pref_ignorator_list"
+            android:title="@string/preferences_ignorator_list"/>
+
+    </android.support.v7.preference.PreferenceCategory>
+
+</android.support.v7.preference.PreferenceScreen>
