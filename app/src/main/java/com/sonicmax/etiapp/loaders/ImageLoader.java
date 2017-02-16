@@ -210,45 +210,6 @@ public class ImageLoader {
         }
     }
 
-    /**
-     * Decodes Bitmap bounds from src and returns int array containing width and height.
-     * @param src Src of image to load
-     * @return [width, height]
-     */
-    private int[] loadBitmapAndDecodeBounds(String src) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inScreenDensity = mDefaultOptions.inScreenDensity;
-        options.inTargetDensity =  mDefaultOptions.inTargetDensity;
-        options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
-        options.inJustDecodeBounds = true;
-
-        HttpURLConnection connection = null;
-        InputStream input = null;
-
-        try {
-            URL url = new URL(src);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.connect();
-            input = connection.getInputStream();
-
-            BitmapFactory.decodeStream(input, null, options);
-
-            int[] size = new int[2];
-            size[0] = options.outWidth;
-            size[1] = options.outHeight;
-
-            return size;
-
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "Error while loading image", e);
-            return null;
-
-        } finally {
-            cleanUpAfterLoad(connection, input);
-        }
-
-    }
-
     private void cleanUpAfterLoad(HttpURLConnection connection, InputStream input) {
         if (connection != null) {
             connection.disconnect();
