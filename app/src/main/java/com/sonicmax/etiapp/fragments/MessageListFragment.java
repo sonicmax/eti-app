@@ -76,6 +76,7 @@ public class MessageListFragment extends Fragment implements
     private int mCurrentPage;
     private String mPrevPageUrl;
     private String mNextPageUrl;
+    private int mStartPoint;
 
     public MessageListFragment() {}
 
@@ -96,6 +97,13 @@ public class MessageListFragment extends Fragment implements
             mTopic = intent.getParcelableExtra("topic");
             String url = (intent.getBooleanExtra("last_page", false))
                     ? mTopic.getLastPageUrl() : mTopic.getUrl();
+            int page = intent.getIntExtra("page", 0);
+
+            if (page > 0) {
+                url += "&page=" + page;
+            }
+
+            mStartPoint = intent.getIntExtra("post", 0);
 
             mMessageListLoader = new MessageListLoader(getContext(), this, url);
 
@@ -305,9 +313,20 @@ public class MessageListFragment extends Fragment implements
         dismissDialog();
 
         if (mCurrentPage > 1) {
-            final int FIRST_POST = 0;
-            scrollToPosition(FIRST_POST);
+            if (mStartPoint > 0) {
+                scrollToPosition(mStartPoint);
+                mStartPoint = 0;
+            }
+            else {
+                final int FIRST_POST = 0;
+                scrollToPosition(FIRST_POST);
+            }
             Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
+        }
+
+        if (mStartPoint > 0) {
+            scrollToPosition(mStartPoint);
+            mStartPoint = 0;
         }
     }
 

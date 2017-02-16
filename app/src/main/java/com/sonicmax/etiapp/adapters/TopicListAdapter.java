@@ -1,12 +1,10 @@
 package com.sonicmax.etiapp.adapters;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.Resources;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,19 +13,12 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.sonicmax.etiapp.activities.InboxThreadActivity;
-import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.utilities.FuzzyTimestampBuilder;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Locale;
 
 public class TopicListAdapter extends BaseAdapter {
     private final String LOG_TAG = TopicListAdapter.class.getSimpleName();
@@ -58,6 +49,7 @@ public class TopicListAdapter extends BaseAdapter {
 
     public interface EventInterface {
         void onRequestNextPage();
+        void onRequestLastUnreadPost(int position);
     }
 
     public void setListView(ListView view) {
@@ -163,7 +155,7 @@ public class TopicListAdapter extends BaseAdapter {
 
             // Make sure that clicks on tagView are dispatched to TagSpan listener
             viewHolder.tagView.setMovementMethod(LinkMovementMethod.getInstance());
-            viewHolder.totalView.setOnClickListener(lastPageHandler);
+            viewHolder.totalView.setOnClickListener(lastUnreadPostHandler);
 
             // Highlight topic if pinned
             if (topic.getTags().toString().matches(".*\\bPinned\\b.*")) {
@@ -175,29 +167,12 @@ public class TopicListAdapter extends BaseAdapter {
         }
     }
 
-    private View.OnClickListener lastPageHandler = new View.OnClickListener() {
+    private View.OnClickListener lastUnreadPostHandler = new View.OnClickListener() {
 
         @Override
         public void onClick(View view) {
-
-            // Get Topic object from adapter
-            final int position = mListView.getPositionForView((View) view.getParent());
-            Topic target = mTopics.get(position);
-
-            Intent intent;
-            if (target.getUrl().contains("inboxthread.php")) {
-                intent = new Intent(mContext, InboxThreadActivity.class);
-            }
-            else {
-                intent = new Intent(mContext, MessageListActivity.class);
-            }
-
-            // Create new intent for MessageListActivity using Topic data
-            intent.putExtra("topic", target);
-            intent.putExtra("title", target.getTitle());
-            intent.putExtra("last_page", true);
-
-            mContext.startActivity(intent);
+        int position = mListView.getPositionForView((View) view.getParent());
+        mEventInterface.onRequestLastUnreadPost(position);
         }
     };
 

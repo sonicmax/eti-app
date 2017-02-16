@@ -78,6 +78,7 @@ public class InboxThreadFragment extends Fragment implements
     private int mCurrentPage;
     private String mPrevPageUrl;
     private String mNextPageUrl;
+    private int mStartPoint;
 
     public InboxThreadFragment() {}
 
@@ -86,7 +87,7 @@ public class InboxThreadFragment extends Fragment implements
         mMessageListAdapter = new MessageListAdapter(context, this);
 
         // Set some values required for MessageListAdapter to work correctly with inbox threads.
-        // TODO: Allow users to choose between regular message list UI and chat UI
+        // TODO: Allow users to choose between chat UI and regular message list UI
         mMessageListAdapter.setInboxThreadFlag(true);
         String self = SharedPreferenceManager.getString(context, "username");
         mMessageListAdapter.setSelf(self);
@@ -102,6 +103,14 @@ public class InboxThreadFragment extends Fragment implements
             mTopic = intent.getParcelableExtra("topic");
             String url = (intent.getBooleanExtra("last_page", false))
                     ? mTopic.getLastPageUrl() : mTopic.getUrl();
+            int page = intent.getIntExtra("page", 0);
+
+            if (page > 0) {
+                url += "&page=" + page;
+            }
+
+            mStartPoint = intent.getIntExtra("post", 0);
+
 
             mMessageListLoader = new MessageListLoader(getContext(), this, url);
 
@@ -234,9 +243,6 @@ public class InboxThreadFragment extends Fragment implements
         }
     }
 
-    /**
-     * For debugging
-     */
     public void clearMemCache() {
         mMessageListAdapter.clearMemoryCache();
     }
@@ -255,6 +261,22 @@ public class InboxThreadFragment extends Fragment implements
         displayDialog("Loading...");
         mCurrentPage = getActivity().getIntent().getIntExtra("page", 1);
         mMessageListLoader.load(args, id);
+    }
+
+    private void loadPrevPage() {
+        if (mPrevPageUrl != null) {
+            displayDialog("Loading...");
+            mMessageListAdapter.clearMessages();
+            loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
+        }
+    }
+
+    private void loadNextPage() {
+        if (mNextPageUrl != null) {
+            displayDialog("Loading...");
+            mMessageListAdapter.clearMessages();
+            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
+        }
     }
 
     public void displayDialog(String message) {
@@ -314,6 +336,23 @@ public class InboxThreadFragment extends Fragment implements
         }
 
         dismissDialog();
+
+        if (mCurrentPage > 1) {
+            if (mStartPoint > 0) {
+                scrollToPosition(mStartPoint);
+                mStartPoint = 0;
+            }
+            else {
+                final int FIRST_POST = 0;
+                scrollToPosition(FIRST_POST);
+            }
+            Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
+        }
+
+        if (mStartPoint > 0) {
+            scrollToPosition(mStartPoint);
+            mStartPoint = 0;
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -345,14 +384,7 @@ public class InboxThreadFragment extends Fragment implements
 
     @Override
     public void onRequestNextPage() {
-        final int FIRST_POST = 0;
-
-        if (mNextPageUrl != null) {
-            mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-            Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
-            scrollToPosition(FIRST_POST);
-        }
+        loadNextPage();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -603,18 +635,12 @@ public class InboxThreadFragment extends Fragment implements
 
         @Override
         public void onSwipeLeft() {
-            if (mNextPageUrl != null) {
-                loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-                Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
-            }
+            loadNextPage();
         }
 
         @Override
         public void onSwipeRight() {
-            if (mPrevPageUrl != null) {
-                loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
-                Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
-            }
+            loadPrevPage();
         }
     };
 

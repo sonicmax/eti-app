@@ -29,6 +29,7 @@ public class TagSpan extends ClickableSpan {
         Intent intent = new Intent(mContext, TopicListActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("url", mUrl);
+        intent.putExtra("page", 1);
         intent.putExtra("boardname", mName);
         mContext.startActivity(intent);
     }

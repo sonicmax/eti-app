@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.InboxThreadActivity;
 import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.adapters.TopicListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
@@ -151,6 +153,42 @@ public class TopicListFragment extends Fragment
     @Override
     public void onRequestNextPage() {
         loadNextPage();
+    }
+
+    @Override
+    public void onRequestLastUnreadPost(int position) {
+        // Get Topic object from adapter
+        Topic target = mTopics.get(position);
+
+        Intent intent;
+        if (target.getUrl().contains("inboxthread.php")) {
+            intent = new Intent(getContext(), InboxThreadActivity.class);
+        }
+        else {
+            intent = new Intent(getContext(), MessageListActivity.class);
+        }
+
+        String total = target.etiFormatSize();
+        if (total.contains("(")) {
+            // Redirect user to page containing last unread post, and add scroll position to intent
+            String trimmedTotal = total.substring(total.indexOf("(")).replace("(+", "");
+            int unreadPosts = Integer.parseInt(trimmedTotal.substring(0, trimmedTotal.indexOf(")")));
+            int lastUnreadPost = target.size() - unreadPosts;
+            int startPage = (lastUnreadPost / 50) + 1;
+            int remainder = lastUnreadPost % 50;
+
+            intent.putExtra("page", startPage);
+            intent.putExtra("post", remainder);
+        }
+
+        else {
+            intent.putExtra("last_page", true);
+        }
+
+        intent.putExtra("topic", target);
+        intent.putExtra("title", target.getTitle());
+
+        getContext().startActivity(intent);
     }
 
     @Override
