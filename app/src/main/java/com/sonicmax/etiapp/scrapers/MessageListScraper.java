@@ -15,6 +15,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MessageListScraper {
@@ -23,10 +24,12 @@ public class MessageListScraper {
     private String mUrl;
     private String mPrevPageUrl;
     private String mNextPageUrl;
+    private HashMap<String, String> mAvatarUrlCache;
 
     public MessageListScraper(Context context, String url) {
         this.mContext = context;
         this.mUrl = url;
+        mAvatarUrlCache = new HashMap<>();
     }
 
     public void setUrl(String url) {
@@ -59,7 +62,7 @@ public class MessageListScraper {
         Elements infobarClass = document.getElementsByClass("infobar");
         if (infobarClass.size() > 0) {
             Element infobar = infobarClass.get(0);
-            getPageUrls(infobar);
+            getPageUrls(document, infobar);
 
             Element pageInfobar = infobarClass.get(1);
             lastPage = getLastPage(pageInfobar);
@@ -109,6 +112,9 @@ public class MessageListScraper {
                 timeStamp = ((TextNode) children.get(3)).text().replace(DIVIDER, "");
             }
 
+            Element holderCollection = container.getElementsByClass("userpic-holder").get(0);
+            String avatarUrl = getAvatarUrl(holderCollection, username);
+
             // Pass null into Message object if topic has already been filtered
             String filterUrl = null;
 
@@ -128,7 +134,7 @@ public class MessageListScraper {
             // Get position of current message in topic
             int position = getPosition(currentPage, i);
 
-            Message message = new Message(container.outerHtml(), username, timeStamp, filterUrl, position);
+            Message message = new Message(container.outerHtml(), username, avatarUrl, timeStamp, filterUrl, position);
 
             messages.add(message);
         }
@@ -147,26 +153,78 @@ public class MessageListScraper {
         }
     }
 
-    private void getPageUrls(Element infobar) {
-        final String HTTPS = "https:";
+    private String getAvatarUrl(Element holderCollection, String username) {
+        String avatarUrl;
+        Elements imgs = holderCollection.getElementsByClass("img-placeholder");
+
+        if (mAvatarUrlCache.get(username) == null) {
+            if (imgs.size() > 0) {
+                // Scrape the image URL from the parameters for the ImageLoader script.
+                String imgHtml = holderCollection.html();
+                String urlStart = "\\/\\/i"; // \/\/i
+                String urlEnd = "\",";
+                int start = imgHtml.indexOf(urlStart);
+                // TODO: Figure out exactly why this was causing crashes. The ugly conditionals seem to "fix" it
+                if (start > -1) {
+                    String trimmedHtml = imgHtml.substring(start);
+                    int end = trimmedHtml.indexOf(urlEnd);
+                    if (end > -1) {
+                        String trimmedUrl = trimmedHtml.substring(0, end).replace("\\/\\/", "//").replace("\\/", "/");
+                        avatarUrl = "https:" + trimmedUrl;
+                        mAvatarUrlCache.put(username, avatarUrl);
+                        return avatarUrl;
+                    }
+                    else {
+                        mAvatarUrlCache.put(username, "");
+                        return null;
+                    }
+                }
+                else {
+                    mAvatarUrlCache.put(username, "");
+                    return null;
+                }
+            } else {
+                mAvatarUrlCache.put(username, "");
+                return null;
+            }
+        }
+
+        else {
+            if (!mAvatarUrlCache.get(username).equals("")) {
+                return mAvatarUrlCache.get(username);
+            }
+            else {
+                return null;
+            }
+        }
+    }
+
+    private void getPageUrls(Document document, Element infobar) {
+        String prefix;
+
+        if (mUrl.contains("inboxthread.php")) {
+            prefix = "https://endoftheinter.net";
+        } else {
+            prefix = "https:/";
+        }
 
         Element secondAnchor = infobar.getElementsByTag("a").get(1);
 
         if (secondAnchor.text().equals("Previous Page")) {
             // Could be anywhere from pages 3-101
-            mPrevPageUrl = HTTPS + secondAnchor.attr("href");
-            mNextPageUrl = HTTPS + infobar.getElementsByTag("a").get(2).attr("href");
+            mPrevPageUrl = prefix + secondAnchor.attr("href");
+            mNextPageUrl = prefix + infobar.getElementsByTag("a").get(2).attr("href");
 
         }
         else if (secondAnchor.text().equals("Next Page")) {
             // Page 2
-            mPrevPageUrl = HTTPS + infobar.getElementsByTag("a").get(0).attr("href");
-            mNextPageUrl = HTTPS + secondAnchor.attr("href");
+            mPrevPageUrl = prefix + infobar.getElementsByTag("a").get(0).attr("href");
+            mNextPageUrl = prefix + secondAnchor.attr("href");
         }
         else {
-            // Page 1
+            // Page 1 or PM thread
             mPrevPageUrl = null;
-            mNextPageUrl = HTTPS + infobar.getElementsByTag("a").get(0).attr("href");
+            mNextPageUrl = prefix + document.getElementById("nextpage").attr("href");
         }
     }
 

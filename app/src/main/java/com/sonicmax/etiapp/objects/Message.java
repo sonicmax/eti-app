@@ -7,15 +7,17 @@ public class Message implements Parcelable {
 
     private String html;
     private String username;
+    private String avatarUrl;
     private String time;
     private String position;
     private String filterUrl;
 
     private boolean mNeedsAnimation = false;
 
-    public Message(String html, String user, String time, String filter, int position) {
+    public Message(String html, String user, String avatarUrl, String time, String filter, int position) {
         this.html = html;
         this.username = user;
+        this.avatarUrl = avatarUrl;
         this.time = time;
         this.filterUrl = filter;
         this.position = Integer.toString(position);
@@ -23,6 +25,10 @@ public class Message implements Parcelable {
 
     public String getUser() {
         return username;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
     }
 
     public String getTimestamp() {
@@ -56,6 +62,7 @@ public class Message implements Parcelable {
     protected Message(Parcel in) {
         html = in.readString();
         username = in.readString();
+        avatarUrl = in.readString();
         time = in.readString();
         position = in.readString();
         filterUrl = in.readString();
@@ -71,6 +78,7 @@ public class Message implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(html);
         dest.writeString(username);
+        dest.writeString(avatarUrl);
         dest.writeString(time);
         dest.writeString(position);
         dest.writeString(filterUrl);
