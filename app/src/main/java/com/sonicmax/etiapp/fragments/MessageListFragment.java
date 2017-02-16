@@ -43,6 +43,7 @@ import com.sonicmax.etiapp.loaders.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
+import com.sonicmax.etiapp.utilities.Snacker;
 import com.sonicmax.etiapp.utilities.Toaster;
 
 import java.util.List;
@@ -263,6 +264,26 @@ public class MessageListFragment extends Fragment implements
         }
     }
 
+    private void loadNextPage() {
+        final int FIRST_POST = 0;
+
+        if (mNextPageUrl != null) {
+            mMessageListAdapter.clearMessages();
+            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
+            scrollToPosition(FIRST_POST);
+        }
+    }
+
+    private void loadPrevPage() {
+        final int FIRST_POST = 0;
+
+        if (mPrevPageUrl != null) {
+            mMessageListAdapter.clearMessages();
+            loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
+            scrollToPosition(FIRST_POST);
+        }
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // MessageListLoader.EventInterface methods
     ///////////////////////////////////////////////////////////////////////////
@@ -300,6 +321,10 @@ public class MessageListFragment extends Fragment implements
         }
 
         dismissDialog();
+
+        if (mCurrentPage > 1) {
+            Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -331,14 +356,7 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onRequestNextPage() {
-        final int FIRST_POST = 0;
-
-        if (mNextPageUrl != null) {
-            mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-            Toaster.makeToast(getContext(), "Page " + mCurrentPage);
-            scrollToPosition(FIRST_POST);
-        }
+        loadNextPage();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -516,29 +534,22 @@ public class MessageListFragment extends Fragment implements
 
             @Override
             public void onPreload() {
-                mDialog = new ProgressDialog(getContext());
-                mDialog.setMessage("Posting message...");
-                mDialog.show();
+                displayDialog("Posting message...");
             }
 
             @Override
             public void onSuccess(String message) {
-                if (mDialog != null && mDialog.isShowing()) {
-                    mDialog.hide();
-                }
+                dismissDialog();
 
                 if (message != null) {
-                    Snackbar.make(mRootView, message, Snackbar.LENGTH_SHORT).show();
+                    Snacker.showSnackBar(mRootView, message);
                 }
             }
 
             @Override
             public void onError(String errorMessage) {
-                if (mDialog != null && mDialog.isShowing()) {
-                    mDialog.hide();
-                }
-
-                Snackbar.make(mRootView, errorMessage, Snackbar.LENGTH_SHORT).show();
+                dismissDialog();
+                Snacker.showSnackBar(mRootView, errorMessage);
             }
         };
 
@@ -597,18 +608,12 @@ public class MessageListFragment extends Fragment implements
 
         @Override
         public void onSwipeLeft() {
-            if (mNextPageUrl != null) {
-                loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
-                Toaster.makeToast(getContext(), "Page " + mCurrentPage);
-            }
+           loadNextPage();
         }
 
         @Override
         public void onSwipeRight() {
-            if (mPrevPageUrl != null) {
-                loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
-                Toaster.makeToast(getContext(), "Page " + mCurrentPage);
-            }
+            loadPrevPage();
         }
     };
 
