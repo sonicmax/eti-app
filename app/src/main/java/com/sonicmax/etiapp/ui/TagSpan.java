@@ -30,7 +30,7 @@ public class TagSpan extends ClickableSpan {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("url", mUrl);
         intent.putExtra("page", 1);
-        intent.putExtra("boardname", mName);
+        intent.putExtra("title", mName);
         mContext.startActivity(intent);
     }
 

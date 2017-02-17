@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -103,10 +105,6 @@ public class TopicListFragment extends Fragment
                              Bundle savedInstanceState) {
 
         mRootView = inflater.inflate(R.layout.fragment_topic_list, container, false);
-
-        mBoardName = (TextView) mRootView.findViewById(R.id.board_name_text);
-        String name = getActivity().getIntent().getStringExtra("boardname");
-        mBoardName.setText(name);
 
         FloatingActionButton newTopicButton = (FloatingActionButton) mRootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(newTopicHandler);
@@ -228,9 +226,7 @@ public class TopicListFragment extends Fragment
 
     public void loadTopicList(String name, String url) {
         showDialog("Loading...");
-        if (name != null) {
-            mBoardName.setText(name);
-        }
+        updateActionBarTitle(name);
         mTopicListLoader.load(url);
     }
 
@@ -255,7 +251,6 @@ public class TopicListFragment extends Fragment
     private void scrollToFirstTopic() {
         final int FIRST_TOPIC = 0;
         mListView.setSelection(FIRST_TOPIC);
-        // mListView.setSelectionAfterHeaderView();
     }
 
     public void showDialog(String message) {
@@ -267,6 +262,23 @@ public class TopicListFragment extends Fragment
     private void dismissDialog() {
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
+        }
+    }
+
+    private void updateActionBarTitle(String newTitle) {
+        if (newTitle != null) {
+            AppCompatActivity activity = (AppCompatActivity) getActivity();
+            ActionBar actionBar = activity.getSupportActionBar();
+
+            if (actionBar != null) {
+                LayoutInflater inflator = LayoutInflater.from(getContext());
+                View v = inflator.inflate(R.layout.title_view, null);
+
+                String title = activity.getIntent().getStringExtra("title");
+                ((TextView) v.findViewById(R.id.title)).setText(title);
+
+                actionBar.setCustomView(v);
+            }
         }
     }
 

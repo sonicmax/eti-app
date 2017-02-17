@@ -105,10 +105,6 @@ public class InboxFragment extends Fragment
 
         mRootView = inflater.inflate(R.layout.fragment_inbox, container, false);
 
-        mBoardName = (TextView) mRootView.findViewById(R.id.board_name_text);
-        String name = getActivity().getIntent().getStringExtra("boardname");
-        mBoardName.setText(name);
-
         FloatingActionButton newTopicButton = (FloatingActionButton) mRootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(inboxThreadCreator);
 

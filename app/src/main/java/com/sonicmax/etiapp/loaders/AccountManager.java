@@ -133,7 +133,7 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
                         String firstBookmarkName = SharedPreferenceManager.getString(mContext, "bookmark_names0");
                         String firstBookmarkUrl = SharedPreferenceManager.getString(mContext, "bookmark_urls0");
                         intent = new Intent(mContext, TopicListActivity.class);
-                        intent.putExtra("boardname", firstBookmarkName);
+                        intent.putExtra("title", firstBookmarkName);
                         intent.putExtra("url", firstBookmarkUrl);
                     }
 
@@ -150,7 +150,7 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
                     if (firstBookmarkName != null && firstBookmarkUrl != null && !mReloadBookmarks) {
                         // Open topic list to first scraped bookmark
                         intent = new Intent(mContext, TopicListActivity.class);
-                        intent.putExtra("boardname", firstBookmarkName);
+                        intent.putExtra("title", firstBookmarkName);
                         intent.putExtra("url", firstBookmarkUrl);
 
                     } else {

@@ -146,12 +146,6 @@ public class MessageListFragment extends Fragment implements
         messageList.setLayoutManager(mLayoutManager);
         messageList.setAdapter(mMessageListAdapter);
 
-        // Display current topic title
-        TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title_text);
-        Intent intent = getActivity().getIntent();
-        mTitle = intent.getStringExtra("title");
-        topicTitle.setText(mTitle);
-
         // Set listeners
         mQuickpostButton.setOnClickListener(this);
         // mRootView.setOnTouchListener(pageSwipeHandler);

@@ -1,8 +1,6 @@
 package com.sonicmax.etiapp.activities;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -10,18 +8,11 @@ import android.view.MenuItem;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
-public class BookmarkManagerActivity extends AppCompatActivity implements AccountManager.EventInterface {
-
-    private final String LOG_TAG = BookmarkManagerActivity.class.getSimpleName();
-    @SuppressWarnings("unused")
-    private ProgressDialog mDialog;
+public class BookmarkManagerActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setElevation(4);
-        }
         setContentView(R.layout.activity_bookmarks);
     }
 
@@ -48,20 +39,5 @@ public class BookmarkManagerActivity extends AppCompatActivity implements Accoun
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // AccountManager.EventInterface callbacks
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Override
-    public void onRequiresLogin() {
-
-    }
-
-    @Override
-    public void onLoadComplete(Intent intent) {
-        startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }

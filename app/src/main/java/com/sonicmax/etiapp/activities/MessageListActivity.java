@@ -1,7 +1,6 @@
 package com.sonicmax.etiapp.activities;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -10,8 +9,7 @@ import com.sonicmax.etiapp.fragments.MessageListFragment;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
-public class MessageListActivity extends AppCompatActivity implements AccountManager.EventInterface {
-    private final String LOG_TAG = MessageListActivity.class.getSimpleName();
+public class MessageListActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,6 +17,7 @@ public class MessageListActivity extends AppCompatActivity implements AccountMan
         if (getSupportActionBar() != null) {
             getSupportActionBar().setElevation(4);
         }
+
         setContentView(R.layout.activity_message_list);
     }
 
@@ -55,22 +54,5 @@ public class MessageListActivity extends AppCompatActivity implements AccountMan
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
-    }
-
-    @Override
-    public void onRequiresLogin() {
-
-    }
-
-    @Override
-    public void onLoadComplete(Intent intent) {
-        startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }

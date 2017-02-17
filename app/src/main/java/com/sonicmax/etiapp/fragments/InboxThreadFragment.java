@@ -8,6 +8,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
@@ -92,6 +93,18 @@ public class InboxThreadFragment extends Fragment implements
         String self = SharedPreferenceManager.getString(context, "username");
         mMessageListAdapter.setSelf(self);
 
+        ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+
+        if (actionBar != null) {
+            LayoutInflater inflator = LayoutInflater.from(context);
+            View v = inflator.inflate(R.layout.title_view, null);
+
+            String title = getActivity().getIntent().getStringExtra("title");
+            ((TextView) v.findViewById(R.id.title)).setText(title);
+
+            actionBar.setCustomView(v);
+        }
+
         super.onAttach(context);
     }
 
@@ -157,12 +170,6 @@ public class InboxThreadFragment extends Fragment implements
         mLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         messageList.setLayoutManager(mLayoutManager);
         messageList.setAdapter(mMessageListAdapter);
-
-        // Display current topic title
-        TextView topicTitle = (TextView) mRootView.findViewById(R.id.topic_title_text);
-        Intent intent = getActivity().getIntent();
-        mTitle = intent.getStringExtra("title");
-        topicTitle.setText(mTitle);
 
         // Set listeners
         mQuickpostButton.setOnClickListener(this);

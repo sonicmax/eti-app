@@ -5,8 +5,8 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,10 +24,7 @@ import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TopicListActivity extends AppCompatActivity
-        implements AccountManager.EventInterface {
-
-    private final String LOG_TAG = TopicListActivity.class.getSimpleName();
+public class TopicListActivity extends BaseActivity {
     public ListView mDrawerList;
     public DrawerLayout mDrawerLayout;
     private ArrayAdapter<String> mDrawerAdapter;
@@ -48,10 +45,12 @@ public class TopicListActivity extends AppCompatActivity
         populateDrawerAdapter();
         initDrawer();
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setElevation(4);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setHomeButtonEnabled(true);
+        ActionBar actionBar = getSupportActionBar();
+
+        if (actionBar != null) {
+            actionBar.setElevation(4);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeButtonEnabled(true);
         }
     }
 
@@ -63,7 +62,7 @@ public class TopicListActivity extends AppCompatActivity
                 Bookmark inbox = new Bookmark("Inbox", "https://endoftheinter.net/inbox.php");
                 Intent intent = new Intent(TopicListActivity.this, InboxActivity.class);
                 intent.putExtra("url", inbox.getUrl());
-                intent.putExtra("boardname", inbox.getName());
+                intent.putExtra("title", inbox.getName());
                 TopicListActivity.this.startActivity(intent);
                 TopicListActivity.this.overridePendingTransition(R.anim.slide_in_from_right,
                         R.anim.slide_out_to_left);
@@ -167,22 +166,5 @@ public class TopicListActivity extends AppCompatActivity
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
-    }
-
-    @Override
-    public void onRequiresLogin() {
-
-    }
-
-    @Override
-    public void onLoadComplete(Intent intent) {
-        startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }

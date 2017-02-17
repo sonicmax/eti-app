@@ -2,7 +2,6 @@ package com.sonicmax.etiapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -10,15 +9,11 @@ import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.fragments.InboxThreadFragment;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
-public class InboxThreadActivity extends AppCompatActivity
-        implements AccountManager.EventInterface {
+public class InboxThreadActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setElevation(4);
-        }
         setContentView(R.layout.activity_inbox_thread);
     }
 
@@ -55,22 +50,5 @@ public class InboxThreadActivity extends AppCompatActivity
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
-    }
-
-    @Override
-    public void onRequiresLogin() {
-
-    }
-
-    @Override
-    public void onLoadComplete(Intent intent) {
-        startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }

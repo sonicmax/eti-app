@@ -1,7 +1,6 @@
 package com.sonicmax.etiapp.activities;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -9,16 +8,13 @@ import android.view.MenuItem;
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
-public class PostTopicActivity extends AppCompatActivity implements AccountManager.EventInterface {
+public class PostTopicActivity extends BaseActivity {
 
     private String LOG_TAG = PostTopicActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setElevation(4);
-        }
         setContentView(R.layout.activity_new_topic);
     }
 
@@ -45,16 +41,5 @@ public class PostTopicActivity extends AppCompatActivity implements AccountManag
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onRequiresLogin() {
-
-    }
-
-    @Override
-    public void onLoadComplete(Intent intent) {
-        startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 }
