@@ -152,7 +152,8 @@ public class MessageListFragment extends Fragment implements
 
         // Set listeners
         mQuickpostButton.setOnClickListener(this);
-        mRootView.setOnTouchListener(pageSwipeHandler);
+        // mRootView.setOnTouchListener(pageSwipeHandler);
+        messageList.setOnTouchListener(pageSwipeHandler);
 
         messageList.post(new Runnable() {
             @Override
