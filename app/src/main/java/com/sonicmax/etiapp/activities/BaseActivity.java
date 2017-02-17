@@ -20,21 +20,47 @@ public class BaseActivity extends AppCompatActivity implements AccountManager.Ev
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initActionBar();
+    }
 
-        ActionBar actionBar = getSupportActionBar();
+    /**
+     * Make some stylistic changes to action bar, display title using custom view,
+     * and make the view scrollable after detecting touch event.
+     */
+
+    private void initActionBar() {
+        final ActionBar actionBar = getSupportActionBar();
 
         if (actionBar != null) {
             actionBar.setElevation(4);
             actionBar.setDisplayShowCustomEnabled(true);
             actionBar.setDisplayShowTitleEnabled(false);
 
-            String title = getIntent().getStringExtra("title");
+            final String title = getIntent().getStringExtra("title");
 
             if (title != null) {
                 View titleView = LayoutInflater.from(this)
                         .inflate(R.layout.title_view, null);
 
-                ((TextView) titleView.findViewById(R.id.title)).setText(title);
+                TextView textView = (TextView) titleView.findViewById(R.id.title);
+                textView.setText(title);
+
+                titleView.setOnClickListener(new View.OnClickListener() {
+
+                    @Override
+                    public void onClick(View view) {
+                        // Replace with scrollable title view
+                        View scrollableView = LayoutInflater.from(BaseActivity.this)
+                                .inflate(R.layout.scrollable_title_view, null);
+                        TextView textView = (TextView) scrollableView.findViewById(R.id.title);
+                        textView.setText(title);
+
+                        actionBar.setCustomView(scrollableView);
+
+                        view.setOnTouchListener(null);
+                    }
+                });
+
                 actionBar.setCustomView(titleView);
             }
         }
