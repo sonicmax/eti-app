@@ -306,10 +306,7 @@ public class InboxThreadFragment extends Fragment implements
         mPrevPageUrl = messageList.getPrevPageUrl();
         mNextPageUrl = messageList.getNextPageUrl();
 
-        if (mNextPageUrl != null) {
-            mMessageListAdapter.setNextPageFlag(true);
-        }
-
+        mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
         mMessageListAdapter.replaceAllMessages(mMessages);
         mMessageListAdapter.setCurrentPage(mCurrentPage);
 
@@ -414,6 +411,7 @@ public class InboxThreadFragment extends Fragment implements
         if (position > totalPosts) {
             mTopic.addToSize(sizeOfNewMessages);
             mMessageListAdapter.addMessages(newMessages);
+            scrollToPosition(mMessageListAdapter.getItemCount() - 1);
             animateTimestampChange();
         }
         else {
