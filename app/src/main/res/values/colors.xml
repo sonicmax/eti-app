@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary_text">#cccccc</color>
-    <color name="secondary_text">#b3cccccc</color>
+    <color name="primary_text">#ddd</color>
+    <color name="secondary_text">#aaa</color>
     <color name="hint_text">#4dcccccc</color>
     <color name="error_red">#ff0000</color>
     <color name="highlighted">#80ffffff</color>
     <color name="action_bar_grey">#212121</color>
-    <color name="bg_grey">#303030</color>
-    <color name="header_grey">#424242</color>
-    <color name="fg_grey">#505050</color>
+    <color name="bg_grey">#191919</color>
+    <color name="header_grey">#2c2c2c</color>
+    <color name="fg_grey">#303030</color>
     <color name="snackbar_action">#0099cc</color>
 </resources>
