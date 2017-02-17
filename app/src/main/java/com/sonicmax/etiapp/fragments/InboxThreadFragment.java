@@ -107,10 +107,11 @@ public class InboxThreadFragment extends Fragment implements
 
             if (page > 0) {
                 url += "&page=" + page;
+                intent.putExtra("page", 0);
             }
 
             mStartPoint = intent.getIntExtra("post", 0);
-
+            intent.putExtra("post", 0);
 
             mMessageListLoader = new MessageListLoader(getContext(), this, url);
 

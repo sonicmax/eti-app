@@ -101,9 +101,11 @@ public class MessageListFragment extends Fragment implements
 
             if (page > 0) {
                 url += "&page=" + page;
+                intent.putExtra("page", 0);
             }
 
             mStartPoint = intent.getIntExtra("post", 0);
+            intent.putExtra("post", 0);
 
             mMessageListLoader = new MessageListLoader(getContext(), this, url);
 
@@ -288,7 +290,6 @@ public class MessageListFragment extends Fragment implements
         mCurrentPage = messageList.getPageNumber();
         mPrevPageUrl = messageList.getPrevPageUrl();
         mNextPageUrl = messageList.getNextPageUrl();
-
 
         mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
         mMessageListAdapter.setCurrentPage(mCurrentPage);
