@@ -266,7 +266,6 @@ public class InboxThreadFragment extends Fragment implements
 
     private void loadPrevPage() {
         if (mPrevPageUrl != null) {
-            displayDialog("Loading...");
             mMessageListAdapter.clearMessages();
             loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
         }
@@ -274,7 +273,6 @@ public class InboxThreadFragment extends Fragment implements
 
     private void loadNextPage() {
         if (mNextPageUrl != null) {
-            displayDialog("Loading...");
             mMessageListAdapter.clearMessages();
             loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
         }
