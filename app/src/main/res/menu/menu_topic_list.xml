@@ -18,5 +18,5 @@
         android:icon="@drawable/ic_refresh_grey600_36dp"
         android:title="@string/action_refresh"
         android:orderInCategory="1"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 </menu>
