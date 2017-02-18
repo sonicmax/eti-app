@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -39,9 +40,9 @@ public class TopicListFragment extends Fragment
     private TopicList mTopicList;
     private List<Topic> mTopics;
     private TopicListLoader mTopicListLoader;
-    private TextView mBoardName;
     private ListView mListView;
     private View mRootView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private int mPageNumber;
 
@@ -108,6 +109,17 @@ public class TopicListFragment extends Fragment
 
         FloatingActionButton newTopicButton = (FloatingActionButton) mRootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(newTopicHandler);
+
+        mSwipeRefreshLayout = (SwipeRefreshLayout) mRootView.findViewById(R.id.listview_topics_container);
+
+        mSwipeRefreshLayout.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        refreshTopicList();
+                    }
+                }
+        );
 
         mListView = (ListView) mRootView.findViewById(R.id.listview_topics);
         mListView.setAdapter(mTopicListAdapter);
@@ -191,7 +203,11 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onLoadTopicList(TopicList topicList) {
+        // Clean up UI
         dismissDialog();
+        mSwipeRefreshLayout.setRefreshing(false);
+
+        // Get data from TopicList and update adapter
         mTopics = topicList.getTopics();
         mPrevPageUrl = topicList.getPrevPageUrl();
         mNextPageUrl = topicList.getNextPageUrl();
@@ -202,6 +218,7 @@ public class TopicListFragment extends Fragment
         mTopicListAdapter.updateTopics(mTopics);
 
         if (mPageNumber > 1) {
+            // TODO: Should maintain screen position in some cases
             scrollToFirstTopic();
             Snacker.showSnackBar(mRootView, "Page " + mPageNumber);
         }
@@ -225,7 +242,13 @@ public class TopicListFragment extends Fragment
     ///////////////////////////////////////////////////////////////////////////
 
     public void loadTopicList(String name, String url) {
-        showDialog("Loading...");
+        if (mSwipeRefreshLayout == null) {
+            showDialog("Loading...");
+        }
+        else if (!mSwipeRefreshLayout.isRefreshing()) {
+            showDialog("Loading...");
+        }
+
         updateActionBarTitle(name);
         mTopicListLoader.load(url);
     }

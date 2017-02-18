@@ -15,7 +15,6 @@ import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.fragments.TopicListFragment;
-import com.sonicmax.etiapp.loaders.AccountManager;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 

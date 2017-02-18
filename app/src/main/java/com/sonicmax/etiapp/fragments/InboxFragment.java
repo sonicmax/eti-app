@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,9 +42,9 @@ public class InboxFragment extends Fragment
     private TopicList mTopicList;
     private List<Topic> mTopics;
     private TopicListLoader mTopicListLoader;
-    private TextView mBoardName;
     private View mRootView;
     private ListView mListView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private int mPageNumber;
     private String mPrevPageUrl;
@@ -71,7 +74,7 @@ public class InboxFragment extends Fragment
         if (savedInstanceState == null) {
             // Get url of chosen topic list form intent and pass it to loader
             mUrl = getActivity().getIntent().getStringExtra("url");
-            loadTopicList(null, mUrl);
+            loadTopicList(mUrl);
         }
 
         else {
@@ -92,7 +95,7 @@ public class InboxFragment extends Fragment
 
             else {
                 mUrl = getActivity().getIntent().getStringExtra("url");
-                loadTopicList(null, mUrl);
+                loadTopicList(mUrl);
             }
         }
 
@@ -107,6 +110,17 @@ public class InboxFragment extends Fragment
 
         FloatingActionButton newTopicButton = (FloatingActionButton) mRootView.findViewById(R.id.new_topic);
         newTopicButton.setOnClickListener(inboxThreadCreator);
+
+        mSwipeRefreshLayout = (SwipeRefreshLayout) mRootView.findViewById(R.id.listview_topics_container);
+
+        mSwipeRefreshLayout.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        refreshTopicList();
+                    }
+                }
+        );
 
         mListView = (ListView) mRootView.findViewById(R.id.listview_topics);
         mListView.setAdapter(mTopicListAdapter);
@@ -187,7 +201,11 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onLoadTopicList(TopicList topicList) {
+        // Clean up UI
         dismissDialog();
+        mSwipeRefreshLayout.setRefreshing(false);
+
+        // Get inbox threads and update adapter
         mTopics = topicList.getTopics();
         mPrevPageUrl = topicList.getPrevPageUrl();
         mNextPageUrl = topicList.getNextPageUrl();
@@ -212,38 +230,53 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onInternalServerError() {
+        // TODO: Can we even access the pm inbox?
         final String name = "Message History";
         final String url = "https://boards.endoftheinter.net/history.php?b";
-        loadTopicList(name, url);
+        loadTopicList(url, name);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
 
-    public void loadTopicList(String name, String url) {
-        showDialog("Loading...");
+    public void loadTopicList(String url, String name) {
+        if (mSwipeRefreshLayout == null) {
+            showDialog("Loading...");
+        }
+        else if (!mSwipeRefreshLayout.isRefreshing()) {
+            showDialog("Loading...");
+        }
 
-        if (name != null) {
-            mBoardName.setText(name);
+        updateActionBarTitle(name);
+
+        mTopicListLoader.load(url);
+    }
+
+    public void loadTopicList(String url) {
+        if (mSwipeRefreshLayout == null) {
+            showDialog("Loading...");
+        }
+        else if (!mSwipeRefreshLayout.isRefreshing()) {
+            showDialog("Loading...");
         }
 
         mTopicListLoader.load(url);
     }
 
     public void refreshTopicList() {
-        loadTopicList(null, mUrl);
+        loadTopicList(mUrl);
     }
 
     private void loadNextPage() {
         if (mNextPageUrl != null) {
-            loadTopicList(null, mNextPageUrl);
+            loadTopicList(mNextPageUrl);
         }
     }
 
     private void loadPrevPage() {
         if (mPrevPageUrl != null) {
-            loadTopicList(null, mPrevPageUrl);
+            loadTopicList(mPrevPageUrl);
         }
     }
 
@@ -262,6 +295,24 @@ public class InboxFragment extends Fragment
     private void scrollToFirstTopic() {
         final int FIRST_TOPIC = 0;
         mListView.setSelection(FIRST_TOPIC);
+    }
+
+
+    private void updateActionBarTitle(String newTitle) {
+        if (newTitle != null) {
+            AppCompatActivity activity = (AppCompatActivity) getActivity();
+            ActionBar actionBar = activity.getSupportActionBar();
+
+            if (actionBar != null) {
+                LayoutInflater inflator = LayoutInflater.from(getContext());
+                View v = inflator.inflate(R.layout.title_view, null);
+
+                String title = activity.getIntent().getStringExtra("title");
+                ((TextView) v.findViewById(R.id.title)).setText(title);
+
+                actionBar.setCustomView(v);
+            }
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -300,7 +351,7 @@ public class InboxFragment extends Fragment
     private View.OnClickListener inboxThreadCreator = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-
+            // TODO: Figure out how to create new PM threads in non-sucky way
         }
     };
 }
