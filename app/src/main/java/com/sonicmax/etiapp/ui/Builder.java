@@ -10,7 +10,7 @@ import android.text.SpannableStringBuilder;
  */
 public class Builder {
 
-    public SpannableStringBuilder buildMessage(String html) {
+    public SpannableStringBuilder buildMessage(String html, boolean needsChatUi) {
         // Intentionally blank - override when extending class
         return null;
     }

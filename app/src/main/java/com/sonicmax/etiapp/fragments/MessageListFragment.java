@@ -10,6 +10,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -77,6 +78,7 @@ public class MessageListFragment extends Fragment implements
     private String mPrevPageUrl;
     private String mNextPageUrl;
     private int mStartPoint;
+    private boolean mNeedsChatUi;
 
     public MessageListFragment() {}
 
@@ -85,7 +87,12 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
+        mNeedsChatUi = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean("pref_global_chat_ui", false);
+
         mMessageListAdapter = new MessageListAdapter(context, this);
+        mMessageListAdapter.setInboxThreadFlag(mNeedsChatUi);
+        mMessageListAdapter.setSelf(SharedPreferenceManager.getString(context, "username"));
         super.onAttach(context);
     }
 

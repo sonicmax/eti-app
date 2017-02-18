@@ -301,7 +301,7 @@ public class MessageListAdapter extends SelectableAdapter {
                 return;
             }
 
-            final SpannableStringBuilder messageSpan = mMessageBuilder.buildMessage(message.getHtml());
+            final SpannableStringBuilder messageSpan = mMessageBuilder.buildMessage(message.getHtml(), mIsInboxThread);
             viewHolder.messageView.setText(messageSpan);
 
             // Check whether we need to load images

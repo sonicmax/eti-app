@@ -36,6 +36,7 @@ public class MessageBuilder extends Builder {
     // Quote depth indicates the current level of nesting while iterating over quoted-message elements
     private int mQuoteDepth = 0;
     private Drawable mSpinner;
+    private boolean mNeedsChatUi = false;
 
     public MessageBuilder(Context context) {
         mContext = context;
@@ -44,7 +45,8 @@ public class MessageBuilder extends Builder {
     }
 
     @Override
-    public SpannableStringBuilder buildMessage(String html) {
+    public SpannableStringBuilder buildMessage(String html, boolean needsChatUi) {
+        mNeedsChatUi = needsChatUi;
 
         Element container = Jsoup.parse(html).getElementsByClass("message-container").get(0);
         Element message = container.getElementsByClass("message").get(0);
@@ -214,7 +216,8 @@ public class MessageBuilder extends Builder {
     @TargetApi(21)
     private SpannableStringBuilder getQuotesFrom(Element quote) {
 
-        final int LIGHT_GREY = Color.rgb(66, 66, 66);
+        final int MESSAGE_HEADER_COLOUR = Color.rgb(66, 66, 66);
+        final int CHAT_HEADER_COLOUR = Color.rgb(206, 206, 206);
         final String QUOTE_ARROW = "⇗";
 
         // Increase quote depth to account for gap/stripe width in CustomQuoteSpan.
@@ -249,9 +252,17 @@ public class MessageBuilder extends Builder {
                     }
                 }
 
-                output.append(username,
-                        new QuoteBackgroundSpan(LIGHT_GREY, mQuoteDepth),
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (!mNeedsChatUi) {
+                    output.append(username,
+                            new QuoteBackgroundSpan(MESSAGE_HEADER_COLOUR, mQuoteDepth),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+
+                else {
+                    output.append(username,
+                            new QuoteBackgroundSpan(CHAT_HEADER_COLOUR, mQuoteDepth),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
 
                 output.append(NEWLINE);
             }

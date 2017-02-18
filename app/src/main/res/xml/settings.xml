@@ -5,6 +5,11 @@
     <android.support.v7.preference.PreferenceCategory
         android:title="@string/preferences_general">
 
+        <android.support.v7.preference.CheckBoxPreference
+            android:key="@string/pref_global_chat_ui"
+            android:defaultValue="false"
+            android:title="@string/preferences_global_chat_ui"/>
+
         <Preference
             android:key="reload_bookmarks"
             android:title="@string/preferences_reload_bookmarks"> </Preference>

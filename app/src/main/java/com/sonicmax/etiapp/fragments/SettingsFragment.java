@@ -14,21 +14,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         addPreferencesFromResource(R.xml.settings);
 
         Preference bookmarkReloadButton = findPreference("reload_bookmarks");
+
         bookmarkReloadButton.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                // TODO Auto-generated method stub
                 return false;
             }
         });
 
         Preference clearCacheButton = findPreference("clear_cache");
+
         clearCacheButton.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                // TODO Auto-generated method stub
                 return false;
             }
         });

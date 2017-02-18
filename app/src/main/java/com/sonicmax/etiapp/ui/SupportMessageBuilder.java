@@ -37,6 +37,7 @@ public class SupportMessageBuilder extends Builder {
     // Quote depth indicates the current level of nesting while iterating over quoted-message elements
     private int mQuoteDepth = 0;
     private Drawable mSpinner;
+    private boolean mNeedsChatUi = false;
 
     public SupportMessageBuilder(Context context) {
         mContext = context;
@@ -45,7 +46,8 @@ public class SupportMessageBuilder extends Builder {
     }
 
     @Override
-    public SpannableStringBuilder buildMessage(String html) {
+    public SpannableStringBuilder buildMessage(String html, boolean needsChatUi) {
+        mNeedsChatUi = needsChatUi;
 
         Element container = Jsoup.parse(html).getElementsByClass("message-container").get(0);
         Element message = container.getElementsByClass("message").get(0);
@@ -245,7 +247,8 @@ public class SupportMessageBuilder extends Builder {
 
     private SpannableStringBuilder getQuotesFrom(Element quote) {
 
-        final int LIGHT_GREY = Color.rgb(66, 66, 66);
+        final int QUOTE_HEADER_COLOUR = Color.rgb(66, 66, 66);
+        final int CHAT_HEADER_COLOUR = Color.rgb(206, 206, 206);
         final String QUOTE_ARROW = "⇗";
 
         // Increase quote depth to account for gap/stripe width in CustomQuoteSpan.
@@ -281,11 +284,21 @@ public class SupportMessageBuilder extends Builder {
                 }
 
                 output.append(username);
-                output.setSpan(
-                        new QuoteBackgroundSpan(LIGHT_GREY, mQuoteDepth),
-                        output.length() - username.length(),
-                        output.length(),
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                if (!mNeedsChatUi) {
+                    output.setSpan(
+                            new QuoteBackgroundSpan(QUOTE_HEADER_COLOUR, mQuoteDepth),
+                            output.length() - username.length(),
+                            output.length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                else {
+                    output.setSpan(
+                            new QuoteBackgroundSpan(CHAT_HEADER_COLOUR, mQuoteDepth),
+                            output.length() - username.length(),
+                            output.length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
 
                 output.append(NEWLINE);
             }

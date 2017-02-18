@@ -46,6 +46,8 @@
     <string name="preferences_reload_bookmarks">Reload bookmarks</string>
     <string name="preferences_clear_cache">Clear cache</string>
 
+    <string name="preferences_global_chat_ui">Use Chat UI inside topics</string>
+
     <string name="preferences_ignorator_enable">Enable ignorator</string>
     <string name="preferences_ignorator_summary">Hides topics created by users defined below</string>
 
