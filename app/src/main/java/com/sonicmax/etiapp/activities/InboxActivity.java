@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp.activities;
 
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
@@ -15,7 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
-import com.sonicmax.etiapp.fragments.TopicListFragment;
+import com.sonicmax.etiapp.fragments.InboxFragment;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
@@ -67,8 +66,8 @@ public class InboxActivity extends BaseActivity {
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.topic_list_container);
+                InboxFragment fragment = (InboxFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.inbox_container);
                 Bookmark bookmark = mBookmarks.get(position);
                 fragment.loadTopicList(bookmark.getName(), bookmark.getUrl());
                 mDrawerLayout.closeDrawers();
