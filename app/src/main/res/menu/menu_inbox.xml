@@ -14,7 +14,7 @@
         android:orderInCategory="3"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_refresh_topic_list"
+        android:id="@+id/action_refresh_inbox"
         android:icon="@drawable/ic_refresh_grey600_36dp"
         android:title="@string/action_refresh"
         android:orderInCategory="1"

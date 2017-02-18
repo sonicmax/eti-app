@@ -102,37 +102,12 @@ public class InboxActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_topic_list, menu);
+        getMenuInflater().inflate(R.menu.menu_inbox, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (mDrawerToggle.onOptionsItemSelected(item)) {
-            return true;
-        }
-
-        else {
-            switch (id) {
-                case R.id.action_settings:
-                    Intent intent = new Intent(this, SettingsActivity.class);
-                    this.startActivity(intent);
-                    break;
-
-                case R.id.action_logout:
-                    new AccountManager(this, this).requestLogout();
-                    break;
-
-                case R.id.action_refresh:
-                    TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
-                            .findFragmentById(R.id.topic_list_container);
-                    fragment.refreshTopicList();
-                    break;
-            }
-        }
-
-        return super.onOptionsItemSelected(item);
+        return (mDrawerToggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item));
     }
 }

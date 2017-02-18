@@ -17,7 +17,6 @@ import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.fragments.TopicListFragment;
-import com.sonicmax.etiapp.loaders.AccountManager;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
@@ -25,11 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TopicListActivity extends BaseActivity {
+    private Button mInboxButton;
     public ListView mDrawerList;
     public DrawerLayout mDrawerLayout;
     private ArrayAdapter<String> mDrawerAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
-    private Button mInboxButton;
     private List<Bookmark> mBookmarks;
 
     @Override
@@ -37,25 +36,26 @@ public class TopicListActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_topic_list);
 
+        mInboxButton = (Button)findViewById(R.id.inbox_button);
         mDrawerList = (ListView)findViewById(R.id.drawer_list);
         mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
-        mInboxButton = (Button)findViewById(R.id.inbox_button);
 
-        populateInboxButton();
-        populateDrawerAdapter();
+        initInboxButton();
         initDrawer();
 
         ActionBar actionBar = getSupportActionBar();
 
         if (actionBar != null) {
             actionBar.setElevation(4);
+            // Required for ActionBarDrawerToggle to function correctly
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
         }
     }
 
-    private void populateInboxButton() {
-        mInboxButton.setText(getInboxString());
+    private void initInboxButton() {
+        mInboxButton.setText(getUnreadPms());
+
         mInboxButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -70,9 +70,31 @@ public class TopicListActivity extends BaseActivity {
         });
     }
 
-    private String getInboxString() {
+    private String getUnreadPms() {
         int count = SharedPreferenceManager.getInt(this, "inbox_count");
         return "Inbox " + "(" + count + ")";
+    }
+
+    public void initDrawer() {
+        populateDrawerAdapter();
+
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
+                R.string.drawer_open, R.string.drawer_close) {
+
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                invalidateOptionsMenu();
+            }
+
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+                invalidateOptionsMenu();
+            }
+        };
+
+        mDrawerToggle.setDrawerIndicatorEnabled(true);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
+        mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
     }
 
     public void populateDrawerAdapter() {
@@ -99,26 +121,6 @@ public class TopicListActivity extends BaseActivity {
         });
     }
 
-    public void initDrawer() {
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
-                R.string.drawer_open, R.string.drawer_close) {
-
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                invalidateOptionsMenu();
-            }
-
-            public void onDrawerClosed(View view) {
-                super.onDrawerClosed(view);
-                invalidateOptionsMenu();
-            }
-        };
-
-        mDrawerToggle.setDrawerIndicatorEnabled(true);
-        mDrawerLayout.addDrawerListener(mDrawerToggle);
-        mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
-    }
-
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
@@ -140,31 +142,6 @@ public class TopicListActivity extends BaseActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (mDrawerToggle.onOptionsItemSelected(item)) {
-            return true;
-        }
-
-        else {
-            switch (id) {
-                case R.id.action_settings:
-                    Intent intent = new Intent(this, SettingsActivity.class);
-                    this.startActivity(intent);
-                    break;
-
-                case R.id.action_logout:
-                    new AccountManager(this, this).requestLogout();
-                    break;
-
-                case R.id.action_refresh:
-                    TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
-                            .findFragmentById(R.id.topic_list_container);
-                    fragment.refreshTopicList();
-                    break;
-            }
-        }
-
-        return super.onOptionsItemSelected(item);
+        return (mDrawerToggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item));
     }
 }

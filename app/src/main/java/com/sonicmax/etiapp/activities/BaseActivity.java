@@ -5,10 +5,15 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.fragments.InboxFragment;
+import com.sonicmax.etiapp.fragments.InboxThreadFragment;
+import com.sonicmax.etiapp.fragments.MessageListFragment;
+import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.loaders.AccountManager;
 
 /**
@@ -67,19 +72,77 @@ public class BaseActivity extends AppCompatActivity implements AccountManager.Ev
     }
 
     @Override
+    public void onRequiresLogin() {
+        // TODO: implement this.
+    }
+
+    @Override
     public void onBackPressed() {
+        // Going "backwards" in app slides screen from left to right.
         super.onBackPressed();
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
     }
 
     @Override
-    public void onRequiresLogin() {
-
+    public void onLoadComplete(Intent intent) {
+        // Going "forwards" in app slides screen from right to left.
+        startActivity(intent);
+        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
     }
 
     @Override
-    public void onLoadComplete(Intent intent) {
-        startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        TopicListFragment topicListFragment = (TopicListFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.topic_list_container);
+
+        InboxFragment inboxFragment = (InboxFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.inbox_container);
+
+        InboxThreadFragment inboxThreadFragment = (InboxThreadFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.inbox_thread_container);
+
+        MessageListFragment messageListFragment = (MessageListFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.message_list_container);
+
+
+        switch (id) {
+            case R.id.action_settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                this.startActivity(intent);
+                break;
+
+            case R.id.action_logout:
+                new AccountManager(this, this).requestLogout();
+                break;
+
+            case R.id.action_refresh_topic_list:
+                topicListFragment.refreshTopicList();
+                break;
+
+            case R.id.action_refresh_message_list:
+                messageListFragment.refreshMessageList();
+                break;
+
+            case R.id.action_refresh_inbox:
+                inboxFragment.refreshTopicList();
+                break;
+
+            case R.id.action_refresh_inbox_thread:
+                inboxThreadFragment.refreshMessageList();
+                break;
+
+            case R.id.action_clear_mem_cache:
+                if (messageListFragment != null) {
+                    messageListFragment.clearMemCache();
+                }
+                else if (inboxThreadFragment != null) {
+                    inboxThreadFragment.clearMemCache();
+                }
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }
