@@ -69,7 +69,7 @@ public class InboxActivity extends BaseActivity {
                 InboxFragment fragment = (InboxFragment) getSupportFragmentManager()
                         .findFragmentById(R.id.inbox_container);
                 Bookmark bookmark = mBookmarks.get(position);
-                fragment.loadTopicList(bookmark.getName(), bookmark.getUrl());
+                fragment.loadTopicList(bookmark.getUrl(), bookmark.getName());
                 mDrawerLayout.closeDrawers();
             }
         });
