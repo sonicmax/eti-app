@@ -13,6 +13,7 @@ import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
+import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -194,6 +195,39 @@ public class LivelinksSubscriber {
         }
     }
 
+    private void fetchNewMessages(int newSize) {
+        // Prepare bundle of args so we can load new messages using moremessages.php
+        Bundle args = new Bundle(3);
+        args.putString("method", "GET");
+        args.putString("type", "moremessages");
+
+        ContentValues values = new ContentValues(4);
+        values.put("old", mTopicSize);
+
+        if (mIsPmThread) {
+            values.put("pm", mTopicId);
+            values.put("new", newSize);
+            mTopicSize = newSize;
+        }
+        else {
+            values.put("topic", mTopicId);
+            values.put("new", newSize);
+            mTopicSize = newSize;
+        }
+
+        values.put("filter", 0);
+
+        args.putParcelable("values", values);
+
+        LoaderManager loaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
+        if (loaderManager.getLoader(FETCH_MESSAGE) == null) {
+            loaderManager.initLoader(FETCH_MESSAGE, args, callbacks).forceLoad();
+        }
+        else {
+            loaderManager.restartLoader(FETCH_MESSAGE, args, callbacks).forceLoad();
+        }
+    }
+
     private void handleLivelinksResponse(String response) {
         int newTopicSize = 0;
         int newInboxSize = 0;
@@ -208,6 +242,7 @@ public class LivelinksSubscriber {
         }
 
         else {
+            // Attempt to parse livelinks response
             try {
                 newTopicSize = parsedResponse.getInt(getTopicPayload().toString());
             } catch (JSONException noNewPosts) {
@@ -217,7 +252,7 @@ public class LivelinksSubscriber {
             try {
                 newThreadSize = parsedResponse.getInt(getThreadPayload().toString());
             } catch (JSONException noNewInboxReplies) {
-
+                // Do nothing
             }
 
             try {
@@ -226,43 +261,28 @@ public class LivelinksSubscriber {
                 // Do nothing
             }
 
-            if (newTopicSize > mTopicSize || newThreadSize > mTopicSize) {
-                // Prepare bundle of args so we can load new messages using moremessages.php
-                Bundle args = new Bundle(3);
-                args.putString("method", "GET");
-                args.putString("type", "moremessages");
+            // Compare size from livelinks response to existing size
 
-                ContentValues values = new ContentValues(4);
-                values.put("old", mTopicSize);
-
-                if (mIsPmThread) {
-                    values.put("pm", mTopicId);
-                    values.put("new", newThreadSize);
-                    mTopicSize = newThreadSize;
-                }
-                else {
-                    values.put("topic", mTopicId);
-                    values.put("new", newTopicSize);
-                    mTopicSize = newTopicSize;
+            if (newTopicSize > mTopicSize) {
+                fetchNewMessages(newTopicSize);
                 }
 
-
-                values.put("filter", 0);
-
-                args.putParcelable("values", values);
-
-                LoaderManager loaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
-                if (loaderManager.getLoader(FETCH_MESSAGE) == null) {
-                    loaderManager.initLoader(FETCH_MESSAGE, args, callbacks).forceLoad();
-                }
-                else {
-                    loaderManager.restartLoader(FETCH_MESSAGE, args, callbacks).forceLoad();
-                }
+            if (newThreadSize > mTopicSize) {
+                fetchNewMessages(newThreadSize);
             }
 
             if (newInboxSize > mInboxSize) {
+                SharedPreferenceManager.putInt(mContext, "inbox_count", newInboxSize);
                 mEventInterface.onReceivePrivateMessage(mInboxSize, newInboxSize);
                 mInboxSize = newInboxSize;
+                subscribe();
+            }
+            else if (newInboxSize < mInboxSize) {
+                SharedPreferenceManager.putInt(mContext, "inbox_count", newInboxSize);
+                mInboxSize = newInboxSize;
+                subscribe();
+            }
+            else {
                 subscribe();
             }
         }
