@@ -59,6 +59,8 @@ public class TopicListActivity extends BaseActivity {
         mInboxButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                mDrawerLayout.closeDrawers();
+
                 Bookmark inbox = new Bookmark("Inbox", "https://endoftheinter.net/inbox.php");
                 Intent intent = new Intent(TopicListActivity.this, InboxActivity.class);
                 intent.putExtra("url", inbox.getUrl());
