@@ -15,6 +15,7 @@ import com.sonicmax.etiapp.scrapers.MessageListScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -311,14 +312,7 @@ public class LivelinksSubscriber {
                         @Override
                         public MessageList loadInBackground() {
                             String response = new WebRequest(mContext, args).sendRequest();
-
-                            // Can't parse HTML unless we remove these characters
-                            String escapedResponse = response.replace("\\/", "/")
-                                    .replace("\\\"", "\"")
-                                    .replace("\\n", "")
-                                    .replace("\\\\/", "\\/");
-
-                            return mScraper.scrapeMessages(escapedResponse, false);
+                            return mScraper.scrapeMessages(StringEscapeUtils.unescapeEcmaScript(response), false);
                         }
                     };
 
