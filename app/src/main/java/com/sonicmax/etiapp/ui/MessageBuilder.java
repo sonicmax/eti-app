@@ -8,7 +8,6 @@ import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.ImageSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
@@ -32,16 +31,18 @@ import java.util.regex.Pattern;
 
 public class MessageBuilder extends Builder {
     private final String NEWLINE = "\n";
+
     private Context mContext;
-    // Quote depth indicates the current level of nesting while iterating over quoted-message elements
-    private int mQuoteDepth = 0;
     private Drawable mSpinner;
+    private int mMaxWidth;
+
+    private int mQuoteDepth = 0;
     private boolean mNeedsChatUi = false;
 
     public MessageBuilder(Context context) {
         mContext = context;
-        mSpinner = ContextCompat.getDrawable(context, R.drawable.spinner_16_inner_holo);
-        mSpinner.setBounds(0, 0, mSpinner.getIntrinsicWidth(), mSpinner.getIntrinsicHeight());
+        mSpinner = ContextCompat.getDrawable(context, R.drawable.transparent_pixel);
+        mMaxWidth = mContext.getApplicationContext().getResources().getDisplayMetrics().widthPixels;
     }
 
     @Override
@@ -177,6 +178,15 @@ public class MessageBuilder extends Builder {
             String[] entries = style.split(";");
             int width = Integer.parseInt(entries[0].replace("width:", "").replace("px", ""));
             int height = Integer.parseInt(entries[1].replace("height:", "").replace("px", ""));
+
+            if (width > mMaxWidth) {
+                // Scale Bitmap to fit screen.
+                float ratio = (float) width / (float) height;
+                width = mMaxWidth;
+                height = (int) ((float) mMaxWidth / ratio);
+            }
+
+            mSpinner.setBounds(0, 0, width, height);
 
             if (mQuoteDepth == 0) {
                 // Apparently this is the only way to append an ImageSpan
