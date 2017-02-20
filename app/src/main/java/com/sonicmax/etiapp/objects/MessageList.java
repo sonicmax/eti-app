@@ -11,6 +11,7 @@ import java.util.List;
  */
 
 public class MessageList implements Parcelable {
+    private final String mTitle;
     private final int mPageNumber;
     private final int mLastPage;
     private final String mPrevPageUrl;
@@ -18,8 +19,9 @@ public class MessageList implements Parcelable {
     private List<Message> mMessages;
     private String mNextPageUrl;
 
-    public MessageList (List<Message> messages, int pageNumber, int lastPage, String prevPageUrl, String nextPageUrl) {
+    public MessageList (List<Message> messages, String title, int pageNumber, int lastPage, String prevPageUrl, String nextPageUrl) {
         mMessages = messages;
+        mTitle = title;
         mPageNumber = pageNumber;
         mLastPage = lastPage;
         mPrevPageUrl = prevPageUrl;
@@ -28,6 +30,15 @@ public class MessageList implements Parcelable {
 
     public List<Message> getMessages() {
         return mMessages;
+    }
+
+    public String getTitle() {
+        if (mTitle != null) {
+            return mTitle;
+        }
+        else {
+            return "";
+        }
     }
 
     public int getPageNumber() {
@@ -61,6 +72,7 @@ public class MessageList implements Parcelable {
         } else {
             mMessages = null;
         }
+        mTitle = in.readString();
         mPageNumber = in.readInt();
         mLastPage = in.readInt();
         mPrevPageUrl = in.readString();
@@ -80,6 +92,7 @@ public class MessageList implements Parcelable {
             dest.writeByte((byte) (0x01));
             dest.writeList(mMessages);
         }
+        dest.writeString(mTitle);
         dest.writeInt(mPageNumber);
         dest.writeInt(mLastPage);
         dest.writeString(mPrevPageUrl);

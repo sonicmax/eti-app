@@ -9,6 +9,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.view.ActionMode;
@@ -30,6 +31,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.activities.BaseActivity;
 import com.sonicmax.etiapp.activities.InboxActivity;
 import com.sonicmax.etiapp.activities.PostMessageActivity;
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
@@ -73,7 +75,6 @@ public class MessageListFragment extends Fragment implements
     private LivelinksSubscriber mLivelinksSubscriber;
 
     private MessageList mMessageList;
-    private String mTitle;
     private int mCurrentPage;
     private String mPrevPageUrl;
     private String mNextPageUrl;
@@ -155,7 +156,6 @@ public class MessageListFragment extends Fragment implements
 
         // Set listeners
         mQuickpostButton.setOnClickListener(this);
-        // mRootView.setOnTouchListener(pageSwipeHandler);
         messageList.setOnTouchListener(pageSwipeHandler);
 
         messageList.post(new Runnable() {
@@ -280,6 +280,32 @@ public class MessageListFragment extends Fragment implements
         }
     }
 
+    private void updateActionBarTitle(final String title) {
+        final Context context = getContext();
+        final ActionBar actionBar = ((BaseActivity) context).getSupportActionBar();
+        View titleView = LayoutInflater.from(context).inflate(R.layout.title_view, mContainer);
+
+        TextView textView = (TextView) titleView.findViewById(R.id.title);
+        textView.setText(title);
+
+        titleView.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                // Replace with scrollable title view
+                View scrollableView = LayoutInflater.from(context).inflate(R.layout.scrollable_title_view, null);
+                TextView textView = (TextView) scrollableView.findViewById(R.id.title);
+                textView.setText(title);
+
+                actionBar.setCustomView(scrollableView);
+
+                view.setOnTouchListener(null);
+            }
+        });
+
+        actionBar.setCustomView(titleView);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // MessageListLoader.EventInterface methods
     ///////////////////////////////////////////////////////////////////////////
@@ -296,7 +322,9 @@ public class MessageListFragment extends Fragment implements
         mMessageListAdapter.setCurrentPage(mCurrentPage);
         mMessageListAdapter.replaceAllMessages(mMessages);
 
-        boolean isLastPage = mCurrentPage == mTopic.getLastPage(0);
+        updateActionBarTitle(messageList.getTitle());
+
+        boolean isLastPage = mCurrentPage == mMessageList.getLastPage();
 
         if (isLastPage && mLivelinksSubscriber == null) {
             final int totalPosts = getTotalPosts();
@@ -477,7 +505,6 @@ public class MessageListFragment extends Fragment implements
                     Context context = getContext();
                     Intent intent = new Intent(context, PostMessageActivity.class);
                     intent.putExtra("quote", quote);
-                    intent.putExtra("title", mTitle);
                     intent.putExtra("id", mTopic.getId());
                     intent.putExtra("lastpage",
                             getActivity().getIntent().getIntExtra("lastpage", 1));

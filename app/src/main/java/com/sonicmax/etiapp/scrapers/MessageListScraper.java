@@ -54,6 +54,8 @@ public class MessageListScraper {
             getSignature(body);
         }
 
+        String title = document.getElementsByTag("h1").get(0).text();
+
         // Get current page number
         int currentPage = getCurrentPage(mUrl);
         int lastPage = 1;
@@ -139,7 +141,7 @@ public class MessageListScraper {
             messages.add(message);
         }
 
-        return new MessageList(messages, currentPage, lastPage, mPrevPageUrl, mNextPageUrl);
+        return new MessageList(messages, title, currentPage, lastPage, mPrevPageUrl, mNextPageUrl);
     }
 
     private int getCurrentPage(String url) {

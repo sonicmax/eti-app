@@ -94,8 +94,9 @@ public class MessageBuilder extends Builder {
                             builder.append(NEWLINE);
                             break;
                         case "a":
-                            builder.append(element.attr("href"),
-                                    new LinkSpan(mContext, element.attr("href")),
+                            LinkSpan linkSpan = new LinkSpan(mContext, element);
+                            builder.append(linkSpan.getName(),
+                                    linkSpan,
                                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
                         case "b":

@@ -98,10 +98,11 @@ public class SupportMessageBuilder extends Builder {
                             builder.append(NEWLINE);
                             break;
                         case "a":
-                            String href = element.attr("href");
-                            builder.append(href);
-                            builder.setSpan(new StyleSpan(android.graphics.Typeface.BOLD),
-                                    builder.length() - href.length(),
+                            LinkSpan linkSpan = new LinkSpan(mContext, element);
+                            String name = linkSpan.getName();
+                            builder.append(name);
+                            builder.setSpan(new LinkSpan(mContext, element),
+                                    builder.length() - name.length(),
                                     builder.length(),
                                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             break;
