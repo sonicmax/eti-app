@@ -48,6 +48,9 @@
 
     <string name="preferences_global_chat_ui">Use Chat UI inside topics</string>
 
+    <string name="preferences_reuse_session">Reuse session tokens</string>
+    <string name="preferences_reuse_session_summary">Do not enable if you login to your account on multiple computers using the same IP address.</string>
+
     <string name="preferences_ignorator_enable">Enable ignorator</string>
     <string name="preferences_ignorator_summary">Hides topics created by users defined below</string>
 

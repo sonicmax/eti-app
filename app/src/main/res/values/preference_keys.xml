@@ -3,4 +3,5 @@
     <string name="pref_global_chat_ui" translatable="false">pref_global_chat_ui</string>
     <string name="pref_ignorator_enable" translatable="false">pref_ignorator_enable</string>
     <string name="pref_ignorator_list" translatable="false">pref_ignorator_list</string>
+    <string name="pref_reuse_session" translatable="false">pref_reuse_session</string>
 </resources>

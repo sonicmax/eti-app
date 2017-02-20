@@ -2,9 +2,7 @@ package com.sonicmax.etiapp.network;
 
 import android.content.Context;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.support.v4.content.AsyncTaskLoader;
-import android.util.Log;
 
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
@@ -12,13 +10,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.ByteOrder;
 
 /**
  * Gets current IP address and constructs string for scripts/login.php request.
+ * The script tells us whether user is logged in at current IP address - however
+ * it doesn't necessarily mean that our session token is valid. (eg. user could've
+ * logged in using a different computer)
  */
 
 public class LoginScriptBuilder extends AsyncTaskLoader<Object> {

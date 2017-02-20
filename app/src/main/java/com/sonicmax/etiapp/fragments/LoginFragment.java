@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,8 +34,10 @@ public class LoginFragment extends Fragment implements AccountManager.EventInter
         super.onCreate(savedInstanceState);
         mAccountManager = new AccountManager(getContext(), this);
 
-        // Check whether "is_logged_in" flag has been set, so we can use stored cookies
-        if (SharedPreferenceManager.getBoolean(getContext(), "is_logged_in")) {
+        boolean reuseSessionToken = PreferenceManager.getDefaultSharedPreferences(getContext())
+                .getBoolean("pref_reuse_session", false);
+
+        if (reuseSessionToken) {
             mAccountManager.checkLoginStatus();
         }
     }

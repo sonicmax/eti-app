@@ -10,6 +10,12 @@
             android:defaultValue="false"
             android:title="@string/preferences_global_chat_ui"/>
 
+        <android.support.v7.preference.CheckBoxPreference
+            android:key="@string/pref_reuse_session"
+            android:defaultValue="false"
+            android:title="@string/preferences_reuse_session"
+            android:summary="@string/preferences_reuse_session_summary"/>
+
         <Preference
             android:key="reload_bookmarks"
             android:title="@string/preferences_reload_bookmarks"> </Preference>
