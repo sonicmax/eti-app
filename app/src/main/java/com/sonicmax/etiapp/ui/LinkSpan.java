@@ -12,7 +12,6 @@ import android.view.View;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.activities.BaseActivity;
-import com.sonicmax.etiapp.activities.InboxActivity;
 import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.objects.Bookmark;
@@ -27,7 +26,9 @@ import org.jsoup.nodes.Element;
 
 public class LinkSpan extends ClickableSpan {
     private final String LOG_TAG = this.getClass().getSimpleName();
-    private final String BOARDS = "https://boards.endoftheinter.net";
+    private final String ETI_URL = "https://endoftheinter.net";
+    private final String BOARD_URL = "https://boards.endoftheinter.net";
+    private final String WIKI_URL = "https://wiki.endoftheinter.net";
 
     private Context mContext;
     private Intent mIntent;
@@ -38,14 +39,19 @@ public class LinkSpan extends ClickableSpan {
 
     public LinkSpan(Context context, Element anchor) {
         mContext = context;
+        findIntentForHref(anchor.attr("href"));
+    }
 
-        String href = anchor.attr("href");
-
+    private void findIntentForHref(String href) {
         // Check for relative URLs
         if (href.startsWith("/")) {
 
             // We can redirect some URLs within the app.
-            if (href.startsWith("/showmessages.php")) {
+            if (href.startsWith("/message.php")) {
+                handleDirectMessageLink(href);
+            }
+
+            else if (href.startsWith("/showmessages.php")) {
                 handleMessageListLink(href);
             }
 
@@ -53,10 +59,13 @@ public class LinkSpan extends ClickableSpan {
                 handleTopicListLink(href);
             }
 
+            else if (href.startsWith("/index.php")) {
+                handleRelativeLink(href, WIKI_URL);
+            }
+
             else {
-                mName = href;
-                mHref = href;
-                mIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(href));
+                // Let user choose which app to open link with
+                handleRelativeLink(href, ETI_URL);
             }
         }
 
@@ -67,8 +76,31 @@ public class LinkSpan extends ClickableSpan {
         }
     }
 
+    private void handleRelativeLink(String href, String prefix) {
+        mName = href;
+        mHref = prefix + href;
+        mIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(href));
+    }
+
+    private void handleDirectMessageLink(String href) {
+        href = BOARD_URL + href;
+        mHref = href;
+
+        Topic target = new Topic(null, null, null, href, null, null);
+
+        // NOTE: Matches ETI behaviour
+
+        mName = "[Message " + target.getId() + "]";
+
+        mIntent = new Intent(mContext, MessageListActivity.class);
+        mIntent.putExtra("topic", target);
+        mIntent.putExtra("page", getPageFromHref(href));
+        mIntent.putExtra("last_page", false);
+        mRedirectWithinApp = true;
+    }
+
     private void handleMessageListLink(String href) {
-        href = BOARDS + href;
+        href = BOARD_URL + href;
         mHref = href;
 
         Topic target = new Topic(null, null, null, href, null, null);
@@ -92,7 +124,7 @@ public class LinkSpan extends ClickableSpan {
 
         mName = "[" + mName + "]";
 
-        href = BOARDS + href;
+        href = BOARD_URL + href;
         mHref = href;
 
         Bookmark target = new Bookmark(mName, href);
