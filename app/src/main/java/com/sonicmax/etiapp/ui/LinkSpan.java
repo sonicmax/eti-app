@@ -1,5 +1,6 @@
 package com.sonicmax.etiapp.ui;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -16,6 +17,7 @@ import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.activities.TopicListActivity;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.objects.Topic;
+import com.sonicmax.etiapp.utilities.Toaster;
 
 import org.jsoup.nodes.Element;
 
@@ -24,11 +26,13 @@ import org.jsoup.nodes.Element;
  */
 
 public class LinkSpan extends ClickableSpan {
+    private final String LOG_TAG = this.getClass().getSimpleName();
     private final String BOARDS = "https://boards.endoftheinter.net";
 
     private Context mContext;
     private Intent mIntent;
     private String mName;
+    private String mHref;
 
     private boolean mRedirectWithinApp = false;
 
@@ -51,21 +55,27 @@ public class LinkSpan extends ClickableSpan {
 
             else {
                 mName = href;
+                mHref = href;
                 mIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(href));
             }
         }
 
         else {
             mName = href;
+            mHref = href;
             mIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(href));
         }
     }
 
     private void handleMessageListLink(String href) {
         href = BOARDS + href;
+        mHref = href;
+
         Topic target = new Topic(null, null, null, href, null, null);
 
-        mName = "[Topic " + target.getId() + "]";
+        // NOTE: Matches ETI behaviour
+
+        mName = "[LT" + target.getId() + "]";
 
         mIntent = new Intent(mContext, MessageListActivity.class);
         mIntent.putExtra("topic", target);
@@ -83,6 +93,7 @@ public class LinkSpan extends ClickableSpan {
         mName = "[" + mName + "]";
 
         href = BOARDS + href;
+        mHref = href;
 
         Bookmark target = new Bookmark(mName, href);
         mIntent = new Intent(mContext, TopicListActivity.class);
@@ -108,12 +119,20 @@ public class LinkSpan extends ClickableSpan {
 
     @Override
     public void onClick(View view) {
-        mContext.startActivity(mIntent);
-        if (mRedirectWithinApp) {
-            ((BaseActivity) mContext).overridePendingTransition(R.anim.slide_in_from_right,
-                    R.anim.slide_out_to_left);
+        try {
+            mContext.startActivity(mIntent);
+
+            if (mRedirectWithinApp) {
+                ((BaseActivity) mContext).overridePendingTransition(R.anim.slide_in_from_right,
+                        R.anim.slide_out_to_left);
+            }
+
+        } catch (ActivityNotFoundException noActivity) {
+            Log.e(LOG_TAG, "Activity not found. Href: " + mHref);
+            Toaster.makeToast(mContext, "Error while opening link");
         }
     }
+
     @Override
     public void updateDrawState(final TextPaint textPaint) {
         textPaint.setColor(ContextCompat.getColor(mContext, R.color.accent));
