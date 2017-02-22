@@ -1,5 +1,7 @@
 package com.sonicmax.etiapp.utilities;
 
+import android.util.Log;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -13,14 +15,13 @@ import java.util.List;
  * for quoting.
  */
 public class MarkupBuilder {
-
     private final String NEWLINE = "\n";
     private final String CLOSE_QUOTE = "</quote>";
     private final String LOG_TAG = MarkupBuilder.class.getSimpleName();
 
-    public String parse(String html) {
+    private int mQuoteDepth;
 
-        // Log.v(LOG_TAG, html);
+    public String parse(String html) {
         Element container = Jsoup.parse(html).getElementsByClass("message-container").get(0);
         Element message = container.getElementsByClass("message").get(0);
         String openQuote = "<quote msgid=\"" + message.attr("msgid") + "\">";
@@ -30,7 +31,6 @@ public class MarkupBuilder {
     }
 
     private String getMarkupFrom(List<Node> children) {
-
         final String OPEN_PRE = "<pre>";
         final String CLOSE_PRE = "</pre>";
         final String SIG_BELT = "---";
@@ -43,7 +43,6 @@ public class MarkupBuilder {
 
             // Handle text nodes
             if (child instanceof TextNode) {
-
                 String textNode = ((TextNode) child).text();
 
                 if (!textNode.replaceAll("^\\s+|\\s+$", "").equals(SIG_BELT)) {
@@ -93,7 +92,9 @@ public class MarkupBuilder {
                             output += getSpoilersFrom(element);
                             break;
                         case "quoted-message":
+                            mQuoteDepth++;
                             output += getQuotesFrom(element);
+                            mQuoteDepth--;
                             break;
                         default:
                             // Do nothing
@@ -107,7 +108,6 @@ public class MarkupBuilder {
     }
 
     private String getImagesFrom(Element imgs) {
-
         final String OPEN_IMG = "<img imgsrc=\"";
         final String CLOSE_IMG = "\" />";
 
@@ -156,45 +156,22 @@ public class MarkupBuilder {
     }
 
     private String getQuotesFrom(Element quote) {
-
         String openQuote = "<quote>";
+
+        String msgId = quote.attr("msgid");
+
         // All quotes have this attribute, but it will be empty in some cases
-        if (!quote.attr("msgid").equals("")) {
+        if (!msgId.equals("")) {
             openQuote = "<quote msgid=\"" + quote.attr("msgid") + "\">";
         }
 
-        // Check for nested quotes
-        Elements nestedQuotes = quote.getElementsByClass("quoted-message");
-
-        if (nestedQuotes.size() > 1) {
-            String nestedOutput = "";
-
-            // Iterate backwards - oldest message should be in centre of node tree
-            for (int j = nestedQuotes.size() - 1; j >= 0; j--) {
-
-                Element nestedQuote = nestedQuotes.get(j);
-
-                String nestedOpenQuote = "<quote>";
-                if (!nestedQuote.attr("msgid").equals("")) {
-                    nestedOpenQuote = "<quote msgid=\"" + nestedQuote.attr("msgid") + "\">";
-                }
-
-                // Preserve nested structure by building new quotes around existing ones
-                // (eg. <quote 1><quote 2> this is quote 2 </quote 2> this is quote 1 </quote 1>
-                nestedOutput = nestedOpenQuote
-                        + nestedOutput + getQuoteContents(nestedQuote) + CLOSE_QUOTE;
-            }
-            return nestedOutput;
+        // Omit quoted text beyond a certain level of nesting, to match ETI quoting behaviour
+        if (mQuoteDepth >= 2) {
+            return openQuote + CLOSE_QUOTE;
         }
+
         else {
-            return openQuote + getQuoteContents(quote) + CLOSE_QUOTE;
+            return openQuote + getMarkupFrom(quote.childNodes()) + CLOSE_QUOTE;
         }
     }
-
-    private String getQuoteContents(Element quote) {
-
-        List<Node> quoteNodes = quote.childNodes();
-        return getMarkupFrom(quoteNodes);
-    }
-
 }
