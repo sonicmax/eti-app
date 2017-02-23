@@ -479,7 +479,7 @@ public class InboxThreadFragment extends Fragment implements
             }
         });
 
-        pmSnackbar.setActionTextColor(ContextCompat.getColor(getContext(), R.color.snackbar_action));
+        pmSnackbar.setActionTextColor(ContextCompat.getColor(getContext(), R.color.accent));
 
         pmSnackbar.show();
     }
