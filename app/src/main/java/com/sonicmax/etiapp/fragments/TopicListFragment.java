@@ -81,7 +81,7 @@ public class TopicListFragment extends Fragment
             mTopicList = savedInstanceState.getParcelable("topiclist");
 
             if (mTopicList != null) {
-                mTopics = mTopicList.getTopics();
+                mTopics = savedInstanceState.getParcelableArrayList("topics");
                 mPageNumber = mTopicList.getPageNumber();
                 mUrl = mTopicList.getUrl();
                 mPrevPageUrl = mTopicList.getPrevPageUrl();
@@ -138,12 +138,10 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        // Save list of topics so we can quickly restore fragment
-        if (mTopicList != null) {
-            outState.putParcelable("topiclist", mTopicList);
-        }
-
         super.onSaveInstanceState(outState);
+        outState.putParcelable("topiclist", mTopicList);
+        ArrayList<Topic> parcelableTopics = new ArrayList<>(mTopics);
+        outState.putParcelableArrayList("topics", parcelableTopics);
     }
 
     @Override

@@ -47,8 +47,8 @@ import com.sonicmax.etiapp.ui.QuickpostWindow;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.Snacker;
-import com.sonicmax.etiapp.utilities.Toaster;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MessageListFragment extends Fragment implements
@@ -56,7 +56,7 @@ public class MessageListFragment extends Fragment implements
         LivelinksSubscriber.EventInterface, View.OnClickListener {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
-    private final int LOAD_MESSAGE = 0;
+    private final int LOAD_MESSAGES = 0;
     private final int REFRESH = 1;
 
     private View mRootView;
@@ -74,8 +74,10 @@ public class MessageListFragment extends Fragment implements
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
 
+    private Bundle mLastRequest;
     private MessageList mMessageList;
     private int mCurrentPage;
+    private String mUrl;
     private String mPrevPageUrl;
     private String mNextPageUrl;
     private int mStartPoint;
@@ -88,50 +90,21 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
-        mNeedsChatUi = PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean("pref_global_chat_ui", false);
-
-        mMessageListAdapter = new MessageListAdapter(context, this);
-        mMessageListAdapter.setInboxThreadFlag(mNeedsChatUi);
-        mMessageListAdapter.setSelf(SharedPreferenceManager.getString(context, "username"));
+        initAdapter(context);
         super.onAttach(context);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
         if (savedInstanceState == null) {
-            Intent intent = getActivity().getIntent();
-            mTopic = intent.getParcelableExtra("topic");
-            String url = (intent.getBooleanExtra("last_page", false))
-                    ? mTopic.getLastPageUrl() : mTopic.getUrl();
-            int page = intent.getIntExtra("page", 0);
-
-            if (page > 0) {
-                url += "&page=" + page;
-                intent.putExtra("page", 0);
-            }
-
-            mStartPoint = intent.getIntExtra("post", 0);
-            intent.putExtra("post", 0);
-
-            mMessageListLoader = new MessageListLoader(getContext(), this, url);
-
-            loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
+            mUrl = getUrl();
+            mStartPoint = getStartPoint();
+            mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
+            loadMessageList(buildArgsForLoader(mUrl, false), LOAD_MESSAGES);
         }
 
         else {
-            mMessageList = savedInstanceState.getParcelable("messagelist");
-            mTopic = savedInstanceState.getParcelable("topic");
-
-            mMessages = mMessageList.getMessages();
-            mPrevPageUrl = mMessageList.getPrevPageUrl();
-            mNextPageUrl = mMessageList.getNextPageUrl();
-            mCurrentPage = mMessageList.getPageNumber();
-
-            mMessageListAdapter.setCurrentPage(mCurrentPage);
-            mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
-            mMessageListAdapter.replaceAllMessages(mMessages);
+            restoreFragment(savedInstanceState);
         }
 
         super.onCreate(savedInstanceState);
@@ -166,15 +139,15 @@ public class MessageListFragment extends Fragment implements
             }
         });
 
+        if (savedInstanceState != null) {
+            restoreFragment(savedInstanceState);
+        }
+
         return mRootView;
     }
 
     @Override
     public void onResume() {
-        if (mLivelinksSubscriber != null) {
-            mLivelinksSubscriber = null;
-        }
-
         super.onResume();
     }
 
@@ -196,10 +169,12 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable("messagelist", mMessageList);
-        outState.putParcelable("topic", mTopic);
-
         super.onSaveInstanceState(outState);
+        outState.putParcelable("messagelist", mMessageList);
+        // TODO: Figure out why mMessages isn't being stored correctly by MessageList
+        ArrayList<Message> parcelableMessages = new ArrayList<>(mMessages);
+        outState.putParcelableArrayList("messages", parcelableMessages);
+        outState.putParcelable("topic", mTopic);
     }
 
     @Override
@@ -211,6 +186,53 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
+
+    private void initAdapter(Context context) {
+        mNeedsChatUi = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean("pref_global_chat_ui", false);
+
+        mMessageListAdapter = new MessageListAdapter(context, this);
+        mMessageListAdapter.setInboxThreadFlag(mNeedsChatUi);
+        mMessageListAdapter.setSelf(SharedPreferenceManager.getString(context, "username"));
+    }
+
+    private String getUrl() {
+        Intent intent = getActivity().getIntent();
+        mTopic = intent.getParcelableExtra("topic");
+        String url = (intent.getBooleanExtra("last_page", false))
+                ? mTopic.getLastPageUrl() : mTopic.getUrl();
+        int page = intent.getIntExtra("page", 0);
+
+        if (page > 0) {
+            url += "&page=" + page;
+            intent.putExtra("page", 0);
+        }
+
+        Log.v(LOG_TAG, url);
+
+        return url;
+    }
+
+    private int getStartPoint() {
+        Intent intent = getActivity().getIntent();
+        int startPoint = intent.getIntExtra("post", 0);
+        intent.putExtra("post", 0);
+        return startPoint;
+    }
+
+    private void restoreFragment(Bundle savedInstanceState) {
+        mMessageList = savedInstanceState.getParcelable("messagelist");
+        mTopic = savedInstanceState.getParcelable("topic");
+
+        mMessages = savedInstanceState.getParcelableArrayList("messages");
+        mPrevPageUrl = mMessageList.getPrevPageUrl();
+        mNextPageUrl = mMessageList.getNextPageUrl();
+        mCurrentPage = mMessageList.getPageNumber();
+
+        mMessageListAdapter.setCurrentPage(mCurrentPage);
+        mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
+        mMessageListAdapter.replaceAllMessages(mMessages);
+    }
 
     private void scrollToPosition(final int position) {
         mLayoutManager.scrollToPosition(position);
@@ -235,13 +257,13 @@ public class MessageListFragment extends Fragment implements
     }
 
     public Bundle buildArgsForLoader(String url, boolean filter) {
-        mArgs = new Bundle();
-        mArgs.putString("method", "GET");
-        mArgs.putString("type", "messagelist");
-        mArgs.putString("url", url);
-        mArgs.putBoolean("filter", filter);
+        Bundle args = new Bundle();
+        args.putString("method", "GET");
+        args.putString("type", "messagelist");
+        args.putString("url", url);
+        args.putBoolean("filter", filter);
 
-        return mArgs;
+        return args;
     }
 
     private void loadMessageList(Bundle args, int id) {
@@ -269,20 +291,21 @@ public class MessageListFragment extends Fragment implements
     private void loadNextPage() {
         if (mNextPageUrl != null) {
             mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
+            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGES);
         }
     }
 
     private void loadPrevPage() {
         if (mPrevPageUrl != null) {
             mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
+            loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGES);
         }
     }
 
     private void updateActionBarTitle(final String title) {
         final Context context = getContext();
         final ActionBar actionBar = ((BaseActivity) context).getSupportActionBar();
+        if (actionBar != null) {
         View titleView = LayoutInflater.from(context).inflate(R.layout.title_view, mContainer);
 
         TextView textView = (TextView) titleView.findViewById(R.id.title);
@@ -305,13 +328,15 @@ public class MessageListFragment extends Fragment implements
 
         actionBar.setCustomView(titleView);
     }
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // MessageListLoader.EventInterface methods
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
-    public void onLoadMessageList(MessageList messageList) {
+    public void onLoadMessageList(Bundle args, MessageList messageList) {
+        mLastRequest = args;
         mMessageList = messageList;
         mMessages = messageList.getMessages();
         mCurrentPage = messageList.getPageNumber();
@@ -355,9 +380,25 @@ public class MessageListFragment extends Fragment implements
             Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
         }
 
-        if (mStartPoint > 0) {
+
             scrollToPosition(mStartPoint);
             mStartPoint = 0;
+        }
+
+    @Override
+    public void onLoadError() {
+        // Clean up UI, display notification and retry last working request
+        dismissDialog();
+        Snacker.showSnackBar(mRootView, "Error while loading page");
+
+        if (mArgs != null) {
+            loadMessageList(mLastRequest, LOAD_MESSAGES);
+            // Make sure that we don't repeat request if something goes wrong.
+            mArgs = null;
+        }
+        else {
+            // Go back to message list
+
         }
     }
 
@@ -497,7 +538,6 @@ public class MessageListFragment extends Fragment implements
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-
             switch (item.getItemId()) {
                 case R.id.quote:
                     String quote = new MarkupBuilder().parse(mSelectedMessage.getHtml());

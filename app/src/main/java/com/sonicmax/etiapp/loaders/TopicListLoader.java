@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.util.Log;
 
 import com.sonicmax.etiapp.activities.PostTopicActivity;
 import com.sonicmax.etiapp.network.WebRequest;
@@ -19,6 +20,7 @@ import com.sonicmax.etiapp.utilities.AsyncLoader;
 import java.util.List;
 
 public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
+    private final String LOG_TAG = this.getClass().getSimpleName();
     private final int LOAD_TOPIC_LIST = 0;
     private final int POST_TOPIC = 1;
 
@@ -87,18 +89,28 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
                     public TopicList loadInBackground() {
                         String html = new WebRequest(mContext, args).sendRequest();
 
-                        if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
+                        if (html == null) {
+                            return null;
+                        }
+
+                        else if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
                             mInternalServerError = true;
                             return null;
 
                         } else {
                             mInternalServerError = false;
 
-                            UserInfoScraper userInfoScraper = new UserInfoScraper(mContext);
-                            userInfoScraper.setInput(html);
-                            userInfoScraper.scrapeUserInfo();
+                            try {
+                                UserInfoScraper userInfoScraper = new UserInfoScraper(mContext);
+                                userInfoScraper.setInput(html);
+                                userInfoScraper.scrapeUserInfo();
 
-                            return new TopicListScraper(getContext(), args.getString("url")).scrapeTopics(html);
+                                return new TopicListScraper(getContext(), args.getString("url")).scrapeTopics(html);
+
+                            } catch (IllegalArgumentException outOfBounds) {
+                                Log.e(LOG_TAG, outOfBounds.getMessage());
+                                return null;
+                            }
                         }
                     }
                 };
@@ -137,9 +149,15 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
             }
 
         } else {
+            // There was some kind of error while requesting HTML.
+
             if (mInternalServerError) {
-                // We can try to load message history
+                // We can try to load message history:
                 mEventInterface.onInternalServerError();
+            }
+
+            else {
+                // Log the error and let it fail
             }
         }
     }

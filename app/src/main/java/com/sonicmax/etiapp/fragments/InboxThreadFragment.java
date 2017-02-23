@@ -45,6 +45,7 @@ import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.Snacker;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,7 +57,7 @@ public class InboxThreadFragment extends Fragment implements
         LivelinksSubscriber.EventInterface, View.OnClickListener {
 
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
-    private final int LOAD_MESSAGE = 0;
+    private final int LOAD_THREAD = 0;
     private final int REFRESH = 1;
 
     private View mRootView;
@@ -73,9 +74,8 @@ public class InboxThreadFragment extends Fragment implements
     private List<Message> mMessages;
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
-
+    private Bundle mLastRequest;
     private MessageList mMessageList;
-    private String mTitle;
     private int mCurrentPage;
     private String mPrevPageUrl;
     private String mNextPageUrl;
@@ -128,14 +128,14 @@ public class InboxThreadFragment extends Fragment implements
 
             mMessageListLoader = new MessageListLoader(getContext(), this, url);
 
-            loadMessageList(buildArgsForLoader(url, false), LOAD_MESSAGE);
+            loadMessageList(buildArgsForLoader(url, false), LOAD_THREAD);
         }
 
         else {
             mMessageList = savedInstanceState.getParcelable("messagelist");
             mTopic = savedInstanceState.getParcelable("topic");
 
-            mMessages = mMessageList.getMessages();
+            mMessages = savedInstanceState.getParcelableArrayList("messages");
             mPrevPageUrl = mMessageList.getPrevPageUrl();
             mNextPageUrl = mMessageList.getNextPageUrl();
             mCurrentPage = mMessageList.getPageNumber();
@@ -216,10 +216,12 @@ public class InboxThreadFragment extends Fragment implements
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable("messagelist", mMessageList);
-        outState.putParcelable("topic", mTopic);
-
         super.onSaveInstanceState(outState);
+        outState.putParcelable("messagelist", mMessageList);
+        // TODO: Figure out why mMessages isn't being stored correctly by MessageList
+        ArrayList<Message> parcelableMessages = new ArrayList<>(mMessages);
+        outState.putParcelableArrayList("messages", parcelableMessages);
+        outState.putParcelable("topic", mTopic);
     }
 
     @Override
@@ -274,14 +276,14 @@ public class InboxThreadFragment extends Fragment implements
     private void loadPrevPage() {
         if (mPrevPageUrl != null) {
             mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_MESSAGE);
+            loadMessageList(buildArgsForLoader(mPrevPageUrl, false), LOAD_THREAD);
         }
     }
 
     private void loadNextPage() {
         if (mNextPageUrl != null) {
             mMessageListAdapter.clearMessages();
-            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_MESSAGE);
+            loadMessageList(buildArgsForLoader(mNextPageUrl, false), LOAD_THREAD);
         }
     }
 
@@ -306,7 +308,8 @@ public class InboxThreadFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
-    public void onLoadMessageList(MessageList messageList) {
+    public void onLoadMessageList(Bundle args, MessageList messageList) {
+        mLastRequest = args;
         mMessageList = messageList;
         mMessages = messageList.getMessages();
         mCurrentPage = messageList.getPageNumber();
@@ -355,6 +358,22 @@ public class InboxThreadFragment extends Fragment implements
         if (mStartPoint > 0) {
             scrollToPosition(mStartPoint);
             mStartPoint = 0;
+        }
+    }
+
+    @Override
+    public void onLoadError() {
+        // Clean up UI, display notification and retry last working request
+        dismissDialog();
+        Snacker.showSnackBar(mRootView, "Error while loading page");
+
+        if (mArgs != null) {
+            loadMessageList(mLastRequest, LOAD_THREAD);
+            // Make sure that we don't repeat request if something goes wrong.
+            mArgs = null;
+        }
+        else {
+            // Go back to inbox
         }
     }
 
@@ -503,7 +522,7 @@ public class InboxThreadFragment extends Fragment implements
                     Context context = getContext();
                     Intent intent = new Intent(context, PostMessageActivity.class);
                     intent.putExtra("quote", quote);
-                    intent.putExtra("title", mTitle);
+                    intent.putExtra("title", intent.getStringExtra("title"));
                     intent.putExtra("id", mTopic.getId());
                     intent.putExtra("lastpage",
                             getActivity().getIntent().getIntExtra("lastpage", 1));

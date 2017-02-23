@@ -27,19 +27,24 @@ public class TopicListScraper {
         this.mUrl = url;
     }
 
-    public TopicList scrapeTopics(String html) {
+    public TopicList scrapeTopics(String html){
         Document document = Jsoup.parse(html);
         Elements tableRows = document.getElementsByTag("tr");
         Elements infobars = document.getElementsByClass("infobar");
 
-        if (mUrl.contains("inbox.php")) {
-            getPageUrlsFromInbox(infobars);
-        }
-        else {
-            getPageUrls(infobars);
-        }
+        try {
 
-        return new TopicList(getTopics(tableRows), getPageNumber(), mUrl, mPrevPageUrl, mNextPageUrl);
+            if (mUrl.contains("inbox.php")) {
+                getPageUrlsFromInbox(infobars);
+            } else {
+                getPageUrls(infobars);
+            }
+
+            return new TopicList(getTopics(tableRows), getPageNumber(), mUrl, mPrevPageUrl, mNextPageUrl);
+
+        } catch (IllegalArgumentException outOfBounds) {
+            return null;
+        }
     }
 
     private ArrayList<Topic> getTopics(Elements tableRows) {

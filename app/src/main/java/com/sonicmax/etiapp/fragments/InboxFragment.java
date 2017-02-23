@@ -26,6 +26,7 @@ import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
 import com.sonicmax.etiapp.utilities.Snacker;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -81,7 +82,7 @@ public class InboxFragment extends Fragment
             mTopicList = savedInstanceState.getParcelable("topiclist");
 
             if (mTopicList != null) {
-                mTopics = mTopicList.getTopics();
+                mTopics = savedInstanceState.getParcelableArrayList("topics");
                 mPageNumber = mTopicList.getPageNumber();
                 mUrl = mTopicList.getUrl();
                 mPrevPageUrl = mTopicList.getPrevPageUrl();
@@ -139,11 +140,10 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if (mTopicList != null) {
-            outState.putParcelable("topiclist", mTopicList);
-        }
-
         super.onSaveInstanceState(outState);
+        outState.putParcelable("topiclist", mTopicList);
+        ArrayList<Topic> parcelableTopics = new ArrayList<>(mTopics);
+        outState.putParcelableArrayList("topics", parcelableTopics);
     }
 
     @Override

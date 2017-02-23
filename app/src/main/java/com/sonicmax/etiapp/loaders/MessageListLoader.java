@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.view.KeyEvent;
 
+import com.sonicmax.etiapp.activities.BaseActivity;
 import com.sonicmax.etiapp.network.WebRequest;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.MessageList;
@@ -24,6 +26,7 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     private EventInterface mEventInterface;
     private LoaderManager mLoaderManager;
     private MessageListScraper mScraper;
+    private Bundle mArgs;
 
     public MessageListLoader (Context context, MessageListLoader.EventInterface eventInterface, String url) {
         mContext = context;
@@ -42,7 +45,8 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     }
 
     public interface EventInterface {
-        void onLoadMessageList(MessageList messageList);
+        void onLoadMessageList(Bundle args, MessageList messageList);
+        void onLoadError();
     }
 
 
@@ -53,11 +57,28 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     public Loader<Object> onCreateLoader(final int id, final Bundle args) {
 
         return new AsyncLoader(mContext, args) {
+
             @Override
             public MessageList loadInBackground() {
                 String html = new WebRequest(mContext, args).sendRequest();
-                mScraper.setUrl(args.getString("url"));
-                return mScraper.scrapeMessages(html, args.getBoolean("filter"));
+
+                if (html == null) {
+                    // Return null so we can handle the error in onLoadFinished()
+                    return null;
+                }
+
+                else {
+                    mArgs = args;
+
+                    // Even if WebRequest was successful, it's possible that we will fail to scrape data from page.
+                    try {
+                        mScraper.setUrl(args.getString("url"));
+                        return mScraper.scrapeMessages(html, args.getBoolean("filter"));
+
+                    } catch (IllegalArgumentException outOfBounds) {
+                        return null;
+                    }
+                }
             }
         };
     }
@@ -67,11 +88,12 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
         if (data != null) {
             // We can be sure that data will safely cast to MessageList.
             MessageList messageList = (MessageList) data;
-            mEventInterface.onLoadMessageList(messageList);
+            mEventInterface.onLoadMessageList(mArgs, messageList);
         }
 
         else {
-            // Handle error
+            // Handle the error in fragment
+            mEventInterface.onLoadError();
         }
     }
 
