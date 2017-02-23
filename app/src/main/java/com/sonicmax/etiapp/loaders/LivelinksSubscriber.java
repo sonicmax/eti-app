@@ -229,7 +229,7 @@ public class LivelinksSubscriber {
         }
     }
 
-    private void handleLivelinksResponse(String response) {
+    private void handleLivelinksResponse(String response)  {
         int newTopicSize = 0;
         int newInboxSize = 0;
         int newThreadSize = 0;
@@ -262,29 +262,30 @@ public class LivelinksSubscriber {
                 // Do nothing
             }
 
-            // Compare size from livelinks response to existing size
+            // Check for changes to topic/thread post count
 
             if (newTopicSize > mTopicSize) {
                 fetchNewMessages(newTopicSize);
-                }
+            }
 
-            if (newThreadSize > mTopicSize) {
+            else if (newThreadSize > mTopicSize) {
                 fetchNewMessages(newThreadSize);
             }
 
-            if (newInboxSize > mInboxSize) {
-                SharedPreferenceManager.putInt(mContext, "inbox_count", newInboxSize);
-                mEventInterface.onReceivePrivateMessage(mInboxSize, newInboxSize);
-                mInboxSize = newInboxSize;
-                subscribe();
-            }
-            else if (newInboxSize < mInboxSize) {
-                SharedPreferenceManager.putInt(mContext, "inbox_count", newInboxSize);
-                mInboxSize = newInboxSize;
-                subscribe();
-            }
             else {
-                subscribe();
+                // Check for changes to unread PM count
+                if (newInboxSize > mInboxSize) {
+                    SharedPreferenceManager.putInt(mContext, "inbox_count", newInboxSize);
+                    mEventInterface.onReceivePrivateMessage(mInboxSize, newInboxSize);
+                    mInboxSize = newInboxSize;
+                    subscribe();
+                } else if (newInboxSize < mInboxSize) {
+                    SharedPreferenceManager.putInt(mContext, "inbox_count", newInboxSize);
+                    mInboxSize = newInboxSize;
+                    subscribe();
+                } else {
+                    subscribe();
+                }
             }
         }
     }
