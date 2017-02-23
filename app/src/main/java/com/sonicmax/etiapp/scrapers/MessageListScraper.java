@@ -236,15 +236,19 @@ public class MessageListScraper {
     }
 
     private int getLastPage(Element infobar) {
-        Elements anchors = infobar.getElementsByTag("a");
-        int size = anchors.size();
-        if (size > 0) {
-            Element lastPageAnchor = anchors.get(size - 1);
-            return Integer.parseInt(lastPageAnchor.html());
-        }
-        else {
-            // Topic is on first page
-            return 1;
+        List<Node> children = infobar.childNodes();
+        Node lastChild = children.get(children.size() - 1);
+
+        try {
+            // If topic has more than 1 page, and user is not on last page, last child of infobar
+            // will be anchor element
+            Element anchor = (Element) lastChild;
+            return Integer.parseInt(anchor.text());
+
+        } catch (ClassCastException notAnchor) {
+            // Scrape page number from TextNode
+            String pageNumber = lastChild.outerHtml().replaceAll("\\D+","");
+            return Integer.parseInt(pageNumber);
         }
     }
 
