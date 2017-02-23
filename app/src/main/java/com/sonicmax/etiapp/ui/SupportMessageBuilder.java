@@ -204,12 +204,13 @@ public class SupportMessageBuilder extends Builder {
             String[] entries = style.split(";");
             int width = Integer.parseInt(entries[0].replace("width:", "").replace("px", ""));
             int height = Integer.parseInt(entries[1].replace("height:", "").replace("px", ""));
+            int widthLimit = (mQuoteDepth == 0) ? mMaxWidth : mMaxWidth / 4;
 
-            if (width > mMaxWidth) {
+            if (width > widthLimit) {
                 // Scale Bitmap to fit screen.
                 float ratio = (float) width / (float) height;
-                width = mMaxWidth;
-                height = (int) ((float) mMaxWidth / ratio);
+                width = widthLimit;
+                height = (int) ((float) widthLimit / ratio);
             }
 
             mSpinner.setBounds(0, 0, width, height);
