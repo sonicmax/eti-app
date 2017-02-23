@@ -69,7 +69,7 @@ public class ImageCache {
 
         // Also add to disk cache
         synchronized (mDiskCacheLock) {
-            if (mDiskLruCache != null) {
+            if (mDiskLruCache != null && !mDiskLruCache.isClosed()) {
                 try {
                     String hash = getMd5FromUrl(key);
                     if (mDiskLruCache.get(hash) == null) {
@@ -119,7 +119,7 @@ public class ImageCache {
 
     private void addBitmapToDiskCache(final String key, final Bitmap value) {
         synchronized (mDiskCacheLock) {
-            if (mDiskLruCache != null) {
+            if (mDiskLruCache != null && !mDiskLruCache.isClosed()) {
                 DiskLruCache.Editor editor;
                 DiskLruCache.Snapshot snapshot = null;
                 OutputStream out = null;
@@ -165,11 +165,16 @@ public class ImageCache {
         synchronized (mDiskCacheLock) {
             // Wait while disk cache is started from background thread
             while (mDiskCacheStarting) {
+
                 try {
                     mDiskCacheLock.wait();
-                } catch (InterruptedException e) {}
+
+                } catch (InterruptedException e) {
+                    // Do nothing
+                }
             }
-            if (mDiskLruCache != null) {
+
+            if (mDiskLruCache != null && !mDiskLruCache.isClosed()) {
                 DiskLruCache.Snapshot snapshot = null;
                 InputStream input;
                 try {
