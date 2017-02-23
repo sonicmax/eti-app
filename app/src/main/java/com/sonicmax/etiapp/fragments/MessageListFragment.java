@@ -306,28 +306,28 @@ public class MessageListFragment extends Fragment implements
         final Context context = getContext();
         final ActionBar actionBar = ((BaseActivity) context).getSupportActionBar();
         if (actionBar != null) {
-        View titleView = LayoutInflater.from(context).inflate(R.layout.title_view, mContainer);
+            View titleView = LayoutInflater.from(context).inflate(R.layout.title_view, mContainer);
 
-        TextView textView = (TextView) titleView.findViewById(R.id.title);
-        textView.setText(title);
+            TextView textView = (TextView) titleView.findViewById(R.id.title);
+            textView.setText(title);
 
-        titleView.setOnClickListener(new View.OnClickListener() {
+            titleView.setOnClickListener(new View.OnClickListener() {
 
-            @Override
-            public void onClick(View view) {
-                // Replace with scrollable title view
-                View scrollableView = LayoutInflater.from(context).inflate(R.layout.scrollable_title_view, null);
-                TextView textView = (TextView) scrollableView.findViewById(R.id.title);
-                textView.setText(title);
+                @Override
+                public void onClick(View view) {
+                    // Replace with scrollable title view
+                    View scrollableView = LayoutInflater.from(context).inflate(R.layout.scrollable_title_view, null);
+                    TextView textView = (TextView) scrollableView.findViewById(R.id.title);
+                    textView.setText(title);
 
-                actionBar.setCustomView(scrollableView);
+                    actionBar.setCustomView(scrollableView);
 
-                view.setOnTouchListener(null);
-            }
-        });
+                    view.setOnTouchListener(null);
+                }
+            });
 
-        actionBar.setCustomView(titleView);
-    }
+            actionBar.setCustomView(titleView);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -381,9 +381,9 @@ public class MessageListFragment extends Fragment implements
         }
 
 
-            scrollToPosition(mStartPoint);
-            mStartPoint = 0;
-        }
+        scrollToPosition(mStartPoint);
+        mStartPoint = 0;
+    }
 
     @Override
     public void onLoadError() {
@@ -633,17 +633,21 @@ public class MessageListFragment extends Fragment implements
             @Override
             public void onClick(View v) {
                 final String NEWLINE = "\n";
-
+                EditText messageView = (EditText) quickpostView.findViewById(R.id.quickpost_edit);
+                String signature = SharedPreferenceManager.getString(getContext(), "signature");
                 String quote = "";
 
                 if (mSelectedMessage != null) {
                     // Quote selected message and append message to it
-                    quote = new MarkupBuilder().parse(mSelectedMessage.getHtml()) + NEWLINE;
+                    quote = new MarkupBuilder().parse(mSelectedMessage.getHtml());
+
+                    if (messageView.getText().length() > 0) {
+                        quote += NEWLINE;
+                    }
                 }
 
-                String signature = SharedPreferenceManager.getString(getContext(), "signature");
-                EditText messageView = (EditText) quickpostView.findViewById(R.id.quickpost_edit);
                 String message = quote + messageView.getText().toString() + NEWLINE + signature;
+
                 mQuickpostHandler.postMessage(message);
 
                 // Clean up UI

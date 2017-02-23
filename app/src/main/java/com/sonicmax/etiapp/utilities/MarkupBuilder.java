@@ -27,7 +27,7 @@ public class MarkupBuilder {
         String openQuote = "<quote msgid=\"" + message.attr("msgid") + "\">";
         List<Node> children = message.childNodes();
 
-        return openQuote + getMarkupFrom(children) + CLOSE_QUOTE + NEWLINE;
+        return openQuote + getMarkupFrom(children) + CLOSE_QUOTE;
     }
 
     private String getMarkupFrom(List<Node> children) {
