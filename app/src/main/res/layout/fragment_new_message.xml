@@ -27,6 +27,7 @@
             android:layout_height="wrap_content"
             android:gravity="top"
             android:inputType="textMultiLine"
+            android:textColor="@android:color/black"
             android:ems="10"
             android:id="@+id/new_message" />
     </LinearLayout>
