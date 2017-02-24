@@ -255,7 +255,7 @@ public class MessageListFragment extends Fragment implements
     }
 
     /**
-     * Attempts to restore adapter content from cache. Returns
+     * Attempts to restore adapter content from cache.
      * @return boolean value indicating whether operation was successful
      */
     private boolean restoreFromCache() {

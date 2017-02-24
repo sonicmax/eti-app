@@ -59,6 +59,7 @@ public class InboxThreadFragment extends Fragment implements
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
     private final int LOAD_THREAD = 0;
     private final int REFRESH = 1;
+    private final int LOAD_FROM_CACHE = 2;
 
     private View mRootView;
     private FloatingActionButton mQuickpostButton;
@@ -77,6 +78,7 @@ public class InboxThreadFragment extends Fragment implements
     private Bundle mLastRequest;
     private MessageList mMessageList;
     private int mCurrentPage;
+    private String mUrl;
     private String mPrevPageUrl;
     private String mNextPageUrl;
     private int mStartPoint;
@@ -85,73 +87,25 @@ public class InboxThreadFragment extends Fragment implements
 
     @Override
     public void onAttach(Context context) {
-        mMessageListAdapter = new MessageListAdapter(context, this);
-
-        // Set some values required for MessageListAdapter to work correctly with inbox threads.
-        // TODO: Allow users to choose between chat UI and regular message list UI
-        mMessageListAdapter.setInboxThreadFlag(true);
-        String self = SharedPreferenceManager.getString(context, "username");
-        mMessageListAdapter.setSelf(self);
-
-        ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-
-        if (actionBar != null) {
-            LayoutInflater inflator = LayoutInflater.from(context);
-            View v = inflator.inflate(R.layout.title_view, null);
-
-            String title = getActivity().getIntent().getStringExtra("title");
-            ((TextView) v.findViewById(R.id.title)).setText(title);
-
-            actionBar.setCustomView(v);
-        }
-
         super.onAttach(context);
+        initInboxAdapter(context);
+        updateActionBarTitle(context);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
         if (savedInstanceState == null) {
-            Intent intent = getActivity().getIntent();
-            mTopic = intent.getParcelableExtra("topic");
-            String url = (intent.getBooleanExtra("last_page", false))
-                    ? mTopic.getLastPageUrl() : mTopic.getUrl();
-            int page = intent.getIntExtra("page", 0);
-
-            if (page > 0) {
-                url += "&page=" + page;
-                intent.putExtra("page", 0);
-            }
-
-            mStartPoint = intent.getIntExtra("post", 0);
-            intent.putExtra("post", 0);
-
-            mMessageListLoader = new MessageListLoader(getContext(), this, url);
-
-            loadMessageList(buildArgsForLoader(url, false), LOAD_THREAD);
+            mUrl = getUrl();
+            mStartPoint = getStartPoint();
+            mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
+            loadMessageList(buildArgsForLoader(mUrl, false), LOAD_THREAD);
         }
 
         else {
-            mMessageList = savedInstanceState.getParcelable("messagelist");
-            mTopic = savedInstanceState.getParcelable("topic");
-
-            mMessages = savedInstanceState.getParcelableArrayList("messages");
-            mPrevPageUrl = mMessageList.getPrevPageUrl();
-            mNextPageUrl = mMessageList.getNextPageUrl();
-            mCurrentPage = mMessageList.getPageNumber();
-
-            mMessageListAdapter.replaceAllMessages(mMessages);
-            mMessageListAdapter.setCurrentPage(mCurrentPage);
-
-            if (mNextPageUrl != null) {
-                mMessageListAdapter.setNextPageFlag(true);
-            }
-            else {
-                mMessageListAdapter.setNextPageFlag(false);
-            }
+            restoreFragmentFromBundle(savedInstanceState);
         }
-
-        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -165,24 +119,23 @@ public class InboxThreadFragment extends Fragment implements
         mContainer = container;
 
         // Prepare RecyclerView so we can display posts after loading has finished
-        final RecyclerView messageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
+        final RecyclerView mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
         mLayoutManager = new LinearLayoutManager(getContext());
         mLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        messageList.setLayoutManager(mLayoutManager);
-        messageList.setAdapter(mMessageListAdapter);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setAdapter(mMessageListAdapter);
 
         // Set listeners
         mQuickpostButton.setOnClickListener(this);
-        messageList.setOnTouchListener(pageSwipeHandler);
+        mRecyclerView.setOnTouchListener(pageSwipeHandler);
 
-        messageList.post(new Runnable() {
+        mRecyclerView.post(new Runnable() {
             @Override
             public void run() {
                 // Find width of messageList and set maximum image width.
                 // For inbox threads, we want to reduce image size to make sure they
                 // fit inside the chat UI.
-                // TODO: Expand images on click
-                mMessageListAdapter.setMaxImageWidth(messageList.getWidth() / 2);
+                mMessageListAdapter.setMaxImageWidth(mRecyclerView.getWidth() / 2);
             }
         });
 
@@ -190,28 +143,32 @@ public class InboxThreadFragment extends Fragment implements
     }
 
     @Override
-    public void onResume() {
-        if (mLivelinksSubscriber != null) {
-            mLivelinksSubscriber = null;
-        }
+    public void onPause() {
+        super.onPause();
+        dismissDialog();
+        setCachedPage();
 
+        if (mLivelinksSubscriber != null) {
+            mLivelinksSubscriber.unsubscribe();
+        }
+    }
+
+    @Override
+    public void onResume() {
         super.onResume();
+        restoreFromCache();
     }
 
     @Override
     public void onStop() {
-        // Clear adapter and memory cache before stopping activity
+        super.onStop();
         mMessageListAdapter.clearMessages();
         mMessageListAdapter.clearMemoryCache();
-        // Close disk cache
         mMessageListAdapter.closeDiskCache();
 
-        // Make sure that livelinks loader is destroyed
         if (mLivelinksSubscriber != null) {
             mLivelinksSubscriber.unsubscribe();
         }
-
-        super.onStop();
     }
 
     @Override
@@ -226,17 +183,120 @@ public class InboxThreadFragment extends Fragment implements
 
     @Override
     public void onDetach() {
-        // Make sure that we don't leak progress dialog when exiting activity
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-
         super.onDetach();
+        dismissDialog();
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
+
+    private void initInboxAdapter(Context context) {
+        // TODO: Allow users to choose between chat UI and regular message list UI
+        mMessageListAdapter = new MessageListAdapter(context, this);
+        mMessageListAdapter.setInboxThreadFlag(true);
+        String self = SharedPreferenceManager.getString(context, "username");
+        mMessageListAdapter.setSelf(self);
+    }
+
+    private void updateActionBarTitle(Context context) {
+        ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+        String title = getActivity().getIntent().getStringExtra("title");
+
+        if (actionBar != null && title != null) {
+            LayoutInflater inflator = LayoutInflater.from(context);
+            View v = inflator.inflate(R.layout.title_view, null);
+            ((TextView) v.findViewById(R.id.title)).setText(title);
+            actionBar.setCustomView(v);
+        }
+    }
+
+    private String getUrl() {
+        Intent intent = getActivity().getIntent();
+        mTopic = intent.getParcelableExtra("topic");
+        String url = (intent.getBooleanExtra("last_page", false))
+                ? mTopic.getLastPageUrl() : mTopic.getUrl();
+        int page = intent.getIntExtra("page", 0);
+
+        if (page > 0) {
+            url += "&page=" + page;
+            intent.putExtra("page", 0);
+        }
+
+        return url;
+    }
+
+    private int getStartPoint() {
+        Intent intent = getActivity().getIntent();
+        int startPoint = intent.getIntExtra("post", 0);
+        intent.putExtra("post", 0);
+        return startPoint;
+    }
+
+    private void restoreFragmentFromBundle(Bundle savedInstanceState) {
+        mMessageList = savedInstanceState.getParcelable("messagelist");
+        mTopic = savedInstanceState.getParcelable("topic");
+
+        mMessages = savedInstanceState.getParcelableArrayList("messages");
+        mPrevPageUrl = mMessageList.getPrevPageUrl();
+        mNextPageUrl = mMessageList.getNextPageUrl();
+        mCurrentPage = mMessageList.getPageNumber();
+
+        mMessageListAdapter.replaceAllMessages(mMessages);
+        mMessageListAdapter.setCurrentPage(mCurrentPage);
+
+        if (mNextPageUrl != null) {
+            mMessageListAdapter.setNextPageFlag(true);
+        }
+        else {
+            mMessageListAdapter.setNextPageFlag(false);
+        }
+    }
+
+    private void setCachedPage() {
+        // Store HTML and URL of current page so we can restore fragment later if needed
+        SharedPreferenceManager.putString(getContext(), "last_viewed_thread_html", mMessageList.getHtml());
+        SharedPreferenceManager.putString(getContext(), "last_viewed_thread_url", mUrl);
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_thread_page", mCurrentPage);
+        int position = 0;
+
+        if (mLayoutManager != null) {
+            position = mLayoutManager.findFirstVisibleItemPosition();
+        }
+
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_thread_position", position);
+    }
+
+    /**
+     * Attempts to restore adapter content from cache.
+     * @return boolean value indicating whether operation was successful
+     */
+    private boolean restoreFromCache() {
+        String html = SharedPreferenceManager.getString(getContext(), "last_viewed_thread_html");
+        String cachedUrl = SharedPreferenceManager.getString(getContext(), "last_viewed_thread_url");
+        int cachedPageNumber = SharedPreferenceManager.getInt(getContext(), "last_viewed_thread_page");
+        int cachedPosition = SharedPreferenceManager.getInt(getContext(), "last_viewed_thread_position");
+
+        if (cachedUrl != null) {
+            mUrl = cachedUrl;
+            mCurrentPage = cachedPageNumber;
+            mStartPoint = cachedPosition;
+            mMessageListLoader = new MessageListLoader(getContext(), this, cachedUrl);
+            loadMessageList(buildArgsForLoader(html, cachedUrl, false), LOAD_FROM_CACHE);
+            resetCachedPage();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private void resetCachedPage() {
+        SharedPreferenceManager.putString(getContext(), "last_viewed_thread_html", null);
+        SharedPreferenceManager.putString(getContext(), "last_viewed_thread_url", null);
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_thread_page", 0);
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_thread_position", 0);
+    }
 
     private void scrollToPosition(final int position) {
         mLayoutManager.scrollToPosition(position);
@@ -265,6 +325,15 @@ public class InboxThreadFragment extends Fragment implements
         mArgs.putBoolean("filter", filter);
 
         return mArgs;
+    }
+
+    public Bundle buildArgsForLoader(String html, String url, boolean filter) {
+        Bundle args = new Bundle();
+        args.putString("html", html);
+        args.putString("url", url);
+        args.putBoolean("filter", filter);
+
+        return args;
     }
 
     private void loadMessageList(Bundle args, int id) {
@@ -344,21 +413,11 @@ public class InboxThreadFragment extends Fragment implements
         dismissDialog();
 
         if (mCurrentPage > 1) {
-            if (mStartPoint > 0) {
-                scrollToPosition(mStartPoint);
-                mStartPoint = 0;
-            }
-            else {
-                final int FIRST_POST = 0;
-                scrollToPosition(FIRST_POST);
-            }
             Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
         }
 
-        if (mStartPoint > 0) {
-            scrollToPosition(mStartPoint);
-            mStartPoint = 0;
-        }
+        scrollToPosition(mStartPoint);
+        mStartPoint = 0;
     }
 
     @Override
