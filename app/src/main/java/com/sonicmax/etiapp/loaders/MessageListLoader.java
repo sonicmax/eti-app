@@ -44,6 +44,25 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
         }
     }
 
+    private MessageList processHtml(Bundle loaderArgs, String html) {
+        if (html == null) {
+            return null;
+
+        } else {
+            mArgs = loaderArgs;
+            String url = loaderArgs.getString("url");
+            boolean isFiltered = loaderArgs.getBoolean("filter");
+
+            try {
+                mScraper.setUrl(url);
+                return mScraper.scrapeMessages(html, isFiltered);
+
+            } catch (IllegalArgumentException outOfBounds) {
+                return null;
+            }
+        }
+    }
+
     public interface EventInterface {
         void onLoadMessageList(Bundle args, MessageList messageList);
         void onLoadError();
@@ -55,32 +74,35 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public Loader<Object> onCreateLoader(final int id, final Bundle args) {
+        final int LOAD_MESSAGES = 0;
+        final int REFRESH = 1;
+        final int LOAD_FROM_CACHE = 2;
 
-        return new AsyncLoader(mContext, args) {
+        switch (id) {
+            case LOAD_MESSAGES:
+            case REFRESH:
+                return new AsyncLoader(mContext, args) {
 
-            @Override
-            public MessageList loadInBackground() {
-                String html = new WebRequest(mContext, args).sendRequest();
-
-                if (html == null) {
-                    // Return null so we can handle the error in onLoadFinished()
-                    return null;
-                }
-
-                else {
-                    mArgs = args;
-
-                    // Even if WebRequest was successful, it's possible that we will fail to scrape data from page.
-                    try {
-                        mScraper.setUrl(args.getString("url"));
-                        return mScraper.scrapeMessages(html, args.getBoolean("filter"));
-
-                    } catch (IllegalArgumentException outOfBounds) {
-                        return null;
+                    @Override
+                    public MessageList loadInBackground() {
+                        String html = new WebRequest(mContext, args).sendRequest();
+                        return processHtml(args, html);
                     }
-                }
-            }
-        };
+                };
+
+            case LOAD_FROM_CACHE:
+                return new AsyncLoader(mContext, args) {
+
+                    @Override
+                    public MessageList loadInBackground() {
+                        String html = args.getString("html");
+                        return processHtml(args, html);
+                    }
+                };
+
+            default:
+                return null;
+        }
     }
 
     @Override

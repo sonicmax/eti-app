@@ -58,8 +58,10 @@ public class MessageListFragment extends Fragment implements
     private final String LOG_TAG = MessageListFragment.class.getSimpleName();
     private final int LOAD_MESSAGES = 0;
     private final int REFRESH = 1;
+    private final int LOAD_FROM_CACHE = 2;
 
     private View mRootView;
+    private RecyclerView mRecyclerView;
     private FloatingActionButton mQuickpostButton;
     public MessageListAdapter mMessageListAdapter;
     private MessageListLoader mMessageListLoader;
@@ -90,13 +92,16 @@ public class MessageListFragment extends Fragment implements
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onAttach(Context context) {
-        initAdapter(context);
         super.onAttach(context);
+        initAdapter(context);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
         if (savedInstanceState == null) {
+            resetCachedPage();
             mUrl = getUrl();
             mStartPoint = getStartPoint();
             mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
@@ -104,10 +109,8 @@ public class MessageListFragment extends Fragment implements
         }
 
         else {
-            restoreFragment(savedInstanceState);
+            restoreFragmentFromBundle(savedInstanceState);
         }
-
-        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -121,50 +124,54 @@ public class MessageListFragment extends Fragment implements
         mContainer = container;
 
         // Prepare RecyclerView so we can display posts after loading has finished
-        final RecyclerView messageList = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
+        mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
         mLayoutManager = new LinearLayoutManager(getContext());
         mLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        messageList.setLayoutManager(mLayoutManager);
-        messageList.setAdapter(mMessageListAdapter);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setAdapter(mMessageListAdapter);
 
         // Set listeners
         mQuickpostButton.setOnClickListener(this);
-        messageList.setOnTouchListener(pageSwipeHandler);
+        mRecyclerView.setOnTouchListener(pageSwipeHandler);
 
-        messageList.post(new Runnable() {
+        mRecyclerView.post(new Runnable() {
             @Override
             public void run() {
                 // Find width of message list and set maximum image width
-                mMessageListAdapter.setMaxImageWidth(messageList.getWidth());
+                mMessageListAdapter.setMaxImageWidth(mRecyclerView.getWidth());
             }
         });
-
-        if (savedInstanceState != null) {
-            restoreFragment(savedInstanceState);
-        }
 
         return mRootView;
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        dismissDialog();
+        setCachedPage();
+
+        if (mLivelinksSubscriber != null) {
+            mLivelinksSubscriber.unsubscribe();
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
+        restoreFromCache();
     }
 
     @Override
     public void onStop() {
-        // Clear adapter and memory cache before stopping activity
+        super.onStop();
         mMessageListAdapter.clearMessages();
         mMessageListAdapter.clearMemoryCache();
-        // Close disk cache
         mMessageListAdapter.closeDiskCache();
 
-        // Make sure that livelinks loader is destroyed
         if (mLivelinksSubscriber != null) {
             mLivelinksSubscriber.unsubscribe();
         }
-
-        super.onStop();
     }
 
     @Override
@@ -179,8 +186,8 @@ public class MessageListFragment extends Fragment implements
 
     @Override
     public void onDetach() {
-        dismissDialog();
         super.onDetach();
+        dismissDialog();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -208,8 +215,6 @@ public class MessageListFragment extends Fragment implements
             intent.putExtra("page", 0);
         }
 
-        Log.v(LOG_TAG, url);
-
         return url;
     }
 
@@ -220,7 +225,7 @@ public class MessageListFragment extends Fragment implements
         return startPoint;
     }
 
-    private void restoreFragment(Bundle savedInstanceState) {
+    private void restoreFragmentFromBundle(Bundle savedInstanceState) {
         mMessageList = savedInstanceState.getParcelable("messagelist");
         mTopic = savedInstanceState.getParcelable("topic");
 
@@ -232,6 +237,52 @@ public class MessageListFragment extends Fragment implements
         mMessageListAdapter.setCurrentPage(mCurrentPage);
         mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
         mMessageListAdapter.replaceAllMessages(mMessages);
+    }
+
+
+    private void setCachedPage() {
+        // Store HTML and URL of current page so we can restore fragment later if needed
+        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_html", mMessageList.getHtml());
+        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_url", mUrl);
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_page", mCurrentPage);
+        int position = 0;
+
+        if (mLayoutManager != null) {
+            position = mLayoutManager.findFirstVisibleItemPosition();
+        }
+
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_position", position);
+    }
+
+    /**
+     * Attempts to restore adapter content from cache. Returns
+     * @return boolean value indicating whether operation was successful
+     */
+    private boolean restoreFromCache() {
+        String html = SharedPreferenceManager.getString(getContext(), "last_viewed_topic_html");
+        String cachedUrl = SharedPreferenceManager.getString(getContext(), "last_viewed_topic_url");
+        int cachedPageNumber = SharedPreferenceManager.getInt(getContext(), "last_viewed_topic_page");
+        int cachedPosition = SharedPreferenceManager.getInt(getContext(), "last_viewed_topic_position");
+
+        if (cachedUrl != null) {
+            mUrl = cachedUrl;
+            mCurrentPage = cachedPageNumber;
+            mStartPoint = cachedPosition;
+            mMessageListLoader = new MessageListLoader(getContext(), this, cachedUrl);
+            loadMessageList(buildArgsForLoader(html, cachedUrl, false), LOAD_FROM_CACHE);
+            resetCachedPage();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private void resetCachedPage() {
+        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_html", null);
+        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_url", null);
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_page", 0);
+        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_position", 0);
     }
 
     private void scrollToPosition(final int position) {
@@ -254,6 +305,15 @@ public class MessageListFragment extends Fragment implements
      */
     public void clearMemCache() {
         mMessageListAdapter.clearMemoryCache();
+    }
+
+    public Bundle buildArgsForLoader(String html, String url, boolean filter) {
+        Bundle args = new Bundle();
+        args.putString("html", html);
+        args.putString("url", url);
+        args.putBoolean("filter", filter);
+
+        return args;
     }
 
     public Bundle buildArgsForLoader(String url, boolean filter) {
@@ -369,17 +429,8 @@ public class MessageListFragment extends Fragment implements
         dismissDialog();
 
         if (mCurrentPage > 1) {
-            if (mStartPoint > 0) {
-                scrollToPosition(mStartPoint);
-                mStartPoint = 0;
-            }
-            else {
-                final int FIRST_POST = 0;
-                scrollToPosition(FIRST_POST);
-            }
             Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
         }
-
 
         scrollToPosition(mStartPoint);
         mStartPoint = 0;

@@ -146,7 +146,7 @@ public class MessageListScraper {
             messages.add(message);
         }
 
-        return new MessageList(messages, title, currentPage, lastPage, mPrevPageUrl, mNextPageUrl);
+        return new MessageList(html, messages, title, currentPage, lastPage, mPrevPageUrl, mNextPageUrl);
     }
 
     private int getCurrentPage(String url) {
