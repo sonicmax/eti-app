@@ -49,7 +49,7 @@ public class WebRequest {
         mValues = args.getParcelable("values");
 
         if (args.getString("url") == null) {
-            mUri = new EtiUriBuilder(mRequestType, mValues).build();
+            mUri = new EtiUriBuilder().build(mRequestType, mValues);
         }
         else {
             mUri = Uri.parse(args.getString("url"));

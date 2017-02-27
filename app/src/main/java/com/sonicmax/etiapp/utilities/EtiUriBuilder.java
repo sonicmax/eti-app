@@ -7,23 +7,18 @@ import android.net.Uri;
  * Class which creates Uri for WebRequest using request type and provided values
  */
 public class EtiUriBuilder {
-    private String mRequestType;
-    private ContentValues mValues;
 
-    public EtiUriBuilder(String requestType, ContentValues values) {
-        mRequestType = requestType;
-        mValues = values;
-    }
+    public EtiUriBuilder() {}
 
-    public Uri build() {
+    public Uri build(String requestType, ContentValues values) {
         Uri.Builder builder = new Uri.Builder();
         builder.scheme("https");
 
-        switch (mRequestType) {
+        switch (requestType) {
             case "topiclist":
                 builder.authority("boards.endoftheinter.net")
                         .appendPath("topics")
-                        .appendPath(mValues.get("tags").toString());
+                        .appendPath(values.get("tags").toString());
                 break;
 
             case "newtopic":
@@ -34,13 +29,13 @@ public class EtiUriBuilder {
             case "newmessage":
                 builder.authority("boards.endoftheinter.net")
                         .appendPath("postmsg.php")
-                        .appendQueryParameter("topic", mValues.get("id").toString());
+                        .appendQueryParameter("topic", values.get("id").toString());
                 break;
 
             case "newpm":
                 builder.authority("boards.endoftheinter.net")
                         .appendPath("postmsg.php")
-                        .appendQueryParameter("pm", mValues.get("pm").toString());
+                        .appendQueryParameter("pm", values.get("pm").toString());
                 break;
 
             case "livelinks":
@@ -52,23 +47,23 @@ public class EtiUriBuilder {
                 builder.authority("boards.endoftheinter.net")
                         .appendPath("moremessages.php");
 
-                if (mValues.get("topic") != null) {
-                    builder.appendQueryParameter("topic", mValues.get("topic").toString());
+                if (values.get("topic") != null) {
+                    builder.appendQueryParameter("topic", values.get("topic").toString());
                 }
-                else if (mValues.get("pm") != null) {
-                    builder.appendQueryParameter("pm", mValues.get("pm").toString());
+                else if (values.get("pm") != null) {
+                    builder.appendQueryParameter("pm", values.get("pm").toString());
                 }
 
-                builder.appendQueryParameter("old", mValues.get("old").toString())
-                        .appendQueryParameter("new", mValues.get("new").toString())
-                        .appendQueryParameter("filter", mValues.get("filter").toString());
+                builder.appendQueryParameter("old", values.get("old").toString())
+                        .appendQueryParameter("new", values.get("new").toString())
+                        .appendQueryParameter("filter", values.get("filter").toString());
                 break;
 
             case "async-update-bookmark":
                 builder.authority("endoftheinter.net")
                         .appendPath("async-update-bookmark.php")
-                        .appendQueryParameter("pm", mValues.get("pm").toString())
-                        .appendQueryParameter("count", mValues.get("count").toString());
+                        .appendQueryParameter("pm", values.get("pm").toString())
+                        .appendQueryParameter("count", values.get("count").toString());
                 break;
 
             case "history":
