@@ -1,6 +1,7 @@
 package com.sonicmax.etiapp.loaders;
 
 import android.app.ProgressDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -54,7 +55,16 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
     // Public methods for logging in, logging out, etc
     ///////////////////////////////////////////////////////////////////////////
 
-    public void login(Bundle args) {
+    public void login(String username, String password) {
+        ContentValues values = new ContentValues(2);
+        values.put("username", username);
+        values.put("password", password);
+
+        Bundle args = new Bundle(3);
+        args.putString("method", "POST");
+        args.putString("type", "login");
+        args.putParcelable("values", values);
+
         mLoaderManager.initLoader(LOGIN, args, this).forceLoad();
     }
 
@@ -70,6 +80,20 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
         // Make sure that user is still logged in
         // (ie. hasn't logged in using a different IP address)
        mLoaderManager.initLoader(SCRIPT_BUILD, null, this).forceLoad();
+    }
+
+    public void checkLoginCredentials() {
+        // Insert username and password from SharedPreferences (if they exist)
+        String username = SharedPreferenceManager.getString(mContext, "username");
+        String password = SharedPreferenceManager.getString(mContext, "password");
+
+        if (username != null & password != null) {
+            login(username, password);
+        }
+
+        else {
+            mEventInterface.onRequiresLogin();
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////

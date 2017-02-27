@@ -96,26 +96,22 @@ public class LoginFragment extends Fragment implements AccountManager.EventInter
     private void makeLoginRequest() {
         Context context = getContext();
 
-        mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Logging in...");
-        mDialog.show();
+        showDialog("Logging in...");
 
-        ContentValues values = new ContentValues(2);
         String username = mUsername.getText().toString();
         String password = mPassword.getText().toString();
-        values.put("username", username);
-        values.put("password", password);
-
-        Bundle args = new Bundle(3);
-        args.putString("method", "POST");
-        args.putString("type", "login");
-        args.putParcelable("values", values);
 
         // Store credentials for later use
         SharedPreferenceManager.putString(context, "username", username);
         SharedPreferenceManager.putString(context, "password", password);
 
-        mAccountManager.login(args);
+        mAccountManager.login(username, password);
+    }
+
+    private void showDialog(String message) {
+        mDialog = new ProgressDialog(getContext());
+        mDialog.setMessage(message);
+        mDialog.show();
     }
 
     @Override
