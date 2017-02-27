@@ -63,7 +63,7 @@ public class InboxThreadFragment extends Fragment implements
 
     private View mRootView;
     private FloatingActionButton mQuickpostButton;
-    public MessageListAdapter mMessageListAdapter;
+    private MessageListAdapter mMessageListAdapter;
     private MessageListLoader mMessageListLoader;
     private ActionMode mActionMode;
     private ProgressDialog mDialog;

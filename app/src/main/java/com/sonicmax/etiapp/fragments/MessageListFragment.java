@@ -63,7 +63,7 @@ public class MessageListFragment extends Fragment implements
     private View mRootView;
     private RecyclerView mRecyclerView;
     private FloatingActionButton mQuickpostButton;
-    public MessageListAdapter mMessageListAdapter;
+    private MessageListAdapter mMessageListAdapter;
     private MessageListLoader mMessageListLoader;
     private ActionMode mActionMode;
     private ProgressDialog mDialog;
