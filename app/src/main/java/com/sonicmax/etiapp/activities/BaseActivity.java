@@ -141,6 +141,10 @@ public class BaseActivity extends AppCompatActivity implements AccountManager.Ev
                     inboxThreadFragment.clearMemCache();
                 }
                 break;
+
+            case R.id.action_toggle_star:
+                // Return false so MessageListFragment can handle it
+                return false;
         }
 
         return super.onOptionsItemSelected(item);

@@ -9,6 +9,8 @@
     <string name="action_refresh">Refresh</string>
     <string name="action_clear_mem_cache">Clear memory cache</string>
     <string name="action_load_next_page">Load Next Page</string>
+    <string name="action_star_topic">Star Topic</string>
+    <string name="action_unstar_topic">Unstar Topic</string>
 
     <string name="title_activity_main">Topic List</string>
     <string name="title_activity_message_list">Message List</string>

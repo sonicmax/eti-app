@@ -72,6 +72,20 @@ public class EtiUriBuilder {
                         .appendPath("history.php");
                 break;
 
+            case "star":
+                builder.authority("boards.endoftheinter.net")
+                        .appendPath("ajax.php")
+                        .appendQueryParameter("r", "1")
+                        .appendQueryParameter("t", values.getAsString("id"));
+                break;
+
+            case "unstar":
+                builder.authority("boards.endoftheinter.net")
+                        .appendPath("ajax.php")
+                        .appendQueryParameter("r", "2")
+                        .appendQueryParameter("t", values.getAsString("id"));
+                break;
+
             case "login":
                 builder.authority("iphone.endoftheinter.net");
                 break;

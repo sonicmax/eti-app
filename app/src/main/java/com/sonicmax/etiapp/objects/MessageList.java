@@ -19,8 +19,10 @@ public class MessageList implements Parcelable {
 
     private List<Message> mMessages;
     private String mNextPageUrl;
+    private boolean mIsStarred;
 
-    public MessageList (String html, List<Message> messages, String title, int pageNumber, int lastPage, String prevPageUrl, String nextPageUrl) {
+    public MessageList (String html, List<Message> messages, String title, int pageNumber,
+                        int lastPage, String prevPageUrl, String nextPageUrl, boolean isStarred) {
         mHtml = html;
         mMessages = messages;
         mTitle = title;
@@ -28,6 +30,7 @@ public class MessageList implements Parcelable {
         mLastPage = lastPage;
         mPrevPageUrl = prevPageUrl;
         mNextPageUrl = nextPageUrl;
+        mIsStarred = isStarred;
     }
 
     public String getHtml() {
@@ -71,6 +74,14 @@ public class MessageList implements Parcelable {
         return mNextPageUrl;
     }
 
+    public boolean isStarred() {
+        return mIsStarred;
+    }
+
+    public void setStarredFlag(boolean value) {
+        mIsStarred = value;
+    }
+
     private MessageList(Parcel in) {
         if (in.readByte() == 0x01) {
             mMessages = new ArrayList<>();
@@ -85,6 +96,7 @@ public class MessageList implements Parcelable {
         mLastPage = in.readInt();
         mPrevPageUrl = in.readString();
         mNextPageUrl = in.readString();
+        mIsStarred = in.readInt() != 0;
     }
 
     @Override
@@ -106,6 +118,7 @@ public class MessageList implements Parcelable {
         dest.writeInt(mLastPage);
         dest.writeString(mPrevPageUrl);
         dest.writeString(mNextPageUrl);
+        dest.writeInt(mIsStarred ? 1 : 0);
     }
 
     @SuppressWarnings("unused")

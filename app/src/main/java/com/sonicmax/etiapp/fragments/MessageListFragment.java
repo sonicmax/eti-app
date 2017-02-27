@@ -36,6 +36,7 @@ import com.sonicmax.etiapp.activities.InboxActivity;
 import com.sonicmax.etiapp.activities.PostMessageActivity;
 import com.sonicmax.etiapp.adapters.MessageListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
+import com.sonicmax.etiapp.loaders.AccountManager;
 import com.sonicmax.etiapp.loaders.MessageListLoader;
 import com.sonicmax.etiapp.loaders.LivelinksSubscriber;
 import com.sonicmax.etiapp.objects.Bookmark;
@@ -75,6 +76,7 @@ public class MessageListFragment extends Fragment implements
     private List<Message> mMessages;
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
+    private Menu mMenu;
 
     private Bundle mLastRequest;
     private MessageList mMessageList;
@@ -99,6 +101,7 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
 
         if (savedInstanceState == null) {
             resetCachedPage();
@@ -188,6 +191,32 @@ public class MessageListFragment extends Fragment implements
     public void onDetach() {
         super.onDetach();
         dismissDialog();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_toggle_star) {
+            String id = mTopic.getId();
+            AccountManager accountManager = new AccountManager(getContext(), null);
+
+            if (!mMessageList.isStarred()) {
+                accountManager.starTopic(id);
+                mMessageList.setStarredFlag(true);
+            } else {
+                accountManager.unstarTopic(id);
+                mMessageList.setStarredFlag(false);
+            }
+
+            updateTopicStarStatus(mMessageList.isStarred());
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        mMenu = menu;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -300,6 +329,16 @@ public class MessageListFragment extends Fragment implements
         }
     }
 
+    private void updateTopicStarStatus(boolean isStarred) {
+        MenuItem starAction = mMenu.findItem(R.id.action_toggle_star);
+        if (isStarred) {
+            starAction.setIcon(R.drawable.starred);
+        }
+        else {
+            starAction.setIcon(R.drawable.empty_star);
+        }
+    }
+
     /**
      * For debugging
      */
@@ -408,6 +447,7 @@ public class MessageListFragment extends Fragment implements
         mMessageListAdapter.replaceAllMessages(mMessages);
 
         updateActionBarTitle(messageList.getTitle());
+        updateTopicStarStatus(messageList.isStarred());
 
         boolean isLastPage = mCurrentPage == mMessageList.getLastPage();
 

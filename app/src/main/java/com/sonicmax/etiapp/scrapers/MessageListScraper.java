@@ -75,6 +75,17 @@ public class MessageListScraper {
             lastPage = getLastPage(pageInfobar);
         }
 
+        // Check whether topic is starred or not
+        boolean isStarred = false;
+        Elements userbarClass = document.getElementsByClass("userbar");
+        if (userbarClass.size() > 0) {
+            Elements anchors = userbarClass.get(0).getElementsByTag("a");
+            Element starAnchor = anchors.get(anchors.size() - 3);
+            if (starAnchor.text().equals("Unstar")) {
+                isStarred = true;
+            }
+        }
+
         // Scrape posts
         ArrayList<Message> messages = new ArrayList<>();
         Elements containers = document.getElementsByClass("message-container");
@@ -146,7 +157,8 @@ public class MessageListScraper {
             messages.add(message);
         }
 
-        return new MessageList(html, messages, title, currentPage, lastPage, mPrevPageUrl, mNextPageUrl);
+        return new MessageList(html, messages, title, currentPage, lastPage,
+                mPrevPageUrl, mNextPageUrl, isStarred);
     }
 
     private int getCurrentPage(String url) {

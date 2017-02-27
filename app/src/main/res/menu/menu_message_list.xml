@@ -19,5 +19,9 @@
         android:title="@string/action_clear_mem_cache"
         android:orderInCategory="4"
         app:showAsAction="never" />
-
+    <item android:id="@+id/action_toggle_star"
+        android:title="@string/action_star_topic"
+        android:icon="@drawable/empty_star"
+        android:orderInCategory="5"
+        app:showAsAction="ifRoom"/>
 </menu>

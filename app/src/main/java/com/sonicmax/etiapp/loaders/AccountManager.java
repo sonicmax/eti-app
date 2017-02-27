@@ -33,6 +33,8 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
     private final int LOGOUT = 1;
     private final int SCRIPT_BUILD = 2;
     private final int STATUS_CHECK = 3;
+    private final int STAR_TOPIC = 4;
+    private final int UNSTAR_TOPIC = 5;
 
     private Context mContext;
     private EventInterface mEventInterface;
@@ -96,6 +98,30 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
         }
     }
 
+    public void starTopic(String topicId) {
+        ContentValues values = new ContentValues(2);
+        values.put("id", topicId);
+
+        Bundle args = new Bundle();
+        args.putString("method", "GET");
+        args.putString("type", "star");
+        args.putParcelable("values", values);
+
+        mLoaderManager.initLoader(STAR_TOPIC, args, this).forceLoad();
+    }
+
+    public void unstarTopic(String topicId) {
+        ContentValues values = new ContentValues(2);
+        values.put("id", topicId);
+
+        Bundle args = new Bundle();
+        args.putString("method", "GET");
+        args.putString("type", "unstar");
+        args.putParcelable("values", values);
+
+        mLoaderManager.initLoader(UNSTAR_TOPIC, args, this).forceLoad();
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Loader callbacks
     ///////////////////////////////////////////////////////////////////////////
@@ -110,6 +136,8 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
             case STATUS_CHECK:
             case LOGIN:
             case LOGOUT:
+            case STAR_TOPIC:
+            case UNSTAR_TOPIC:
 
                 return new AsyncLoader(mContext, args) {
                     @Override
@@ -183,6 +211,14 @@ public class AccountManager implements LoaderManager.LoaderCallbacks<Object> {
                         mContext.startActivity(intent);
                     }
 
+                    break;
+
+                case STAR_TOPIC:
+                case UNSTAR_TOPIC:
+                    // We don't need to do anything with the response for these requests
+                    break;
+
+                default:
                     break;
             }
 
