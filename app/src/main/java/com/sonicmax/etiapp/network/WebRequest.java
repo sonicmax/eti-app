@@ -12,6 +12,7 @@ import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.EtiUriBuilder;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,6 +27,8 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class WebRequest {
     private final String LOG_TAG = WebRequest.class.getSimpleName();
+    private final String FILE_NOT_FOUND = "404";
+
     private Context mContext;
     private String mMethod;
     private String mRequestType;
@@ -155,13 +158,21 @@ public class WebRequest {
 
             response = builder.toString();
 
+        } catch (FileNotFoundException fileNotFound) {
+            if (mRequestType.equals("livelinks")) {
+                // Livelinks server returns null as part of normal operation, so we should
+                // return a specific string and check for it in LivelinksSubscriber.
+                return FILE_NOT_FOUND;
+            }
+            else {
+                return null;
+            }
+
         } catch (IOException e){
-            Log.e(LOG_TAG, "Error requesting data ", e);
-            // Error requesting data - no need to continue.
+            Log.e(LOG_TAG, "Error requesting data:", e);
             return null;
 
         } finally {
-            // Do some cleanup
             if (connection != null) {
                 connection.disconnect();
             }
@@ -174,11 +185,11 @@ public class WebRequest {
                 }
             }
         }
-        // Log.v(LOG_TAG, response);
+
         return response;
     }
 
-    public void getCookies() {
+    private void getCookies() {
         int size = SharedPreferenceManager.getInt(mContext, "cookie_array_size");
         for (int i = 0; i < size; i++) {
             String cookie = SharedPreferenceManager.getString(mContext, "cookie_array" + i);

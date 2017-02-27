@@ -325,12 +325,20 @@ public class LivelinksSubscriber {
 
         @Override
         public void onLoadFinished(Loader<Object> loader, Object data) {
+            final String FILE_NOT_FOUND = "404";
+
             switch (loader.getId()) {
                 case LIVELINKS_PM_THREAD:
                 case LIVELINKS_TOPICLIST:
                     if (data != null) {
                         String response = (String) data;
+                        if (response.equals(FILE_NOT_FOUND)) {
+                            // Do nothing - don't attempt to parse response, and
+                            // don't attempt to resubscribe to endpoint
+                        }
+                        else {
                         handleLivelinksResponse(response);
+                    }
                     }
                     else {
                         subscribe();
