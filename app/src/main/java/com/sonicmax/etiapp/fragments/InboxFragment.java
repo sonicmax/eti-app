@@ -113,6 +113,7 @@ public class InboxFragment extends Fragment
         newTopicButton.setOnClickListener(inboxThreadCreator);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) mRootView.findViewById(R.id.listview_topics_container);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.accent);
 
         mSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
