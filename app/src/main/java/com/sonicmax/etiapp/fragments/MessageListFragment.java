@@ -104,8 +104,7 @@ public class MessageListFragment extends Fragment implements
         setHasOptionsMenu(true);
 
         if (savedInstanceState == null) {
-            resetCachedPage();
-            mUrl = getUrl();
+            mUrl = getUrlFromIntent();
             mStartPoint = getStartPoint();
             mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
             loadMessageList(buildArgsForLoader(mUrl, false), LOAD_MESSAGES);
@@ -232,13 +231,22 @@ public class MessageListFragment extends Fragment implements
         mMessageListAdapter.setSelf(SharedPreferenceManager.getString(context, "username"));
     }
 
-    private String getUrl() {
+    private void initMessageListLoader() {
+        if (mUrl == null) {
+            mUrl = getUrlFromIntent();
+        }
+
+        mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
+    }
+
+    private String getUrlFromIntent() {
         Intent intent = getActivity().getIntent();
         mTopic = intent.getParcelableExtra("topic");
-        String url = (intent.getBooleanExtra("last_page", false))
-                ? mTopic.getLastPageUrl() : mTopic.getUrl();
-        int page = intent.getIntExtra("page", 0);
 
+        boolean isLastPage = intent.getBooleanExtra("last_page", false);
+        String url = isLastPage ? mTopic.getLastPageUrl() : mTopic.getUrl();
+
+        int page = intent.getIntExtra("page", 0);
         if (page > 0) {
             url += "&page=" + page;
             intent.putExtra("page", 0);
@@ -366,6 +374,10 @@ public class MessageListFragment extends Fragment implements
     }
 
     private void loadMessageList(Bundle args, int id) {
+        if (mMessageListLoader == null) {
+            initMessageListLoader();
+        }
+
         displayDialog("Loading...");
         mCurrentPage = getActivity().getIntent().getIntExtra("page", 1);
         mMessageListLoader.load(args, id);
@@ -378,7 +390,12 @@ public class MessageListFragment extends Fragment implements
     }
 
     public void refreshMessageList() {
+        if (mArgs == null) {
+            loadMessageList(buildArgsForLoader(getUrlFromIntent(), false), REFRESH);
+        }
+        else {
         loadMessageList(mArgs, REFRESH);
+    }
     }
 
     private void dismissDialog() {
