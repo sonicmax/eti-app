@@ -65,15 +65,24 @@ public class MarkupBuilder {
                         case "br":
                             output += NEWLINE;
                             break;
+
                         case "a":
-                            output += element.attr("href");
+                            String href = element.attr("href");
+                            if (href.startsWith("/")) {
+                                output += EtiRelativeUrlFixer.getAbsoluteUrl(href);
+                            }
+                            else {
+                                output += element.attr("href");
+                            }
                             break;
+
                         case "b":
                         case "i":
                         case "u":
                             output += "<" + element.tagName() + ">" + element.text()
                                     + "</" + element.tagName() + ">";
                             break;
+
                         default:
                             break;
                     }
