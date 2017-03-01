@@ -181,23 +181,35 @@ public class TopicListScraper {
         else {
             firstPage = false;
             Element prevPageInfobar = infobars.get(0);
-            Element prevPageAnchor = prevPageInfobar.getElementsByTag("a").get(0);
-            mPrevPageUrl = URL_PREFIX + prevPageAnchor.attr("href");
+            Elements anchors = prevPageInfobar.getElementsByTag("a");
+            if (anchors.size() > 0) {
+                Element prevPageAnchor = anchors.get(0);
+                mPrevPageUrl = URL_PREFIX + prevPageAnchor.attr("href");
+            }
+            else {
+                mPrevPageUrl = null;
+            }
         }
 
-        Element nextPageInfobar;
+        Element nextPageInfobar = null;
 
         if (firstPage) {
             nextPageInfobar = infobars.get(0);
         } else {
-            nextPageInfobar = infobars.get(1);
+            if (infobars.size() > 1) {
+                nextPageInfobar = infobars.get(1);
+            }
         }
 
-        Elements pageAnchors = nextPageInfobar.getElementsByTag("a");
+        if (nextPageInfobar != null) {
+            Elements pageAnchors = nextPageInfobar.getElementsByTag("a");
 
-        if (pageAnchors.size() > 0) {
-            Element nextPageAnchor = pageAnchors.get(0);
-            mNextPageUrl = URL_PREFIX + nextPageAnchor.attr("href");
+            if (pageAnchors.size() > 0) {
+                Element nextPageAnchor = pageAnchors.get(0);
+                mNextPageUrl = URL_PREFIX + nextPageAnchor.attr("href");
+            } else {
+                mNextPageUrl = null;
+            }
         }
 
         else {
