@@ -423,16 +423,23 @@ public class InboxThreadFragment extends Fragment implements
     @Override
     public void onLoadError() {
         // Clean up UI, display notification and retry last working request
-        dismissDialog();
+        DialogHandler.dismissDialog();
         Snacker.showSnackBar(mRootView, "Error while loading page");
 
-        if (mArgs != null) {
+        if (mArgs != null && mLastRequest != null) {
             loadMessageList(mLastRequest, LOAD_THREAD);
             // Make sure that we don't repeat request if something goes wrong.
             mArgs = null;
         }
         else {
             // Go back to inbox
+            Bookmark inbox = new Bookmark("Inbox", "https://endoftheinter.net/inbox.php");
+            Intent intent = new Intent(getActivity(), InboxActivity.class);
+            intent.putExtra("url", inbox.getUrl());
+            intent.putExtra("title", inbox.getName());
+            getActivity().startActivity(intent);
+            getActivity().overridePendingTransition(R.anim.slide_out_to_left,
+                    R.anim.slide_in_from_right);
         }
     }
 
