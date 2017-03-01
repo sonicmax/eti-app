@@ -38,7 +38,7 @@ public class ImageCache {
         int memoryClass = am.getMemoryClass(); // Tells us how many MBs of RAM our app can use.
 
         // We probably can't use *all* of that RAM for the cache, so divide by a reasonable number
-        final int memCacheSize = (memoryClass * 1000000) / 2;
+        final int memCacheSize = (memoryClass * 1000000) / 4;
 
         mMemoryCache = new LruCache<String, Bitmap>(memCacheSize) {
             @Override
