@@ -26,9 +26,8 @@ public class MessageListScraper {
     private String mNextPageUrl;
     private HashMap<String, String> mAvatarUrlCache;
 
-    public MessageListScraper(Context context, String url) {
+    public MessageListScraper(Context context) {
         this.mContext = context;
-        this.mUrl = url;
         mAvatarUrlCache = new HashMap<>();
     }
 

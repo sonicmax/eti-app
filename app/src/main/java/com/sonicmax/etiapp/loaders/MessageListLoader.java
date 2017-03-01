@@ -28,11 +28,11 @@ public class MessageListLoader implements LoaderManager.LoaderCallbacks<Object> 
     private MessageListScraper mScraper;
     private Bundle mArgs;
 
-    public MessageListLoader (Context context, MessageListLoader.EventInterface eventInterface, String url) {
+    public MessageListLoader (Context context, MessageListLoader.EventInterface eventInterface) {
         mContext = context;
         mEventInterface = eventInterface;
         mLoaderManager = ((FragmentActivity) mContext).getSupportLoaderManager();
-        mScraper = new MessageListScraper(context, url);
+        mScraper = new MessageListScraper(context);
     }
 
     public void load(Bundle args, int id) {

@@ -51,7 +51,7 @@ public class LivelinksSubscriber {
         this.mTopicSize = topicSize;
         this.mInboxSize = inboxSize;
 
-        mScraper = new MessageListScraper(context, "");
+        mScraper = new MessageListScraper(context);
     }
 
     public LivelinksSubscriber(String topicId, String userId, int topicSize, int inboxSize) {
@@ -313,6 +313,7 @@ public class LivelinksSubscriber {
                         @Override
                         public MessageList loadInBackground() {
                             String response = new WebRequest(mContext, args).sendRequest();
+                            mScraper.setUrl(args.getString("url"));
                             return mScraper.scrapeMessages(StringEscapeUtils.unescapeEcmaScript(response), false);
                         }
                     };
