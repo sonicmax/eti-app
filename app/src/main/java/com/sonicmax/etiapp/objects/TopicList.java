@@ -11,13 +11,16 @@ import java.util.List;
  */
 
 public class TopicList implements Parcelable {
+    private String mHtml;
     private List<Topic> mTopics;
     private int mPageNumber;
     private String mPrevPageUrl;
     private String mNextPageUrl;
     private String mCurrentUrl;
 
-    public TopicList (List<Topic> topics, int pageNumber, String currentUrl, String prevPageUrl, String nextPageUrl) {
+    public TopicList (String html, List<Topic> topics, int pageNumber, String currentUrl,
+                      String prevPageUrl, String nextPageUrl) {
+        mHtml = html;
         mTopics = topics;
         mPageNumber = pageNumber;
         mCurrentUrl = currentUrl;
@@ -32,6 +35,10 @@ public class TopicList implements Parcelable {
         else {
             return new ArrayList<>();
         }
+    }
+
+    public String getHtml() {
+        return mHtml;
     }
 
     public int getPageNumber() {
@@ -51,6 +58,7 @@ public class TopicList implements Parcelable {
     }
 
     private TopicList(Parcel in) {
+        mHtml = in.readString();
         if (in.readByte() == 0x01) {
             mTopics = new ArrayList<>();
             in.readList(mTopics, Message.class.getClassLoader());
@@ -70,6 +78,7 @@ public class TopicList implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(mHtml);
         if (mTopics == null) {
             dest.writeByte((byte) (0x00));
         } else {

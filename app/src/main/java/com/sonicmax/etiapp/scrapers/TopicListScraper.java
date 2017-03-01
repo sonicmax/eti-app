@@ -40,7 +40,7 @@ public class TopicListScraper {
                 getPageUrls(infobars);
             }
 
-            return new TopicList(getTopics(tableRows), getPageNumber(), mUrl, mPrevPageUrl, mNextPageUrl);
+            return new TopicList(html, getTopics(tableRows), getPageNumber(), mUrl, mPrevPageUrl, mNextPageUrl);
 
         } catch (IllegalArgumentException outOfBounds) {
             return null;

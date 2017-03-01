@@ -10,19 +10,17 @@ import android.util.Log;
 
 import com.sonicmax.etiapp.activities.PostTopicActivity;
 import com.sonicmax.etiapp.network.WebRequest;
-import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
 import com.sonicmax.etiapp.scrapers.PostmsgScraper;
 import com.sonicmax.etiapp.scrapers.TopicListScraper;
 import com.sonicmax.etiapp.scrapers.UserInfoScraper;
 import com.sonicmax.etiapp.utilities.AsyncLoader;
 
-import java.util.List;
-
 public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
     private final String LOG_TAG = this.getClass().getSimpleName();
     private final int LOAD_TOPIC_LIST = 0;
     private final int POST_TOPIC = 1;
+    private final int LOAD_FROM_CACHE = 2;
 
     private final Context mContext;
     private LoaderManager mLoaderManager;
@@ -54,6 +52,19 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
         }
     }
 
+    public void loadFromCache(String url, String cachedHtml) {
+        Bundle args = new Bundle();
+        args.putString("url", url);
+        args.putString("html", cachedHtml);
+
+        if (mLoaderManager.getLoader(LOAD_FROM_CACHE) == null) {
+            mLoaderManager.initLoader(LOAD_FROM_CACHE, args, this).forceLoad();
+        }
+        else {
+            mLoaderManager.restartLoader(LOAD_FROM_CACHE, args, this).forceLoad();
+        }
+    }
+
     public void openPostTopicActivity() {
         Bundle args = new Bundle();
         args.putString("method", "GET");
@@ -64,6 +75,34 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
 
         } else {
             mLoaderManager.restartLoader(POST_TOPIC, args, this).forceLoad();
+        }
+    }
+
+    private TopicList processHtml(Bundle args, String html) {
+        final String HTTP_INTERNAL_SERVER_ERROR = "500";
+
+        if (html == null) {
+            return null;
+        }
+
+        else if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
+            mInternalServerError = true;
+            return null;
+
+        } else {
+            mInternalServerError = false;
+
+            try {
+                UserInfoScraper userInfoScraper = new UserInfoScraper(mContext);
+                userInfoScraper.setInput(html);
+                userInfoScraper.scrapeUserInfo();
+
+                return new TopicListScraper(mContext, args.getString("url")).scrapeTopics(html);
+
+            } catch (IllegalArgumentException outOfBounds) {
+                Log.e(LOG_TAG, outOfBounds.getMessage());
+                return null;
+            }
         }
     }
 
@@ -79,7 +118,6 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
 
     @Override
     public Loader<Object> onCreateLoader(int id, final Bundle args) {
-        final String HTTP_INTERNAL_SERVER_ERROR = "500";
 
         switch (id) {
             case LOAD_TOPIC_LIST:
@@ -87,31 +125,17 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
 
                     @Override
                     public TopicList loadInBackground() {
-                        String html = new WebRequest(mContext, args).sendRequest();
+                       return processHtml(args, new WebRequest(mContext, args).sendRequest());
+                    }
+                };
 
-                        if (html == null) {
-                            return null;
-                        }
+            case LOAD_FROM_CACHE:
+                return new AsyncLoader(mContext, args) {
 
-                        else if (html.equals(HTTP_INTERNAL_SERVER_ERROR)) {
-                            mInternalServerError = true;
-                            return null;
-
-                        } else {
-                            mInternalServerError = false;
-
-                            try {
-                                UserInfoScraper userInfoScraper = new UserInfoScraper(mContext);
-                                userInfoScraper.setInput(html);
-                                userInfoScraper.scrapeUserInfo();
-
-                                return new TopicListScraper(getContext(), args.getString("url")).scrapeTopics(html);
-
-                            } catch (IllegalArgumentException outOfBounds) {
-                                Log.e(LOG_TAG, outOfBounds.getMessage());
-                                return null;
-                            }
-                        }
+                    @Override
+                    public TopicList loadInBackground() {
+                        String html = args.getString("html");
+                        return processHtml(args, html);
                     }
                 };
 
@@ -134,6 +158,7 @@ public class TopicListLoader implements LoaderManager.LoaderCallbacks<Object> {
         if (data != null) {
             switch (loader.getId()) {
                 case LOAD_TOPIC_LIST:
+                case LOAD_FROM_CACHE:
                     // We can be sure that data will safely cast to List<Topic>.
                     TopicList topicList = (TopicList) data;
                     mEventInterface.onLoadTopicList(topicList);

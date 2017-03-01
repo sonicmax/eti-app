@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp.fragments;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
@@ -9,7 +8,6 @@ import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,11 +21,12 @@ import com.sonicmax.etiapp.activities.MessageListActivity;
 import com.sonicmax.etiapp.adapters.TopicListAdapter;
 import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.TopicListLoader;
+import com.sonicmax.etiapp.network.ResponseCache;
+import com.sonicmax.etiapp.network.ResponseCacheEntry;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
 import com.sonicmax.etiapp.utilities.DialogHandler;
 import com.sonicmax.etiapp.utilities.Snacker;
-import com.sonicmax.etiapp.utilities.Toaster;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +41,15 @@ public class TopicListFragment extends Fragment
     private TopicListLoader mTopicListLoader;
     private ListView mListView;
     private View mRootView;
+    private ResponseCache mResponseCache;
     private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private int mPageNumber;
-
     private String mPrevPageUrl;
     private String mNextPageUrl;
+    private int mStartPoint;
+
+    private boolean mIsLoading = false;
 
     public TopicListFragment() {}
 
@@ -57,48 +59,22 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onAttach(Context context) {
-        // Create adapter to display list of topics
-        mTopicListAdapter = new TopicListAdapter(context, this);
-        mTopicListLoader = new TopicListLoader(context, this);
-
-        // Topic list will always start at page 1. mFirstRun is set to false after starting loader,
-        // in case user changes pages (handled with swipe event)
-        if (mPageNumber == 0) {
-            mPageNumber = 1;
-        }
-
         super.onAttach(context);
+        init(context);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
         if (savedInstanceState == null) {
-            mUrl = getActivity().getIntent().getStringExtra("url");
+            mUrl = getUrlFromIntent();
             loadTopicList(null, mUrl);
         }
 
         else {
-            mTopicList = savedInstanceState.getParcelable("topiclist");
-
-            if (mTopicList != null) {
-                mTopics = savedInstanceState.getParcelableArrayList("topics");
-                mPageNumber = mTopicList.getPageNumber();
-                mUrl = mTopicList.getUrl();
-                mPrevPageUrl = mTopicList.getPrevPageUrl();
-                mNextPageUrl = mTopicList.getNextPageUrl();
-
-                mTopicListAdapter.setCurrentPage(mPageNumber);
-                mTopicListAdapter.getCurrentTime();
-                mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
-                mTopicListAdapter.updateTopics(mTopics);
-            }
-            else {
-                mUrl = getActivity().getIntent().getStringExtra("url");
-                loadTopicList(null, mUrl);
-            }
+           restoreFragmentFromBundle(savedInstanceState);
         }
-
-        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -132,17 +108,26 @@ public class TopicListFragment extends Fragment
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        cachePageData();
+    }
+
+    @Override
     public void onResume() {
-        // loadTopicList(mUrl);
         super.onResume();
+
+        if (!mIsLoading && !restoreFromCache()) {
+            Snacker.showSnackBar(mRootView, "Cache load failed");
+            refreshTopicList();
+        }
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putParcelable("topiclist", mTopicList);
-        ArrayList<Topic> parcelableTopics = new ArrayList<>(mTopics);
-        outState.putParcelableArrayList("topics", parcelableTopics);
+        outState.putParcelableArrayList("topics", new ArrayList<>(mTopics));
     }
 
     @Override
@@ -198,11 +183,10 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onLoadTopicList(TopicList topicList) {
-        // Clean up UI
         DialogHandler.dismissDialog();
         mSwipeRefreshLayout.setRefreshing(false);
 
-        // Get data from TopicList and update adapter
+        mTopicList = topicList;
         mTopics = topicList.getTopics();
         mPrevPageUrl = topicList.getPrevPageUrl();
         mNextPageUrl = topicList.getNextPageUrl();
@@ -212,11 +196,17 @@ public class TopicListFragment extends Fragment
         mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
         mTopicListAdapter.updateTopics(mTopics);
 
+        scrollToPosition(mStartPoint);
+
+        if (mStartPoint > 0) {
+            mStartPoint = 0;
+        }
+
         if (mPageNumber > 1) {
-            // TODO: Should maintain screen position in some cases
-            scrollToFirstTopic();
             Snacker.showSnackBar(mRootView, "Page " + mPageNumber);
         }
+
+        mIsLoading = false;
     }
 
     @Override
@@ -236,7 +226,86 @@ public class TopicListFragment extends Fragment
     // Helper methods
     ///////////////////////////////////////////////////////////////////////////
 
+    private void init(Context context) {
+        mTopicListAdapter = new TopicListAdapter(context, this);
+        mTopicListLoader = new TopicListLoader(context, this);
+        mResponseCache = new ResponseCache(context);
+
+        if (mPageNumber == 0) {
+            mPageNumber = 1;
+        }
+    }
+
+    private String getUrlFromIntent() {
+        Intent intent = getActivity().getIntent();
+        return intent.getStringExtra("url");
+    }
+
+    private void setIntentUrl(String url) {
+        Intent intent = getActivity().getIntent();
+        intent.putExtra("url", url);
+    }
+
+    private void restoreFragmentFromBundle(Bundle savedInstanceState) {
+        mTopicList = savedInstanceState.getParcelable("topiclist");
+        mTopics = savedInstanceState.getParcelableArrayList("topics");
+        mPageNumber = mTopicList.getPageNumber();
+        mUrl = mTopicList.getUrl();
+        mPrevPageUrl = mTopicList.getPrevPageUrl();
+        mNextPageUrl = mTopicList.getNextPageUrl();
+
+        mTopicListAdapter.setCurrentPage(mPageNumber);
+        mTopicListAdapter.getCurrentTime();
+        mTopicListAdapter.setHasNextPage((mNextPageUrl != null));
+        mTopicListAdapter.updateTopics(mTopics);
+    }
+
+    /**
+     * Caches current URL, loaded HTML, page number and adapter position of current fragment
+     * so we can restore them later.
+     */
+    private void cachePageData() {
+        int position = 0;
+
+        if (mListView != null) {
+            position = mListView.getFirstVisiblePosition();
+        }
+
+        mResponseCache.cacheResponseData(mUrl, mTopicList.getHtml(), mPageNumber, position);
+    }
+
+    /**
+     * Attempts to restore adapter content from cache.
+     * @return boolean value indicating whether operation was successful
+     */
+    private boolean restoreFromCache() {
+        if (mResponseCache == null) {
+            mResponseCache = new ResponseCache(getContext());
+        }
+
+        ResponseCacheEntry cachedResponse = mResponseCache.getResponseFromCache(getUrlFromIntent());
+
+        if (cachedResponse != null) {
+            String html = cachedResponse.getHtml();
+            mUrl = cachedResponse.getUrl();
+            mPageNumber = cachedResponse.getPageNumber();
+            mStartPoint = cachedResponse.getAdapterPosition();
+
+            mTopicListLoader = new TopicListLoader(getContext(), this);
+            mTopicListLoader.loadFromCache(mUrl, html);
+
+            Snacker.showSnackBar(mRootView, "Cache load success");
+            return true;
+        }
+
+        else {
+            return false;
+        }
+    }
+
     public void loadTopicList(String name, String url) {
+        mIsLoading = true;
+
         if (mSwipeRefreshLayout == null) {
             DialogHandler.showDialog(getContext(), "Loading...");
         }
@@ -245,10 +314,15 @@ public class TopicListFragment extends Fragment
         }
 
         updateActionBarTitle(name);
+        setIntentUrl(url);
         mTopicListLoader.load(url);
     }
 
     public void refreshTopicList() {
+        if (mTopicListLoader == null) {
+            mTopicListLoader = new TopicListLoader(getContext(), this);
+        }
+
         loadTopicList(null, mUrl);
     }
 
@@ -266,9 +340,8 @@ public class TopicListFragment extends Fragment
         }
     }
 
-    private void scrollToFirstTopic() {
-        final int FIRST_TOPIC = 0;
-        mListView.setSelection(FIRST_TOPIC);
+    private void scrollToPosition(int position) {
+        mListView.setSelection(position);
     }
 
     private void updateActionBarTitle(String newTitle) {
