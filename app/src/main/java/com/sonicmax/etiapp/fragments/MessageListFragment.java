@@ -39,12 +39,15 @@ import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.AccountManager;
 import com.sonicmax.etiapp.loaders.MessageListLoader;
 import com.sonicmax.etiapp.loaders.LivelinksSubscriber;
+import com.sonicmax.etiapp.network.ResponseCacheEntry;
+import com.sonicmax.etiapp.network.ResponseCache;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.objects.Message;
 import com.sonicmax.etiapp.objects.MessageList;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.loaders.QuickpostHandler;
 import com.sonicmax.etiapp.ui.QuickpostWindow;
+import com.sonicmax.etiapp.utilities.DialogHandler;
 import com.sonicmax.etiapp.utilities.MarkupBuilder;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 import com.sonicmax.etiapp.utilities.Snacker;
@@ -76,6 +79,7 @@ public class MessageListFragment extends Fragment implements
     private List<Message> mMessages;
     private QuickpostHandler mQuickpostHandler;
     private LivelinksSubscriber mLivelinksSubscriber;
+    private ResponseCache mResponseCache;
     private Menu mMenu;
 
     private Bundle mLastRequest;
@@ -87,6 +91,8 @@ public class MessageListFragment extends Fragment implements
     private int mStartPoint;
     private boolean mNeedsChatUi;
 
+    private boolean mIsLoading = false;
+
     public MessageListFragment() {}
 
     ///////////////////////////////////////////////////////////////////////////
@@ -95,7 +101,7 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        initAdapter(context);
+        init(context);
     }
 
     @Override
@@ -105,8 +111,7 @@ public class MessageListFragment extends Fragment implements
 
         if (savedInstanceState == null) {
             mUrl = getUrlFromIntent();
-            mStartPoint = getStartPoint();
-            mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
+            mStartPoint = getStartPointFromIntent();
             loadMessageList(buildArgsForLoader(mUrl, false), LOAD_MESSAGES);
         }
 
@@ -127,7 +132,6 @@ public class MessageListFragment extends Fragment implements
 
         // Prepare RecyclerView so we can display posts after loading has finished
         mRecyclerView = (RecyclerView) mRootView.findViewById(R.id.listview_messages);
-        mLayoutManager = new LinearLayoutManager(getContext());
         mLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setAdapter(mMessageListAdapter);
@@ -150,8 +154,8 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onPause() {
         super.onPause();
-        dismissDialog();
-        setCachedPage();
+        DialogHandler.dismissDialog();
+        cachePageData();
 
         if (mLivelinksSubscriber != null) {
             mLivelinksSubscriber.unsubscribe();
@@ -161,7 +165,11 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onResume() {
         super.onResume();
-        restoreFromCache();
+
+        if (!mIsLoading && !restoreFromCache()) {
+            Snacker.showSnackBar(mRootView, "Cache load failed");
+            refreshMessageList();
+        }
     }
 
     @Override
@@ -169,7 +177,6 @@ public class MessageListFragment extends Fragment implements
         super.onStop();
         mMessageListAdapter.clearMessages();
         mMessageListAdapter.clearMemoryCache();
-        mMessageListAdapter.closeDiskCache();
 
         if (mLivelinksSubscriber != null) {
             mLivelinksSubscriber.unsubscribe();
@@ -179,17 +186,16 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
         outState.putParcelable("messagelist", mMessageList);
-        // TODO: Figure out why mMessages isn't being stored correctly by MessageList
-        ArrayList<Message> parcelableMessages = new ArrayList<>(mMessages);
-        outState.putParcelableArrayList("messages", parcelableMessages);
+        outState.putParcelableArrayList("messages", new ArrayList<>(mMessages));
         outState.putParcelable("topic", mTopic);
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        dismissDialog();
+        DialogHandler.dismissDialog();
     }
 
     @Override
@@ -219,137 +225,9 @@ public class MessageListFragment extends Fragment implements
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Helper methods
+    // Public methods
     ///////////////////////////////////////////////////////////////////////////
 
-    private void initAdapter(Context context) {
-        mNeedsChatUi = PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean("pref_global_chat_ui", false);
-
-        mMessageListAdapter = new MessageListAdapter(context, this);
-        mMessageListAdapter.setInboxThreadFlag(mNeedsChatUi);
-        mMessageListAdapter.setSelf(SharedPreferenceManager.getString(context, "username"));
-    }
-
-    private void initMessageListLoader() {
-        if (mUrl == null) {
-            mUrl = getUrlFromIntent();
-        }
-
-        mMessageListLoader = new MessageListLoader(getContext(), this, mUrl);
-    }
-
-    private String getUrlFromIntent() {
-        Intent intent = getActivity().getIntent();
-        mTopic = intent.getParcelableExtra("topic");
-
-        boolean isLastPage = intent.getBooleanExtra("last_page", false);
-        String url = isLastPage ? mTopic.getLastPageUrl() : mTopic.getUrl();
-
-        int page = intent.getIntExtra("page", 0);
-        if (page > 0) {
-            url += "&page=" + page;
-            intent.putExtra("page", 0);
-        }
-
-        return url;
-    }
-
-    private int getStartPoint() {
-        Intent intent = getActivity().getIntent();
-        int startPoint = intent.getIntExtra("post", 0);
-        intent.putExtra("post", 0);
-        return startPoint;
-    }
-
-    private void restoreFragmentFromBundle(Bundle savedInstanceState) {
-        mMessageList = savedInstanceState.getParcelable("messagelist");
-        mTopic = savedInstanceState.getParcelable("topic");
-
-        mMessages = savedInstanceState.getParcelableArrayList("messages");
-        mPrevPageUrl = mMessageList.getPrevPageUrl();
-        mNextPageUrl = mMessageList.getNextPageUrl();
-        mCurrentPage = mMessageList.getPageNumber();
-
-        mMessageListAdapter.setCurrentPage(mCurrentPage);
-        mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
-        mMessageListAdapter.replaceAllMessages(mMessages);
-    }
-
-
-    private void setCachedPage() {
-        // Store HTML and URL of current page so we can restore fragment later if needed
-        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_html", mMessageList.getHtml());
-        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_url", mUrl);
-        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_page", mCurrentPage);
-        int position = 0;
-
-        if (mLayoutManager != null) {
-            position = mLayoutManager.findFirstVisibleItemPosition();
-        }
-
-        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_position", position);
-    }
-
-    /**
-     * Attempts to restore adapter content from cache.
-     * @return boolean value indicating whether operation was successful
-     */
-    private boolean restoreFromCache() {
-        String html = SharedPreferenceManager.getString(getContext(), "last_viewed_topic_html");
-        String cachedUrl = SharedPreferenceManager.getString(getContext(), "last_viewed_topic_url");
-        int cachedPageNumber = SharedPreferenceManager.getInt(getContext(), "last_viewed_topic_page");
-        int cachedPosition = SharedPreferenceManager.getInt(getContext(), "last_viewed_topic_position");
-
-        if (cachedUrl != null) {
-            mUrl = cachedUrl;
-            mCurrentPage = cachedPageNumber;
-            mStartPoint = cachedPosition;
-            mMessageListLoader = new MessageListLoader(getContext(), this, cachedUrl);
-            loadMessageList(buildArgsForLoader(html, cachedUrl, false), LOAD_FROM_CACHE);
-            resetCachedPage();
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    private void resetCachedPage() {
-        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_html", null);
-        SharedPreferenceManager.putString(getContext(), "last_viewed_topic_url", null);
-        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_page", 0);
-        SharedPreferenceManager.putInt(getContext(), "last_viewed_topic_position", 0);
-    }
-
-    private void scrollToPosition(final int position) {
-        mLayoutManager.scrollToPosition(position);
-    }
-
-    private int getTotalPosts() {
-        if (mCurrentPage > 1) {
-            // Account for posts on previous pages & add current adapter count
-            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getMessageCount();
-        }
-        else {
-
-            return mMessageListAdapter.getMessageCount();
-        }
-    }
-
-    private void updateTopicStarStatus(boolean isStarred) {
-        MenuItem starAction = mMenu.findItem(R.id.action_toggle_star);
-        if (isStarred) {
-            starAction.setIcon(R.drawable.starred);
-        }
-        else {
-            starAction.setIcon(R.drawable.empty_star);
-        }
-    }
-
-    /**
-     * For debugging
-     */
     public void clearMemCache() {
         mMessageListAdapter.clearMemoryCache();
     }
@@ -373,35 +251,167 @@ public class MessageListFragment extends Fragment implements
         return args;
     }
 
-    private void loadMessageList(Bundle args, int id) {
+    public void refreshMessageList() {
         if (mMessageListLoader == null) {
-            initMessageListLoader();
+            mMessageListLoader = new MessageListLoader(getContext(), this);
         }
 
-        displayDialog("Loading...");
-        mCurrentPage = getActivity().getIntent().getIntExtra("page", 1);
-        mMessageListLoader.load(args, id);
-    }
-
-    public void displayDialog(String message) {
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage(message);
-        mDialog.show();
-    }
-
-    public void refreshMessageList() {
         if (mArgs == null) {
             loadMessageList(buildArgsForLoader(getUrlFromIntent(), false), REFRESH);
         }
         else {
-        loadMessageList(mArgs, REFRESH);
-    }
+            loadMessageList(mArgs, REFRESH);
+        }
     }
 
-    private void dismissDialog() {
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
+    ///////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Initialises classes required for fragment to function correctly
+     * (adapter, loader, layout manager, etc)
+     * @param context
+     */
+    private void init(Context context) {
+        mNeedsChatUi = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean("pref_global_chat_ui", false);
+
+        mMessageListAdapter = new MessageListAdapter(context, this);
+        mMessageListAdapter.setInboxThreadFlag(mNeedsChatUi);
+        mMessageListAdapter.setSelf(SharedPreferenceManager.getString(context, "username"));
+        mLayoutManager = new LinearLayoutManager(getContext());
+        mResponseCache = new ResponseCache(context);
+        mMessageListLoader = new MessageListLoader(context, this);
+    }
+
+    private String getUrlFromIntent() {
+        Intent intent = getActivity().getIntent();
+        String url;
+
+        // If we have navigated to a different page in the same fragment instance, we can
+        // get the updated URL directly from intent.
+        if (intent.getStringExtra("url") != null) {
+            url = intent.getStringExtra("url");
         }
+
+        else {
+            // First run - get URL from Topic object and work out which page to load
+            mTopic = intent.getParcelableExtra("topic");
+
+            boolean isLastPage = intent.getBooleanExtra("last_page", false);
+            url = isLastPage ? mTopic.getLastPageUrl() : mTopic.getUrl();
+
+            int page = intent.getIntExtra("page", 0);
+            if (page > 0) {
+                url += "&page=" + page;
+                intent.putExtra("page", 0);
+            }
+        }
+
+        return url;
+    }
+
+    private void setIntentUrl(String url) {
+        Intent intent = getActivity().getIntent();
+        intent.putExtra("url", url);
+    }
+
+    private int getStartPointFromIntent() {
+        Intent intent = getActivity().getIntent();
+        int startPoint = intent.getIntExtra("post", 0);
+        intent.putExtra("post", 0);
+        return startPoint;
+    }
+
+    private void restoreFragmentFromBundle(Bundle savedInstanceState) {
+        mMessageList = savedInstanceState.getParcelable("messagelist");
+        mTopic = savedInstanceState.getParcelable("topic");
+
+        mMessages = savedInstanceState.getParcelableArrayList("messages");
+        mPrevPageUrl = mMessageList.getPrevPageUrl();
+        mNextPageUrl = mMessageList.getNextPageUrl();
+        mCurrentPage = mMessageList.getPageNumber();
+
+        mMessageListAdapter.setCurrentPage(mCurrentPage);
+        mMessageListAdapter.setNextPageFlag((mNextPageUrl != null));
+        mMessageListAdapter.replaceAllMessages(mMessages);
+    }
+
+    /**
+     * Caches current URL, loaded HTML, page number and adapter position of current fragment
+     * so we can restore them later.
+     */
+    private void cachePageData() {
+        int position = 0;
+
+        if (mLayoutManager != null) {
+            position = mLayoutManager.findFirstVisibleItemPosition();
+        }
+
+        mResponseCache.cacheResponseData(mUrl, mMessageList.getHtml(), mCurrentPage, position);
+    }
+
+    /**
+     * Attempts to restore adapter content from cache.
+     * @return boolean value indicating whether operation was successful
+     */
+    private boolean restoreFromCache() {
+        if (mResponseCache == null) {
+            mResponseCache = new ResponseCache(getContext());
+        }
+
+        ResponseCacheEntry cachedResponse = mResponseCache.getResponseFromCache(getUrlFromIntent());
+
+        if (cachedResponse != null) {
+            mUrl = cachedResponse.getUrl();
+            mCurrentPage = cachedResponse.getPageNumber();
+            mStartPoint = cachedResponse.getAdapterPosition();
+            mMessageListLoader = new MessageListLoader(getContext(), this);
+            loadMessageList(buildArgsForLoader(cachedResponse.getHtml(), mUrl, false), LOAD_FROM_CACHE);
+            Snacker.showSnackBar(mRootView, "Cache load success");
+            return true;
+        }
+
+        else {
+            return false;
+        }
+    }
+
+    private void scrollToPosition(final int position) {
+        mLayoutManager.scrollToPosition(position);
+    }
+
+    private int getTotalPosts() {
+        if (mCurrentPage > 1) {
+            // Account for posts on previous pages & add current adapter count
+            return ((mTopic.getLastPage(0) - 1) * 50) + mMessageListAdapter.getMessageCount();
+        }
+        else {
+            return mMessageListAdapter.getMessageCount();
+        }
+    }
+
+    /**
+     * Updates star icon on ActionBar
+     * @param isStarred
+     */
+    private void updateTopicStarStatus(boolean isStarred) {
+        if (mMenu != null) {
+            MenuItem starAction = mMenu.findItem(R.id.action_toggle_star);
+            if (isStarred) {
+                starAction.setIcon(R.drawable.starred);
+            } else {
+                starAction.setIcon(R.drawable.empty_star);
+            }
+        }
+    }
+
+    private void loadMessageList(Bundle args, int id) {
+        mIsLoading = true;
+        DialogHandler.showDialog(getContext(), "Loading...");
+        mCurrentPage = getActivity().getIntent().getIntExtra("page", 1);
+        mMessageListLoader.load(args, id);
     }
 
     private void loadNextPage() {
@@ -453,6 +463,7 @@ public class MessageListFragment extends Fragment implements
     @Override
     public void onLoadMessageList(Bundle args, MessageList messageList) {
         mLastRequest = args;
+        setIntentUrl(args.getString("url"));
         mMessageList = messageList;
         mMessages = messageList.getMessages();
         mCurrentPage = messageList.getPageNumber();
@@ -483,7 +494,7 @@ public class MessageListFragment extends Fragment implements
             mLivelinksSubscriber.unsubscribe();
         }
 
-        dismissDialog();
+        DialogHandler.dismissDialog();
 
         if (mCurrentPage > 1) {
             Snacker.showSnackBar(mRootView, "Page " + mCurrentPage);
@@ -491,12 +502,13 @@ public class MessageListFragment extends Fragment implements
 
         scrollToPosition(mStartPoint);
         mStartPoint = 0;
+        mIsLoading = false;
     }
 
     @Override
     public void onLoadError() {
         // Clean up UI, display notification and retry last working request
-        dismissDialog();
+        DialogHandler.dismissDialog();
         Snacker.showSnackBar(mRootView, "Error while loading page");
 
         if (mArgs != null) {
@@ -714,12 +726,12 @@ public class MessageListFragment extends Fragment implements
 
             @Override
             public void onPreload() {
-                displayDialog("Posting message...");
+                DialogHandler.showDialog(getContext(), "Posting message...");
             }
 
             @Override
             public void onSuccess(String message) {
-                dismissDialog();
+                DialogHandler.dismissDialog();
 
                 if (message != null) {
                     Snacker.showSnackBar(mRootView, message);
@@ -728,7 +740,7 @@ public class MessageListFragment extends Fragment implements
 
             @Override
             public void onError(String errorMessage) {
-                dismissDialog();
+                DialogHandler.dismissDialog();
                 Snacker.showSnackBar(mRootView, errorMessage);
             }
         };
