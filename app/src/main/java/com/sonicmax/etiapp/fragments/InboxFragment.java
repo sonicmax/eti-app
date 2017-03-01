@@ -1,6 +1,5 @@
 package com.sonicmax.etiapp.fragments;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -24,6 +23,7 @@ import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.TopicListLoader;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
+import com.sonicmax.etiapp.utilities.DialogHandler;
 import com.sonicmax.etiapp.utilities.Snacker;
 
 import java.util.ArrayList;
@@ -39,7 +39,6 @@ public class InboxFragment extends Fragment
 
     private TopicListAdapter mTopicListAdapter;
     private String mUrl;
-    private ProgressDialog mDialog;
     private TopicList mTopicList;
     private List<Topic> mTopics;
     private TopicListLoader mTopicListLoader;
@@ -149,10 +148,8 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onDetach() {
-        // Make sure that we don't leak progress dialog when exiting activity
-        dismissDialog();
-
         super.onDetach();
+        DialogHandler.dismissDialog();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -203,7 +200,7 @@ public class InboxFragment extends Fragment
     @Override
     public void onLoadTopicList(TopicList topicList) {
         // Clean up UI
-        dismissDialog();
+        DialogHandler.dismissDialog();
         mSwipeRefreshLayout.setRefreshing(false);
 
         // Get inbox threads and update adapter
@@ -225,7 +222,7 @@ public class InboxFragment extends Fragment
 
     @Override
     public void onCreateTopic(Intent intent) {
-        dismissDialog();
+        DialogHandler.dismissDialog();
         getContext().startActivity(intent);
     }
 
@@ -243,10 +240,10 @@ public class InboxFragment extends Fragment
 
     public void loadTopicList(String url, String name) {
         if (mSwipeRefreshLayout == null) {
-            showDialog("Loading...");
+            DialogHandler.showDialog(getContext(), "Loading...");
         }
         else if (!mSwipeRefreshLayout.isRefreshing()) {
-            showDialog("Loading...");
+            DialogHandler.showDialog(getContext(), "Loading...");
         }
 
         updateActionBarTitle(name);
@@ -256,10 +253,10 @@ public class InboxFragment extends Fragment
 
     public void loadTopicList(String url) {
         if (mSwipeRefreshLayout == null) {
-            showDialog("Loading...");
+            DialogHandler.showDialog(getContext(), "Loading...");
         }
         else if (!mSwipeRefreshLayout.isRefreshing()) {
-            showDialog("Loading...");
+            DialogHandler.showDialog(getContext(), "Loading...");
         }
 
         mTopicListLoader.load(url);
@@ -278,18 +275,6 @@ public class InboxFragment extends Fragment
     private void loadPrevPage() {
         if (mPrevPageUrl != null) {
             loadTopicList(mPrevPageUrl);
-        }
-    }
-
-    private void showDialog(String message) {
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage(message);
-        mDialog.show();
-    }
-
-    private void dismissDialog() {
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
         }
     }
 

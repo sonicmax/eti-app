@@ -25,6 +25,7 @@ import com.sonicmax.etiapp.listeners.OnSwipeListener;
 import com.sonicmax.etiapp.loaders.TopicListLoader;
 import com.sonicmax.etiapp.objects.Topic;
 import com.sonicmax.etiapp.objects.TopicList;
+import com.sonicmax.etiapp.utilities.DialogHandler;
 import com.sonicmax.etiapp.utilities.Snacker;
 import com.sonicmax.etiapp.utilities.Toaster;
 
@@ -36,7 +37,6 @@ public class TopicListFragment extends Fragment
 
     private TopicListAdapter mTopicListAdapter;
     private String mUrl;
-    private ProgressDialog mDialog;
     private TopicList mTopicList;
     private List<Topic> mTopics;
     private TopicListLoader mTopicListLoader;
@@ -147,12 +147,8 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onDetach() {
-        // Make sure that we don't leak progress dialog when exiting activity
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
-
         super.onDetach();
+        DialogHandler.dismissDialog();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -203,7 +199,7 @@ public class TopicListFragment extends Fragment
     @Override
     public void onLoadTopicList(TopicList topicList) {
         // Clean up UI
-        dismissDialog();
+        DialogHandler.dismissDialog();
         mSwipeRefreshLayout.setRefreshing(false);
 
         // Get data from TopicList and update adapter
@@ -225,7 +221,7 @@ public class TopicListFragment extends Fragment
 
     @Override
     public void onCreateTopic(Intent intent) {
-        dismissDialog();
+        DialogHandler.dismissDialog();
         getContext().startActivity(intent);
     }
 
@@ -242,10 +238,10 @@ public class TopicListFragment extends Fragment
 
     public void loadTopicList(String name, String url) {
         if (mSwipeRefreshLayout == null) {
-            showDialog("Loading...");
+            DialogHandler.showDialog(getContext(), "Loading...");
         }
         else if (!mSwipeRefreshLayout.isRefreshing()) {
-            showDialog("Loading...");
+            DialogHandler.showDialog(getContext(), "Loading...");
         }
 
         updateActionBarTitle(name);
@@ -273,18 +269,6 @@ public class TopicListFragment extends Fragment
     private void scrollToFirstTopic() {
         final int FIRST_TOPIC = 0;
         mListView.setSelection(FIRST_TOPIC);
-    }
-
-    public void showDialog(String message) {
-        mDialog = new ProgressDialog(getContext());
-        mDialog.setMessage(message);
-        mDialog.show();
-    }
-
-    private void dismissDialog() {
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
     }
 
     private void updateActionBarTitle(String newTitle) {
