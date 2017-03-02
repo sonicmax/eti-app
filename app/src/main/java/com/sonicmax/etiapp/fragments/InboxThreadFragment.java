@@ -83,10 +83,13 @@ public class InboxThreadFragment extends Fragment implements
     private MessageList mMessageList;
     private int mCurrentPage;
     private ResponseCache mResponseCache;
+
     private String mUrl;
     private String mPrevPageUrl;
     private String mNextPageUrl;
     private int mStartPoint;
+
+    private boolean mIsLoading = false;
 
     public InboxThreadFragment() {}
 
@@ -160,7 +163,11 @@ public class InboxThreadFragment extends Fragment implements
     @Override
     public void onResume() {
         super.onResume();
-        restoreFromCache();
+
+        if (!mIsLoading && !restoreFromCache()) {
+            // Snacker.showSnackBar(mRootView, "Cache load failed");
+            refreshMessageList();
+        }
     }
 
     @Override
@@ -337,6 +344,7 @@ public class InboxThreadFragment extends Fragment implements
     }
 
     private void loadMessageList(Bundle args, int id) {
+        mIsLoading = true;
         DialogHandler.showDialog(getContext(), "Loading...");
         mCurrentPage = getActivity().getIntent().getIntExtra("page", 1);
         mMessageListLoader.load(args, id);
@@ -415,6 +423,7 @@ public class InboxThreadFragment extends Fragment implements
 
         scrollToPosition(mStartPoint);
         mStartPoint = 0;
+        mIsLoading = false;
     }
 
     @Override
