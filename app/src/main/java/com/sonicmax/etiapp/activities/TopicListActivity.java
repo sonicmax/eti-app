@@ -108,6 +108,9 @@ public class TopicListActivity extends BaseActivity {
             mBookmarks.add(new Bookmark(nameArray.get(i), urlArray.get(i)));
         }
 
+        nameArray.add(0, "TOTM");
+        mBookmarks.add(0, new Bookmark("TOTM", "https://boards.endoftheinter.net/topics/LUE?popular"));
+
         mDrawerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameArray);
         mDrawerList.setAdapter(mDrawerAdapter);
 
