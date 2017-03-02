@@ -117,10 +117,15 @@ public class TopicListActivity extends BaseActivity {
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.topic_list_container);
                 Bookmark bookmark = mBookmarks.get(position);
-                fragment.loadTopicList(bookmark.getName(), bookmark.getUrl());
+
+                Intent intent = new Intent(TopicListActivity.this, TopicListActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.putExtra("url", bookmark.getUrl());
+                intent.putExtra("title", bookmark.getName());
+                intent.putExtra("page", 1);
+                TopicListActivity.this.startActivity(intent);
+
                 mDrawerLayout.closeDrawers();
             }
         });
