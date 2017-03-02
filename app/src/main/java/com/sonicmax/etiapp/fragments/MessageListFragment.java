@@ -349,6 +349,10 @@ public class MessageListFragment extends Fragment implements
             position = mLayoutManager.findFirstVisibleItemPosition();
         }
 
+        if (mUrl == null) {
+            mUrl = getUrlFromIntent();
+        }
+
         mResponseCache.cacheResponseData(mUrl, mMessageList.getHtml(), mCurrentPage, position);
     }
 
