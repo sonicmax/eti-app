@@ -15,6 +15,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.adapters.DrawerAdapter;
 import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
@@ -27,7 +28,7 @@ public class InboxActivity extends BaseActivity {
     private final String LOG_TAG = TopicListActivity.class.getSimpleName();
     public ListView mDrawerList;
     public DrawerLayout mDrawerLayout;
-    private ArrayAdapter<String> mDrawerAdapter;
+    private DrawerAdapter mDrawerAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
     private List<Bookmark> mBookmarks;
 
@@ -53,40 +54,38 @@ public class InboxActivity extends BaseActivity {
     }
 
     public void populateDrawerAdapter() {
-        List<String> nameArray = SharedPreferenceManager.getStringList(this, "bookmark_names");
-        List<String> urlArray = SharedPreferenceManager.getStringList(this, "bookmark_urls");
         mBookmarks = new ArrayList<>();
+        mBookmarks.add(new Bookmark("TOTM", "https://boards.endoftheinter.net/topics/LUE?popular"));
+        getBookmarksFromSharedPreferences();
 
-        for (int i = 0; i < nameArray.size(); i++) {
-            mBookmarks.add(new Bookmark(nameArray.get(i), urlArray.get(i)));
-        }
-
-        mDrawerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameArray);
+        mDrawerAdapter = new DrawerAdapter(this);
+        mDrawerAdapter.setBookmarks(mBookmarks);
         mDrawerList.setAdapter(mDrawerAdapter);
 
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Bookmark bookmark = mBookmarks.get(position);
-                TopicListFragment fragment = (TopicListFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.topic_list_container);
 
-                if (fragment != null) {
-                    fragment.loadTopicList(bookmark.getUrl(), bookmark.getName());
-                }
-
-                else {
                     Intent intent = new Intent(InboxActivity.this, TopicListActivity.class);
                     intent.putExtra("url", bookmark.getUrl());
                     intent.putExtra("boardname", bookmark.getName());
                     InboxActivity.this.startActivity(intent);
                     InboxActivity.this.overridePendingTransition(R.anim.slide_in_from_right,
                             R.anim.slide_out_to_left);
-                }
 
                 mDrawerLayout.closeDrawers();
             }
         });
+    }
+
+    private void getBookmarksFromSharedPreferences() {
+        List<String> nameArray = SharedPreferenceManager.getStringList(this, "bookmark_names");
+        List<String> urlArray = SharedPreferenceManager.getStringList(this, "bookmark_urls");
+
+        for (int i = 0; i < nameArray.size(); i++) {
+            mBookmarks.add(new Bookmark(nameArray.get(i), urlArray.get(i)));
+        }
     }
 
     public void initDrawer() {

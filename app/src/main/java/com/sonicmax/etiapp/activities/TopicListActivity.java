@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
+import com.sonicmax.etiapp.adapters.DrawerAdapter;
 import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
@@ -27,7 +28,7 @@ public class TopicListActivity extends BaseActivity {
     private Button mInboxButton;
     public ListView mDrawerList;
     public DrawerLayout mDrawerLayout;
-    private ArrayAdapter<String> mDrawerAdapter;
+    private DrawerAdapter mDrawerAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
     private List<Bookmark> mBookmarks;
 
@@ -36,9 +37,9 @@ public class TopicListActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_topic_list);
 
-        mInboxButton = (Button)findViewById(R.id.inbox_button);
-        mDrawerList = (ListView)findViewById(R.id.drawer_list);
-        mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
+        mInboxButton = (Button) findViewById(R.id.inbox_button);
+        mDrawerList = (ListView) findViewById(R.id.drawer_list);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
         initInboxButton();
         initDrawer();
@@ -100,18 +101,12 @@ public class TopicListActivity extends BaseActivity {
     }
 
     public void populateDrawerAdapter() {
-        List<String> nameArray = SharedPreferenceManager.getStringList(this, "bookmark_names");
-        List<String> urlArray = SharedPreferenceManager.getStringList(this, "bookmark_urls");
         mBookmarks = new ArrayList<>();
+        mBookmarks.add(new Bookmark("TOTM", "https://boards.endoftheinter.net/topics/LUE?popular"));
+        getBookmarksFromSharedPreferences();
 
-        for (int i = 0; i < nameArray.size(); i++) {
-            mBookmarks.add(new Bookmark(nameArray.get(i), urlArray.get(i)));
-        }
-
-        nameArray.add(0, "TOTM");
-        mBookmarks.add(0, new Bookmark("TOTM", "https://boards.endoftheinter.net/topics/LUE?popular"));
-
-        mDrawerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameArray);
+        mDrawerAdapter = new DrawerAdapter(this);
+        mDrawerAdapter.setBookmarks(mBookmarks);
         mDrawerList.setAdapter(mDrawerAdapter);
 
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -129,6 +124,15 @@ public class TopicListActivity extends BaseActivity {
                 mDrawerLayout.closeDrawers();
             }
         });
+    }
+
+    private void getBookmarksFromSharedPreferences() {
+        List<String> nameArray = SharedPreferenceManager.getStringList(this, "bookmark_names");
+        List<String> urlArray = SharedPreferenceManager.getStringList(this, "bookmark_urls");
+
+        for (int i = 0; i < nameArray.size(); i++) {
+            mBookmarks.add(new Bookmark(nameArray.get(i), urlArray.get(i)));
+        }
     }
 
     @Override
