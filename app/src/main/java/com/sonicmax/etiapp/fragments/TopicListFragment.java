@@ -179,6 +179,8 @@ public class TopicListFragment extends Fragment
         intent.putExtra("title", target.getTitle());
 
         getContext().startActivity(intent);
+        ((AppCompatActivity) getContext()).overridePendingTransition(R.anim.slide_in_from_right,
+                R.anim.slide_out_to_left);
     }
 
     @Override
