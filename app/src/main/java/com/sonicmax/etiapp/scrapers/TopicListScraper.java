@@ -173,7 +173,7 @@ public class TopicListScraper {
 
         boolean firstPage = true;
 
-        if (infobars.size() == 2) {
+        if (infobars.size() > 2 || infobars.size() == 0) {
             // User is on first page of topic list - no previous page
             mPrevPageUrl = null;
         }
@@ -193,12 +193,11 @@ public class TopicListScraper {
 
         Element nextPageInfobar = null;
 
-        if (firstPage) {
+        if (firstPage && infobars.size() > 0) {
             nextPageInfobar = infobars.get(0);
-        } else {
-            if (infobars.size() > 1) {
-                nextPageInfobar = infobars.get(1);
             }
+        else if (infobars.size() > 1) {
+            nextPageInfobar = infobars.get(1);
         }
 
         if (nextPageInfobar != null) {
