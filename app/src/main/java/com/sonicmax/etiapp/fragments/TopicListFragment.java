@@ -352,9 +352,7 @@ public class TopicListFragment extends Fragment
             if (actionBar != null) {
                 LayoutInflater inflator = LayoutInflater.from(getContext());
                 View v = inflator.inflate(R.layout.title_view, null);
-
-                String title = activity.getIntent().getStringExtra("title");
-                ((TextView) v.findViewById(R.id.title)).setText(title);
+                ((TextView) v.findViewById(R.id.title)).setText(newTitle);
 
                 actionBar.setCustomView(v);
             }
