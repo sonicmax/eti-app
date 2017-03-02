@@ -11,13 +11,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 
 import com.sonicmax.etiapp.R;
 import com.sonicmax.etiapp.adapters.DrawerAdapter;
-import com.sonicmax.etiapp.fragments.TopicListFragment;
 import com.sonicmax.etiapp.objects.Bookmark;
 import com.sonicmax.etiapp.utilities.SharedPreferenceManager;
 
@@ -118,8 +116,8 @@ public class TopicListActivity extends BaseActivity {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 intent.putExtra("url", bookmark.getUrl());
                 intent.putExtra("title", bookmark.getName());
-                intent.putExtra("page", 1);
-                TopicListActivity.this.startActivity(intent);
+                startActivity(intent);
+                overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
 
                 mDrawerLayout.closeDrawers();
             }
