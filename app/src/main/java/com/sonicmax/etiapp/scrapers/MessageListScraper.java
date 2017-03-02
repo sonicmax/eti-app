@@ -60,9 +60,13 @@ public class MessageListScraper {
             title = headerCollection.get(0).text();
         }
 
-        // Get current page number
-        int currentPage = getCurrentPage(mUrl);
+        int currentPage = 1;
         int lastPage = 1;
+
+        // mUrl might be null if we are scraping from moremessages.php
+        if (mUrl != null) {
+            currentPage = getCurrentPage(mUrl);
+        }
 
         // Check anchors of infobar to get prev/next page URLs (not found in moremessages.php)
         Elements infobarClass = document.getElementsByClass("infobar");
